@@ -25,11 +25,6 @@ mkdir -p "$RESOURCES_DIR/en.lproj"
 if [[ -d "$ROOT_DIR/Resources/l10n/en.lproj" ]]; then
     cp "$ROOT_DIR/Resources/l10n/en.lproj/"*.strings "$RESOURCES_DIR/en.lproj/"
 fi
-# Declare localized resources so Bundle.main lookup resolves en.lproj.
-PLIST_INSERT="$RESOURCES_DIR/Info.plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations array" "$PLIST_INSERT" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations:0 string en" "$PLIST_INSERT" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Add :CFBundleDevelopmentRegion string en" "$PLIST_INSERT" 2>/dev/null || true
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -38,6 +33,11 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <dict>
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>zh-Hans</string>
+    </array>
     <key>CFBundleExecutable</key>
     <string>OPCCompany</string>
     <key>CFBundleIdentifier</key>
