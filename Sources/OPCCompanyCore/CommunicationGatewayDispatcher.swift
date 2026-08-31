@@ -21,7 +21,7 @@ public enum CommunicationGatewayDispatcher {
         }
 
         guard let url = URL(string: preview.endpoint), let scheme = url.scheme?.lowercased(), ["http", "https"].contains(scheme) else {
-            return CommunicationDispatchResult(succeeded: false, httpStatus: nil, attempts: 0, error: "接口地址无效：\(redactedEndpoint(preview.endpoint))")
+            return CommunicationDispatchResult(succeeded: false, httpStatus: nil, attempts: 0, error: "接口地址无效：".L() + "\(redactedEndpoint(preview.endpoint))")
         }
 
         let maxAttempts = max(1, retryBudget + 1)
@@ -44,7 +44,7 @@ public enum CommunicationGatewayDispatcher {
                 if let status, (200..<300).contains(status) {
                     return CommunicationDispatchResult(succeeded: true, httpStatus: status, attempts: attempt)
                 }
-                lastError = "HTTP \(status.map(String.init) ?? "未知状态")：\(redactedEndpoint(preview.endpoint))"
+                lastError = "HTTP \(status.map(String.init) ?? "未知状态".L())：\(redactedEndpoint(preview.endpoint))"
             } catch {
                 lastError = "\(error.localizedDescription)：\(redactedEndpoint(preview.endpoint))"
             }
@@ -55,11 +55,11 @@ public enum CommunicationGatewayDispatcher {
 
     public static func redactedEndpoint(_ endpoint: String) -> String {
         guard var components = URLComponents(string: endpoint), components.host != nil else {
-            return "无效地址"
+            return "无效地址".L()
         }
         components.path = "/***"
         components.query = nil
         components.fragment = nil
-        return components.string ?? "已隐藏接口地址"
+        return components.string ?? "已隐藏接口地址".L()
     }
 }

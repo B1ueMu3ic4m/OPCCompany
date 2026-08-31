@@ -11085,7 +11085,7 @@ private actor AutoLoopInputQueue {
     // 自检扫描器至少抓到了维护和交付侧已知字面量，避免正则失效让守门变成空过。
     #expect(foundExact.contains("自动验收检查"))
     #expect(foundExact.contains("产物扫描完成"))
-    #expect(foundPrefixSnippets.contains("老板验收通过："))
+    #expect(foundExact.contains("老板验收通过：") || foundPrefixSnippets.contains("老板验收通过："))
     #expect(foundExact.count + foundPrefixSnippets.count >= 18)
 
     let maintenanceSet = CompanyStore.technicalMaintenanceVerificationTitles
@@ -11286,8 +11286,8 @@ private actor AutoLoopInputQueue {
 
     // 自检扫描器至少抓到了已知字面量，避免正则失效让守门变空过。
     #expect(foundExact.contains("安全检查点"))
-    #expect(foundPrefixSnippets.contains("验收产物："))
-    #expect(foundPrefixSnippets.contains("验收报告："))
+    #expect(foundExact.contains("验收产物：") || foundPrefixSnippets.contains("验收产物："))
+    #expect(foundExact.contains("验收报告：") || foundPrefixSnippets.contains("验收报告："))
     #expect(foundPrefixSnippets.contains("命令行作业档案："))
 
     let maintenanceExact = CompanyStore.technicalMaintenanceArtifactTitleExactMatches
@@ -12232,7 +12232,7 @@ private actor AutoLoopInputQueue {
 
     for expectation in expectations {
         let url = projectRoot.appendingPathComponent(expectation.file)
-        let content = try String(contentsOf: url, encoding: .utf8)
+        let content = normalizeL10nSourceShape(try String(contentsOf: url, encoding: .utf8))
         let lines = content.components(separatedBy: "\n")
 
         guard let symbolLineIndex = lines.firstIndex(where: { $0.contains(expectation.symbol) }) else {
@@ -12260,7 +12260,7 @@ private actor AutoLoopInputQueue {
     // 反向 sanity：上述 3 处中文 label 字符串必须在对应文件中**真实出现**（防止 expectations 表被改坏后还能误 pass）。
     for expectation in expectations {
         let url = projectRoot.appendingPathComponent(expectation.file)
-        let content = try String(contentsOf: url, encoding: .utf8)
+        let content = normalizeL10nSourceShape(try String(contentsOf: url, encoding: .utf8))
         #expect(content.contains(expectation.label), "\(expectation.file) 缺少中文 a11y label 字面量：\(expectation.label)")
     }
 }
@@ -15410,7 +15410,10 @@ private actor AutoLoopInputQueue {
 
 @Test func agentReportDefaultPromptIsCentralizedAndIdenticalAcrossSurfaces() async throws {
     var occurrences = 0
+    let l10nInfraFiles: Set<String> = ["AppStringsGenerated.swift", "AppStrings.swift",
+                                       "AppStringsTables.swift", "AppLanguage.swift", "L10nEnvironment.swift"]
     for url in try loadOPCCompanyCoreSwiftFileURLs() {
+        guard !l10nInfraFiles.contains(url.lastPathComponent) else { continue } // 翻译表合法包含全部文案
         let source = try String(contentsOf: url, encoding: .utf8)
         occurrences += source.components(separatedBy: "\"汇报你的角色").count - 1
     }
@@ -16711,7 +16714,28 @@ fileprivate func loadOPCCompanyCoreSource(_ relativePath: String) throws -> Stri
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .appendingPathComponent("Sources/OPCCompanyCore/\(relativePath)")
-    return try String(contentsOf: url, encoding: .utf8)
+    return normalizeL10nSourceShape(try String(contentsOf: url, encoding: .utf8))
+}
+
+/// i18n normalization: tests assert on source shapes that predate the
+/// bilingual layer. 1) Strip the `.L()` wrapper so `"...".L()` matches the
+/// historical `\"...\"` assertions. 2) Re-join adjacent plain literals split
+/// by the l10n codemod (`"A" + "B"` -> `"AB"`) so shape assertions see the
+/// original single-literal form.
+fileprivate func normalizeL10nSourceShape(_ raw: String) -> String {
+    var s = raw.replacingOccurrences(of: "\".L()", with: "\"")
+    let pattern = "\"((?:\\\\.|[^\"\\\\])*)\"\\s*\\+\\s*\"((?:\\\\.|[^\"\\\\])*)\""
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return s }
+    for _ in 0..<64 {
+        let ns = s as NSString
+        guard let m = regex.firstMatch(in: s, range: NSRange(location: 0, length: ns.length)) else { break }
+        let a = ns.substring(with: m.range(at: 1))
+        let b = ns.substring(with: m.range(at: 2))
+        let out = NSMutableString(string: s)
+        out.replaceCharacters(in: m.range, with: "\"" + a + b + "\"")
+        s = out as String
+    }
+    return s
 }
 
 /// 列出 `Sources/OPCCompanyCore/` 目录下所有 `.swift` 文件 URL（不递归子目录）。

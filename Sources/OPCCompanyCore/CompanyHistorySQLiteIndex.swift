@@ -294,7 +294,7 @@ public enum CompanyHistorySQLiteIndex {
                 taskID: nil,
                 kind: "chat_message",
                 subtype: message.author.rawValue,
-                title: message.author == .user ? "老板消息" : "员工对话",
+                title: message.author == .user ? "老板消息".L() : "员工对话".L(),
                 body: message.text,
                 createdAt: message.createdAt,
                 source: message
@@ -339,7 +339,7 @@ public enum CompanyHistorySQLiteIndex {
                 taskID: item.taskID,
                 kind: "work_item",
                 subtype: item.status.rawValue,
-                title: "员工工作项",
+                title: "员工工作项".L(),
                 body: item.promptPreview,
                 createdAt: item.createdAt,
                 source: item
@@ -429,7 +429,7 @@ public enum CompanyHistorySQLiteIndex {
                 taskID: gate.taskID,
                 kind: "review_gate",
                 subtype: gate.status.rawValue,
-                title: "验收门禁",
+                title: "验收门禁".L(),
                 body: gate.summary,
                 createdAt: gate.updatedAt,
                 source: gate
@@ -560,7 +560,7 @@ public enum CompanyHistorySQLiteIndex {
         var database: OpaquePointer?
         let flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX
         guard sqlite3_open_v2(url.path, &database, flags, nil) == SQLITE_OK, let database else {
-            let message = database.map(errorMessage) ?? "无法打开本地历史索引。"
+            let message = database.map(errorMessage) ?? "无法打开本地历史索引。".L()
             if let database { sqlite3_close(database) }
             throw IndexError.openFailed(message)
         }

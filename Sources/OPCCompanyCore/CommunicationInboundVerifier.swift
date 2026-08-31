@@ -16,9 +16,9 @@ public enum CommunicationInboundAction: String, Codable, CaseIterable, Sendable 
 
     public var title: String {
         switch self {
-        case .queryStatus: "查询当前产品状态"
-        case .submitInstruction: "提交普通指令任务"
-        case .approvalDecision: "处理特定审批"
+        case .queryStatus: "查询当前产品状态".L()
+        case .submitInstruction: "提交普通指令任务".L()
+        case .approvalDecision: "处理特定审批".L()
         }
     }
 }
@@ -59,7 +59,7 @@ public enum CommunicationInboundCommandParser {
 
         switch action {
         case .queryStatus:
-            return .accepted(CommunicationInboundCommand(action: action, text: "查询当前产品状态"))
+            return .accepted(CommunicationInboundCommand(action: action, text: "查询当前产品状态".L()))
         case .submitInstruction:
             let text = stringValue(dictionary["text"]) ?? stringValue(dictionary["instruction"]) ?? stringValue(dictionary["command"]) ?? ""
             let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -73,17 +73,17 @@ public enum CommunicationInboundCommandParser {
     public static func parseFailureTitle(_ result: CommunicationInboundCommandParseResult) -> String {
         switch result {
         case .accepted:
-            "已通过"
+            "已通过".L()
         case .invalidJSON:
-            "请求体必须是 JSON"
+            "请求体必须是 JSON".L()
         case .missingField(let field):
-            "缺少 \(field)"
+            "缺少 ".L() + "\(field)"
         case .unsupportedAction(let action):
-            "动作不在白名单：\(action)"
+            "动作不在白名单：".L() + "\(action)"
         case .emptyInstruction:
-            "普通指令内容为空"
+            "普通指令内容为空".L()
         case .approvalActionDisabled:
-            "外部审批动作暂未开放"
+            "外部审批动作暂未开放".L()
         }
     }
 

@@ -100,7 +100,7 @@ struct WorkspaceNavigationBar: View {
                         .fill(store.runningAgentIDs.isEmpty ? CompanyTheme.muted : CompanyTheme.accent)
                         .frame(width: 7, height: 7)
                         .shadow(color: store.runningAgentIDs.isEmpty ? .clear : CompanyTheme.accent.opacity(0.36), radius: 4)
-                    Text("\(store.runningAgentIDs.count) 运行中")
+                    Text("\(store.runningAgentIDs.count)" + " 运行中".L())
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(store.runningAgentIDs.isEmpty ? CompanyTheme.muted : CompanyTheme.ink)
                         .lineLimit(1)
@@ -161,7 +161,7 @@ struct CompanySceneToolbarButton: View {
         Button {
             store.mainWorkspace = .office
         } label: {
-            Label("公司场景", systemImage: "building.2.fill")
+            Label("公司场景".L(), systemImage: "building.2.fill")
                 .font(.system(size: 12, weight: .heavy))
                 .foregroundStyle(CompanyTheme.selectedDeep)
                 .padding(.horizontal, 14)
@@ -184,7 +184,7 @@ struct CompanySceneToolbarButton: View {
                 .shadow(color: CompanyTheme.selectionGlow.opacity(isSelected ? 0.34 : 0.18), radius: isSelected ? 12 : 8, y: 4)
         }
         .buttonStyle(.plain)
-        .help("打开公司场景")
+        .help("打开公司场景".L())
     }
 }
 
@@ -457,17 +457,17 @@ struct AgentRosterView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 7) {
-                Text("OPC 公司")
+                Text("OPC 公司".L())
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
                     .foregroundStyle(CompanyTheme.ink)
-                Text("公司办公室与工作区")
+                Text("公司办公室与工作区".L())
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(CompanyTheme.accent)
             }
             .padding(.top, 20)
 
             HStack {
-                Text("产品工作区")
+                Text("产品工作区".L())
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .textCase(.uppercase)
                     .foregroundStyle(CompanyTheme.muted)
@@ -475,7 +475,7 @@ struct AgentRosterView: View {
                 Button {
                     importExistingProject()
                 } label: {
-                    Label("导入", systemImage: "tray.and.arrow.down")
+                    Label("导入".L(), systemImage: "tray.and.arrow.down")
                 }
                 .buttonStyle(.plain)
                 .font(.system(size: 12, weight: .semibold))
@@ -483,7 +483,7 @@ struct AgentRosterView: View {
                 Button {
                     store.addProductWorkspace()
                 } label: {
-                    Label("新增", systemImage: "plus")
+                    Label("新增".L(), systemImage: "plus")
                 }
                 .buttonStyle(.plain)
                 .font(.system(size: 12, weight: .semibold))
@@ -492,7 +492,7 @@ struct AgentRosterView: View {
 
             ProductWorkspaceList()
 
-            SectionHeader(title: "员工", actionTitle: "新增") {
+            SectionHeader(title: "员工".L(), actionTitle: "新增".L()) {
                 store.isAddingEmployee = true
             }
 
@@ -552,9 +552,9 @@ struct AgentRosterView: View {
 
     private func importExistingProject() {
         let panel = NSOpenPanel()
-        panel.title = "导入现有产品项目"
-        panel.message = "选择已经在开发的项目根目录。OPC 会读取本地规则、记忆和项目文件线索。"
-        panel.prompt = "导入项目"
+        panel.title = "导入现有产品项目".L()
+        panel.message = "选择已经在开发的项目根目录。OPC 会读取本地规则、记忆和项目文件线索。".L()
+        panel.prompt = "导入项目".L()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
@@ -598,10 +598,10 @@ struct CompanySceneEntryButton: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("OPC 公司办公室")
+                        Text("OPC 公司办公室".L())
                             .font(.system(size: 15, weight: .heavy))
                             .foregroundStyle(CompanyTheme.ink)
-                        Text("公司总览")
+                        Text("公司总览".L())
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(isSelected ? CompanyTheme.selected : CompanyTheme.secondaryInk)
                             .lineLimit(1)
@@ -637,7 +637,7 @@ struct CompanySceneEntryButton: View {
             .shadow(color: isSelected ? CompanyTheme.selectionGlow.opacity(0.18) : .black.opacity(0.14), radius: isSelected ? 12 : 8, y: 5)
         }
         .buttonStyle(.plain)
-        .help("打开公司场景总览")
+        .help("打开公司场景总览".L())
     }
 }
 
@@ -653,7 +653,7 @@ struct ProductWorkspaceList: View {
                         store.selectProduct(product.id)
                     }
                     .contextMenu {
-                        Button("删除产品", role: .destructive) {
+                        Button("删除产品".L(), role: .destructive) {
                             pendingDeletion = ProductDeletionRequest(product: product)
                         }
                         .disabled(store.products.count <= 1)
@@ -661,22 +661,22 @@ struct ProductWorkspaceList: View {
             }
         }
         .confirmationDialog(
-            "确认删除产品",
+            "确认删除产品".L(),
             isPresented: Binding(
                 get: { pendingDeletion != nil },
                 set: { newValue in if !newValue { pendingDeletion = nil } }
             ),
             presenting: pendingDeletion
         ) { request in
-            Button("永久删除「\(request.productName)」", role: .destructive) {
+            Button("永久删除「" + "\(request.productName)" + "」".L(), role: .destructive) {
                 store.deleteProduct(request.productID)
                 pendingDeletion = nil
             }
-            Button("取消", role: .cancel) {
+            Button("取消".L(), role: .cancel) {
                 pendingDeletion = nil
             }
         } message: { request in
-            Text("将永久移除「\(request.productName)」及其全部任务、审批、记忆与交付物，操作无法撤销。")
+            Text("将永久移除「" + "\(request.productName)" + "」及其全部任务、审批、记忆与交付物，操作无法撤销。")
         }
     }
 }
@@ -765,12 +765,12 @@ struct ProductWorkspaceRow: View {
         let count = product.assignedAgentIDs.count
         let lead = product.teamLeadAgentID.flatMap { id in
             store.agents.first { $0.id == id }?.displayName
-        } ?? "未设负责人"
-        return "团队 \(count) 人 · \(lead)"
+        } ?? "未设负责人".L()
+        return "团队 ".L() + "\(count)" + " 人 · ".L() + "\(lead)"
     }
 
     private func importLine(for report: ProjectImportReport) -> String {
-        let tools = report.detectedTools.isEmpty ? "本地项目" : report.detectedTools.joined(separator: "+")
+        let tools = report.detectedTools.isEmpty ? "本地项目".L() : report.detectedTools.joined(separator: "+")
         return "\(tools) · \(URL(fileURLWithPath: report.rootDirectory).lastPathComponent)"
     }
 }

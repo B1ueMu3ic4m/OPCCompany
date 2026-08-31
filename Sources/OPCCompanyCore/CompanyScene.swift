@@ -88,7 +88,7 @@ final class OfficeScene: SKScene {
         addSchedulerTable(in: zones.core)
         addExecutiveOffice(
             rect: zones.ctoDeck,
-            title: "技术负责人办公室",
+            title: "技术负责人办公室".L(),
             fill: NSColor(CompanyTheme.officeCTO),
             border: NSColor(CompanyTheme.officeCTOBorder),
             accent: NSColor(CompanyTheme.blue),
@@ -96,7 +96,7 @@ final class OfficeScene: SKScene {
         )
         addExecutiveOffice(
             rect: zones.bossDeck,
-            title: "老板办公室",
+            title: "老板办公室".L(),
             fill: NSColor(CompanyTheme.officeBoss),
             border: NSColor(CompanyTheme.officeBossBorder),
             accent: NSColor(CompanyTheme.selected),
@@ -292,7 +292,7 @@ final class OfficeScene: SKScene {
         nucleus.zPosition = 0.8
         addChild(nucleus)
 
-        let title = SKLabelNode(text: "智能调度")
+        let title = SKLabelNode(text: "智能调度".L())
         title.fontName = "AvenirNext-DemiBold"
         title.fontSize = 10.5
         title.fontColor = NSColor(CompanyTheme.secondaryInk).withAlphaComponent(0.70)
@@ -512,7 +512,7 @@ final class OfficeScene: SKScene {
         innerFrame.zPosition = -1.0
         addChild(innerFrame)
 
-        let title = SKLabelNode(text: "员工办公区")
+        let title = SKLabelNode(text: "员工办公区".L())
         title.fontName = "AvenirNext-DemiBold"
         title.fontSize = 10.5
         title.fontColor = NSColor(CompanyTheme.secondaryInk).withAlphaComponent(0.72)
@@ -597,7 +597,7 @@ final class OfficeScene: SKScene {
         }
 
         if employeeCount == 0 {
-            let empty = SKLabelNode(text: "等待新增员工")
+            let empty = SKLabelNode(text: "等待新增员工".L())
             empty.fontName = "AvenirNext-DemiBold"
             empty.fontSize = 10.5
             empty.fontColor = NSColor(CompanyTheme.muted).withAlphaComponent(0.44)
@@ -945,7 +945,7 @@ struct OfficeOverlay: View {
                     .onTapGesture {
                         store.isAddingEmployee = true
                     }
-                    .help("新增员工")
+                    .help("新增员工".L())
             }
         }
         .frame(width: size.width, height: size.height)

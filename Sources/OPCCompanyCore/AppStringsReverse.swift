@@ -14,6 +14,13 @@ public extension String {
             return AppStrings.enByZh[self] ?? self
         }
     }
+
+    /// Session-localized variant used inside enum titles and store-generated
+    /// strings. Under XCTest `sessionLanguage` is forced to Chinese so the
+    /// suite stays deterministic.
+    func L() -> String {
+        zh(AppStrings.sessionLanguage)
+    }
 }
 
 extension AppStrings {

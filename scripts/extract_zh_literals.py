@@ -54,14 +54,19 @@ def extract_literals(text):
                 buf["s"] += '\\"'; i += 1
             elif c == "\\" and buf["hashes"] == 0 and nxt == "(":
                 buf["interp"] = True
-                buf["s"] += "\\("
-                # skip to matching ')' respecting nesting and inner strings (approx: no nested strings)
-                depth = 1; i += 1
-                while i < n-1 and depth:
-                    i += 1
-                    if text[i] == "(": depth += 1
-                    elif text[i] == ")": depth -= 1
-                i += 1  # points after ')'
+                # capture the FULL interpolation expression (nested parens safe)
+                depth = 1; j = i + 2; expr = []
+                while j < n and depth:
+                    ch = text[j]
+                    if ch == "(":
+                        depth += 1
+                    elif ch == ")":
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    expr.append(ch); j += 1
+                i = j  # lands on ')'
+                buf["s"] += "\\(" + "".join(expr) + ")"
                 continue
             elif buf["hashes"] > 0 and c == '"' and text[i+1:i+1+buf["hashes"]] == "#"*buf["hashes"]:
                 skip = buf["hashes"]

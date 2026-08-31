@@ -87,7 +87,7 @@ public enum AgentProcessRunner {
                 if let sandboxProfile {
                     let sandboxExecutable = "/usr/bin/sandbox-exec"
                     guard FileManager.default.isExecutableFile(atPath: sandboxExecutable) else {
-                        let error = "严格沙盒不可用：当前系统没有可执行的 sandbox-exec。"
+                        let error = "严格沙盒不可用：当前系统没有可执行的 sandbox-exec。".L()
                         onOutput(error)
                         continuation.resume(returning: CommandExecutionResult(exitCode: 127, standardOutput: "", standardError: error))
                         return
@@ -96,7 +96,7 @@ public enum AgentProcessRunner {
                 }
 
                 guard let executable = launchCommand.first else {
-                    let error = "没有提供命令。"
+                    let error = "没有提供命令。".L()
                     onOutput(error)
                     continuation.resume(returning: CommandExecutionResult(exitCode: 127, standardOutput: "", standardError: error))
                     return
@@ -169,7 +169,7 @@ public enum AgentProcessRunner {
                             let pid = process.processIdentifier
                             DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + max(terminationGraceSeconds, 0)) {
                                 guard process.isRunning else { return }
-                                let killMessage = "\n命令在 SIGTERM 后仍在运行，已升级到 SIGKILL 强制结束。\n"
+                                let killMessage = "\n命令在 SIGTERM 后仍在运行，已升级到 SIGKILL 强制结束。\n".L()
                                 outputBuffer.append(killMessage, isError: true)
                                 onOutput(killMessage)
                                 kill(pid, SIGKILL)
@@ -277,15 +277,15 @@ public enum AgentAPIChatRunner {
         public var errorDescription: String? {
             switch self {
             case .invalidEndpoint:
-                "接口地址无效。请填写兼容 OpenAI 的基础地址，例如 https://api.openai.com/v1。"
+                "接口地址无效。请填写兼容 OpenAI 的基础地址，例如 https://api.openai.com/v1。".L()
             case .missingAPIKey:
-                "接口密钥为空。接口模式需要在员工档案里配置密钥。"
+                "接口密钥为空。接口模式需要在员工档案里配置密钥。".L()
             case .invalidHTTPResponse:
-                "接口没有返回有效网络响应。"
+                "接口没有返回有效网络响应。".L()
             case let .httpError(status, body):
                 "接口请求失败：网络状态 \(status)。\(body)"
             case .emptyReply:
-                "接口返回成功，但没有解析到模型回复内容。"
+                "接口返回成功，但没有解析到模型回复内容。".L()
             }
         }
     }
@@ -443,7 +443,7 @@ public enum CLIAgentCommandBuilder {
 
     public static func interactionSummary(for agent: CompanyAgent) -> String? {
         guard let profile = interactionProfile(for: agent) else { return nil }
-        let resumeText = profile.supportsResume ? "支持按产品续跑" : "不续跑历史会话"
+        let resumeText = profile.supportsResume ? "支持按产品续跑".L() : "不续跑历史会话".L()
         return "\(profile.displayName) · \(resumeText) · 识别会话编号关键词 · 监控\(profile.healthSignalSummary)"
     }
 
@@ -525,10 +525,10 @@ public struct CLIInteractionProfile: Hashable, Sendable {
 
     public var healthSignalSummary: String {
         [
-            readySignals.isEmpty ? nil : "就绪",
-            busySignals.isEmpty ? nil : "忙碌",
-            authenticationIssueSignals.isEmpty ? nil : "授权异常",
-            transientIssueSignals.isEmpty ? nil : "临时异常"
+            readySignals.isEmpty ? nil : "就绪".L(),
+            busySignals.isEmpty ? nil : "忙碌".L(),
+            authenticationIssueSignals.isEmpty ? nil : "授权异常".L(),
+            transientIssueSignals.isEmpty ? nil : "临时异常".L()
         ].compactMap { $0 }.joined(separator: "、")
     }
 
@@ -752,12 +752,12 @@ public struct CLIInteractionProfile: Hashable, Sendable {
         "network error", "network timeout", "connection timed out", "request timed out",
         "temporarily unavailable", "timeout", "429",
         // 中文诊断前缀：覆盖工具中文输出。同样要求出现在行首，普通中文句子不会误命中。
-        "错误：", "错误 ", "致命：", "致命 ", "致命错误：", "严重：", "严重错误：",
-        "警告：", "警告 ", "异常：", "异常 ",
-        "授权失败", "授权异常", "登录失败", "未授权", "请登录", "请重新登录",
-        "网络错误", "网络异常", "请求超时", "连接超时", "连接失败",
-        "临时不可用", "临时异常", "服务繁忙", "已忙碌", "速率限制", "配额已用尽",
-        "请稍后重试"
+        "错误：".L(), "错误 ".L(), "致命：".L(), "致命 ".L(), "致命错误：".L(), "严重：".L(), "严重错误：".L(),
+        "警告：".L(), "警告 ".L(), "异常：".L(), "异常 ".L(),
+        "授权失败".L(), "授权异常".L(), "登录失败".L(), "未授权".L(), "请登录".L(), "请重新登录".L(),
+        "网络错误".L(), "网络异常".L(), "请求超时".L(), "连接超时".L(), "连接失败".L(),
+        "临时不可用".L(), "临时异常".L(), "服务繁忙".L(), "已忙碌".L(), "速率限制".L(), "配额已用尽".L(),
+        "请稍后重试".L()
     ]
 
     fileprivate static let pathOrIdentifierMarkers: Set<Character> = ["/", "\\", "-", "_", "."]
@@ -862,13 +862,13 @@ public enum CLIInteractionRecoveryAction: String, Codable, CaseIterable, Sendabl
     public var title: String {
         switch self {
         case .noAction:
-            return "无需处理"
+            return "无需处理".L()
         case .checkAuthentication:
-            return "检查登录授权"
+            return "检查登录授权".L()
         case .waitAndRetryLater:
-            return "稍后重试"
+            return "稍后重试".L()
         case .waitForCurrentTask:
-            return "等待当前任务"
+            return "等待当前任务".L()
         }
     }
 
@@ -877,11 +877,11 @@ public enum CLIInteractionRecoveryAction: String, Codable, CaseIterable, Sendabl
         case .noAction:
             return nil
         case .checkAuthentication:
-            return "请在对应工具中确认登录授权，再重新发起任务。"
+            return "请在对应工具中确认登录授权，再重新发起任务。".L()
         case .waitAndRetryLater:
-            return "网络或模型来源临时不可用，请稍后再发起任务。"
+            return "网络或模型来源临时不可用，请稍后再发起任务。".L()
         case .waitForCurrentTask:
-            return "上一轮任务尚未结束，请等待完成后再发起新任务。"
+            return "上一轮任务尚未结束，请等待完成后再发起新任务。".L()
         }
     }
 }
@@ -890,24 +890,24 @@ public enum CLIInteractionStateMachine {
     public static func observe(output: String, profile: CLIInteractionProfile, previousPhase: CLIInteractionPhase = .unknown) -> CLIInteractionObservation {
         let sessionID = profile.sessionID(from: output)
         if profile.containsAuthenticationIssue(output) {
-            return CLIInteractionObservation(phase: .authenticationBlocked, reasonTitle: "授权异常", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .authenticationBlocked, reasonTitle: "授权异常".L(), sessionID: sessionID)
         }
         if profile.containsTransientIssue(output) {
-            return CLIInteractionObservation(phase: .transientFailure, reasonTitle: "临时异常", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .transientFailure, reasonTitle: "临时异常".L(), sessionID: sessionID)
         }
         if profile.containsBusySignal(output) {
-            return CLIInteractionObservation(phase: .busy, reasonTitle: "忙碌中", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .busy, reasonTitle: "忙碌中".L(), sessionID: sessionID)
         }
         if profile.containsEndTurnSignal(output) {
-            return CLIInteractionObservation(phase: .completedTurn, reasonTitle: "本轮已结束", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .completedTurn, reasonTitle: "本轮已结束".L(), sessionID: sessionID)
         }
         if profile.containsReadySignal(output) || sessionID != nil {
-            return CLIInteractionObservation(phase: .ready, reasonTitle: "可继续交互", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .ready, reasonTitle: "可继续交互".L(), sessionID: sessionID)
         }
         if previousPhase == .awaitingResponse {
-            return CLIInteractionObservation(phase: .awaitingResponse, reasonTitle: "等待回复", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .awaitingResponse, reasonTitle: "等待回复".L(), sessionID: sessionID)
         }
-        return CLIInteractionObservation(phase: .unknown, reasonTitle: "未识别状态", sessionID: sessionID)
+        return CLIInteractionObservation(phase: .unknown, reasonTitle: "未识别状态".L(), sessionID: sessionID)
     }
 
     public static func recoveryAction(for phase: CLIInteractionPhase) -> CLIInteractionRecoveryAction {
@@ -932,24 +932,24 @@ public enum CLIInteractionStateMachine {
     public static func observeREPLTurn(output: String, profile: CLIInteractionProfile, previousPhase: CLIInteractionPhase = .awaitingResponse) -> CLIInteractionObservation {
         let sessionID = profile.sessionID(from: output)
         if profile.containsAuthenticationIssue(output) {
-            return CLIInteractionObservation(phase: .authenticationBlocked, reasonTitle: "授权异常", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .authenticationBlocked, reasonTitle: "授权异常".L(), sessionID: sessionID)
         }
         if profile.containsTransientIssue(output) {
-            return CLIInteractionObservation(phase: .transientFailure, reasonTitle: "临时异常", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .transientFailure, reasonTitle: "临时异常".L(), sessionID: sessionID)
         }
         if profile.containsBusySignal(output) {
-            return CLIInteractionObservation(phase: .busy, reasonTitle: "忙碌中", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .busy, reasonTitle: "忙碌中".L(), sessionID: sessionID)
         }
         if profile.containsEndTurnSignal(output) {
-            return CLIInteractionObservation(phase: .completedTurn, reasonTitle: "本轮已结束", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .completedTurn, reasonTitle: "本轮已结束".L(), sessionID: sessionID)
         }
         if profile.containsREPLReadySignal(output) || sessionID != nil {
-            return CLIInteractionObservation(phase: .ready, reasonTitle: "可继续交互", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .ready, reasonTitle: "可继续交互".L(), sessionID: sessionID)
         }
         if previousPhase == .awaitingResponse {
-            return CLIInteractionObservation(phase: .awaitingResponse, reasonTitle: "等待回复", sessionID: sessionID)
+            return CLIInteractionObservation(phase: .awaitingResponse, reasonTitle: "等待回复".L(), sessionID: sessionID)
         }
-        return CLIInteractionObservation(phase: .unknown, reasonTitle: "未识别状态", sessionID: sessionID)
+        return CLIInteractionObservation(phase: .unknown, reasonTitle: "未识别状态".L(), sessionID: sessionID)
     }
 }
 
@@ -957,7 +957,7 @@ public enum CLIInteractionProfileCatalog {
     public static let profiles: [CLIInteractionProfile] = [
         CLIInteractionProfile(
             command: "codex",
-            displayName: "Codex 命令行交互",
+            displayName: "Codex 命令行交互".L(),
             protocolKind: .singleCommand,
             sessionMode: "codex-exec",
             supportsResume: true,
@@ -965,15 +965,15 @@ public enum CLIInteractionProfileCatalog {
             sessionIDPattern: #"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"#,
             readySignals: ["codex", "OpenAI Codex", "codex-cli"],
             replReadySignals: ["codex>"],
-            endTurnSignals: ["[命令退出码", "turn complete", "response completed"],
-            busySignals: ["busy", "already running", "rate limit", "Plan usage limits", "服务繁忙", "已忙碌", "已在运行", "速率限制", "配额已用尽", "请稍后重试"],
-            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权", "请登录", "请重新登录", "授权失败", "授权异常", "登录失败"],
-            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时", "连接超时", "网络异常", "网络错误", "连接失败", "临时不可用"],
+            endTurnSignals: ["[命令退出码".L(), "turn complete", "response completed"],
+            busySignals: ["busy", "already running", "rate limit", "Plan usage limits", "服务繁忙".L(), "已忙碌".L(), "已在运行".L(), "速率限制".L(), "配额已用尽".L(), "请稍后重试".L()],
+            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权".L(), "请登录".L(), "请重新登录".L(), "授权失败".L(), "授权异常".L(), "登录失败".L()],
+            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时".L(), "连接超时".L(), "网络异常".L(), "网络错误".L(), "连接失败".L(), "临时不可用".L()],
             recommendedTimeoutSeconds: 600
         ),
         CLIInteractionProfile(
             command: "claude",
-            displayName: "Claude Code 命令行交互",
+            displayName: "Claude Code 命令行交互".L(),
             protocolKind: .printMode,
             sessionMode: "claude-print",
             supportsResume: true,
@@ -982,14 +982,14 @@ public enum CLIInteractionProfileCatalog {
             readySignals: ["Claude Code", "claude"],
             replReadySignals: ["claude>"],
             endTurnSignals: ["completion_reason", "Done", "result"],
-            busySignals: ["busy", "already running", "overloaded", "rate limit", "服务繁忙", "已忙碌", "已在运行", "过载", "速率限制", "请稍后重试"],
-            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权", "请登录", "请重新登录", "授权失败", "授权异常", "登录失败"],
-            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时", "连接超时", "网络异常", "网络错误", "连接失败", "临时不可用"],
+            busySignals: ["busy", "already running", "overloaded", "rate limit", "服务繁忙".L(), "已忙碌".L(), "已在运行".L(), "过载".L(), "速率限制".L(), "请稍后重试".L()],
+            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权".L(), "请登录".L(), "请重新登录".L(), "授权失败".L(), "授权异常".L(), "登录失败".L()],
+            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时".L(), "连接超时".L(), "网络异常".L(), "网络错误".L(), "连接失败".L(), "临时不可用".L()],
             recommendedTimeoutSeconds: 600
         ),
         CLIInteractionProfile(
             command: "gemini",
-            displayName: "Gemini 命令行交互",
+            displayName: "Gemini 命令行交互".L(),
             protocolKind: .promptMode,
             sessionMode: "gemini-prompt",
             supportsResume: true,
@@ -998,9 +998,9 @@ public enum CLIInteractionProfileCatalog {
             readySignals: ["Gemini", "gemini"],
             replReadySignals: ["gemini>"],
             endTurnSignals: ["turn complete", "response completed", "Done"],
-            busySignals: ["busy", "already running", "rate limit", "quota", "服务繁忙", "已忙碌", "已在运行", "速率限制", "配额已用尽", "请稍后重试"],
-            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权", "请登录", "请重新登录", "授权失败", "授权异常", "登录失败"],
-            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时", "连接超时", "网络异常", "网络错误", "连接失败", "临时不可用"],
+            busySignals: ["busy", "already running", "rate limit", "quota", "服务繁忙".L(), "已忙碌".L(), "已在运行".L(), "速率限制".L(), "配额已用尽".L(), "请稍后重试".L()],
+            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权".L(), "请登录".L(), "请重新登录".L(), "授权失败".L(), "授权异常".L(), "登录失败".L()],
+            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时".L(), "连接超时".L(), "网络异常".L(), "网络错误".L(), "连接失败".L(), "临时不可用".L()],
             recommendedTimeoutSeconds: 600
         )
     ]

@@ -25,7 +25,7 @@ extension Date {
 
 func opcBackendCommandDisplayName(_ command: String) -> String {
     let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return "未配置" }
+    guard !trimmed.isEmpty else { return "未配置".L() }
     let firstToken = trimmed.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" }).first.map(String.init) ?? trimmed
     let lastPathComponent = URL(fileURLWithPath: firstToken).lastPathComponent
     let toolName = lastPathComponent.isEmpty ? firstToken : lastPathComponent
@@ -39,11 +39,11 @@ func opcBackendCommandDisplayName(_ command: String) -> String {
 
 func opcBackendModelDisplayName(_ model: String) -> String {
     let trimmed = model.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.isEmpty ? "默认模型" : trimmed
+    return trimmed.isEmpty ? "默认模型".L() : trimmed
 }
 
 func opcBackendCompactDisplay(command: String, model: String) -> String {
-    "工具 \(opcBackendCommandDisplayName(command)) · \(opcBackendModelDisplayName(model))"
+    "工具 ".L() + "\(opcBackendCommandDisplayName(command))" + " · " + "\(opcBackendModelDisplayName(model))"
 }
 
 func opcBackendCompactDisplay(type: BackendType, command: String, model: String) -> String {
@@ -51,21 +51,21 @@ func opcBackendCompactDisplay(type: BackendType, command: String, model: String)
     case .subscriptionCLI:
         return opcBackendCompactDisplay(command: command, model: model)
     case .api:
-        return "接口模型 · \(opcBackendModelDisplayName(model))"
+        return "接口模型 · ".L() + "\(opcBackendModelDisplayName(model))"
     case .local:
         let placeholder = model.trimmingCharacters(in: .whitespacesAndNewlines)
-        return placeholder.isEmpty ? "本地占位" : "本地占位 · \(placeholder)"
+        return placeholder.isEmpty ? "本地占位".L() : "本地占位 · \(placeholder)"
     }
 }
 
 func opcProductWorkspaceDisplayName(_ rootDirectory: String) -> String {
     let trimmed = rootDirectory.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return "未设置本地工作区" }
+    guard !trimmed.isEmpty else { return "未设置本地工作区".L() }
 
     let expanded = NSString(string: trimmed).expandingTildeInPath
     let component = URL(fileURLWithPath: expanded).standardizedFileURL.lastPathComponent
-    guard !component.isEmpty else { return "本地工作区已连接" }
-    return "本地工作区：\(component)"
+    guard !component.isEmpty else { return "本地工作区已连接".L() }
+    return "本地工作区：".L() + "\(component)"
 }
 
 /// 集中管理 Computer Use / UI 自动化使用的 SwiftUI accessibility identifier。
@@ -235,13 +235,13 @@ public enum OPCUIAutomationIdentifier: String, CaseIterable, Sendable {
 }
 
 public enum OPCVisibleInterfaceCopy {
-    public static let intelligenceControlTitle = "智能控制 / 通信"
-    public static let commandChannelTitle = "指令通道"
-    public static let commandChannelHint = "向选中员工发送目标、约束或状态查询。"
-    public static let companySceneTitle = "OPC 智能公司指挥舱"
-    public static let companySceneSubtitle = "俯视剖面办公室沙盘 · 本地员工编队"
-    public static let presalesTopicPlaceholder = "方案主题，例如：某客户智能知识库建设方案"
-    public static let defaultAgentReportPromptText = "汇报你的角色、当前状态和下一步建议。"
+    public static let intelligenceControlTitle = "智能控制 / 通信".L()
+    public static let commandChannelTitle = "指令通道".L()
+    public static let commandChannelHint = "向选中员工发送目标、约束或状态查询。".L()
+    public static let companySceneTitle = "OPC 智能公司指挥舱".L()
+    public static let companySceneSubtitle = "俯视剖面办公室沙盘 · 本地员工编队".L()
+    public static let presalesTopicPlaceholder = "方案主题，例如：某客户智能知识库建设方案".L()
+    public static let defaultAgentReportPromptText = "汇报你的角色、当前状态和下一步建议。".L()
     public static let defaultTerminalPromptPlaceholder = defaultAgentReportPromptText
 
     public static let defaultVisibleTexts = [

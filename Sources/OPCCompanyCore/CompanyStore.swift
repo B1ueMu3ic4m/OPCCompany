@@ -15,9 +15,9 @@ public enum CTOAutopilotState: Equatable {
     public var buttonTitle: String {
         switch self {
         case .idle, .completed:
-            return "让技术负责人推进一次"
+            return "让技术负责人推进一次".L()
         case .running:
-            return "正在推进"
+            return "正在推进".L()
         }
     }
 
@@ -26,16 +26,16 @@ public enum CTOAutopilotState: Equatable {
         case .idle:
             return nil
         case .running:
-            return "正在让技术负责人推进…"
+            return "正在让技术负责人推进…".L()
         case .completed:
-            return "技术负责人已完成本次推进。"
+            return "技术负责人已完成本次推进。".L()
         }
     }
 }
 
 @MainActor
 public final class CompanyStore: ObservableObject {
-    static let cliResumeContextNotice = "\n[OPC 上下文复用]\n本次任务会接续该员工在当前产品里的上一轮上下文。\n"
+    static let cliResumeContextNotice = "\n[OPC 上下文复用]\n本次任务会接续该员工在当前产品里的上一轮上下文。\n".L()
     static func defaultProductRootDirectory() -> String {
         defaultProductRootDirectoryURL().path
     }
@@ -81,10 +81,10 @@ public final class CompanyStore: ObservableObject {
         let raw = NSString(string: rootDirectory).expandingTildeInPath
         let url = URL(fileURLWithPath: raw, isDirectory: true).standardizedFileURL
         let desktop = legacyDesktopURL()
-        if url.path == desktop.path, productName == "默认产品工作区" {
+        if url.path == desktop.path, productName == "默认产品工作区".L() {
             return defaultProductRootDirectory()
         }
-        guard productName.hasPrefix("新产品 "),
+        guard productName.hasPrefix("新产品 ".L()),
               url.deletingLastPathComponent().standardizedFileURL.path == desktop.path,
               let index = legacyDesktopGeneratedProductIndex(from: url)
         else {
@@ -123,7 +123,7 @@ public final class CompanyStore: ObservableObject {
     private static let reworkPromptSuccessCriteriaLimit = 1_200
     private static let agentMessageSubjectTextLimit = 240
     private static let agentMessageBodyTextLimit = 2_400
-    static let persistentSeatExecutionNotice = "\n[OPC 长期席位执行]\n本次任务会在该员工的长期席位运行；完成后会被收录到产物记录和验收流程。\n"
+    static let persistentSeatExecutionNotice = "\n[OPC 长期席位执行]\n本次任务会在该员工的长期席位运行；完成后会被收录到产物记录和验收流程。\n".L()
 
     @Published public var agents: [CompanyAgent]
     @Published public var selectedAgentID: UUID
@@ -250,8 +250,8 @@ public final class CompanyStore: ObservableObject {
         let agents = [
             CompanyAgent(
                 id: bossID,
-                displayName: "老板",
-                title: "OPC 公司老板",
+                displayName: "老板".L(),
+                title: "OPC 公司老板".L(),
                 role: .boss,
                 backend: AgentBackend(type: .local, command: "human", model: "owner"),
                 ethnicity: .chinese,
@@ -264,8 +264,8 @@ public final class CompanyStore: ObservableObject {
             ),
             CompanyAgent(
                 id: ctoID,
-                displayName: "Codex 技术负责人",
-                title: "总技术负责人",
+                displayName: "Codex 技术负责人".L(),
+                title: "总技术负责人".L(),
                 role: .cto,
                 backend: AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .high),
                 ethnicity: .white,
@@ -278,8 +278,8 @@ public final class CompanyStore: ObservableObject {
             ),
             CompanyAgent(
                 id: uiID,
-                displayName: "Gemini 界面设计师",
-                title: "视觉产品设计师",
+                displayName: "Gemini 界面设计师".L(),
+                title: "视觉产品设计师".L(),
                 role: .uiDesigner,
                 backend: AgentBackend(type: .subscriptionCLI, command: "gemini", model: "", reasoningEffort: .medium),
                 ethnicity: .southAsian,
@@ -291,8 +291,8 @@ public final class CompanyStore: ObservableObject {
             ),
             CompanyAgent(
                 id: codeID,
-                displayName: "Claude Code 工程师",
-                title: "高级 macOS 工程师",
+                displayName: "Claude Code 工程师".L(),
+                title: "高级 macOS 工程师".L(),
                 role: .codeEngineer,
                 backend: AgentBackend(type: .subscriptionCLI, command: "claude", model: "sonnet", reasoningEffort: .medium),
                 ethnicity: .black,
@@ -304,8 +304,8 @@ public final class CompanyStore: ObservableObject {
             ),
             CompanyAgent(
                 id: reviewID,
-                displayName: "Codex 审查员",
-                title: "风险与验收审查员",
+                displayName: "Codex 审查员".L(),
+                title: "风险与验收审查员".L(),
                 role: .reviewer,
                 backend: AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .high),
                 ethnicity: .latino,
@@ -318,14 +318,14 @@ public final class CompanyStore: ObservableObject {
         ]
 
         let events = [
-            CompanyEvent(kind: .statusChanged, title: "公司已启动", detail: "已创建默认技术负责人、界面、编码和审查员工。", agentID: ctoID)
+            CompanyEvent(kind: .statusChanged, title: "公司已启动".L(), detail: "已创建默认技术负责人、界面、编码和审查员工。".L(), agentID: ctoID)
         ]
 
         let defaultProductID = UUID()
         let defaultProduct = ProductWorkspace(
             id: defaultProductID,
-            name: "默认产品工作区",
-            shortName: "默认",
+            name: "默认产品工作区".L(),
+            shortName: "默认".L(),
             rootDirectory: defaultProductRootDirectory(),
             status: .active,
             stage: .discovery,
@@ -334,16 +334,16 @@ public final class CompanyStore: ObservableObject {
         )
 
         let messages = [
-            ChatMessage(productID: defaultProductID, agentID: ctoID, author: .system, text: "系统提示：OPC 公司已经上线。正式沟通会调用员工配置的真实模型来源；未配置或不可用时只显示系统降级提示。"),
-            ChatMessage(productID: defaultProductID, agentID: uiID, author: .system, text: "系统提示：Gemini 界面设计师已创建，档案、记忆和技能已写入员工工作区。"),
-            ChatMessage(productID: defaultProductID, agentID: codeID, author: .system, text: "系统提示：Claude Code 工程师已创建，档案、记忆和技能已写入员工工作区。"),
-            ChatMessage(productID: defaultProductID, agentID: reviewID, author: .system, text: "系统提示：Codex 审查员已创建，档案、记忆和技能已写入员工工作区。")
+            ChatMessage(productID: defaultProductID, agentID: ctoID, author: .system, text: "系统提示：OPC 公司已经上线。正式沟通会调用员工配置的真实模型来源；未配置或不可用时只显示系统降级提示。".L()),
+            ChatMessage(productID: defaultProductID, agentID: uiID, author: .system, text: "系统提示：Gemini 界面设计师已创建，档案、记忆和技能已写入员工工作区。".L()),
+            ChatMessage(productID: defaultProductID, agentID: codeID, author: .system, text: "系统提示：Claude Code 工程师已创建，档案、记忆和技能已写入员工工作区。".L()),
+            ChatMessage(productID: defaultProductID, agentID: reviewID, author: .system, text: "系统提示：Codex 审查员已创建，档案、记忆和技能已写入员工工作区。".L())
         ]
 
         let tasks = [
-            CompanyTask(productID: defaultProduct.id, title: "定义产品架构", ownerID: ctoID, status: .done, successCriteria: "完成产品规格、技术栈和角色系统。"),
-            CompanyTask(productID: defaultProduct.id, title: "创建 2D 公司应用基础", ownerID: codeID, status: .running, successCriteria: "构建原生 macOS SwiftUI/SpriteKit 外壳，并支持点击员工沟通。"),
-            CompanyTask(productID: defaultProduct.id, title: "审查命令行调度设计", ownerID: reviewID, status: .planned, successCriteria: "确认 Codex、Claude、Gemini 命令适配器安全且可扩展。")
+            CompanyTask(productID: defaultProduct.id, title: "定义产品架构".L(), ownerID: ctoID, status: .done, successCriteria: "完成产品规格、技术栈和角色系统。".L()),
+            CompanyTask(productID: defaultProduct.id, title: "创建 2D 公司应用基础".L(), ownerID: codeID, status: .running, successCriteria: "构建原生 macOS SwiftUI/SpriteKit 外壳，并支持点击员工沟通。".L()),
+            CompanyTask(productID: defaultProduct.id, title: "审查命令行调度设计".L(), ownerID: reviewID, status: .planned, successCriteria: "确认 Codex、Claude、Gemini 命令适配器安全且可扩展。".L())
         ]
 
         let store = CompanyStore(
@@ -448,7 +448,7 @@ public final class CompanyStore: ObservableObject {
     /// 幽灵等维护类事件。
     /// 角色继承期轮 5/6/8 和 2026-05-05 迁移收敛后，所有老板专属视图（`CommandCenterView.riskEvents` /
     /// `InspectorPanel.BossControlPanel.recentRiskCount` / `CommandCenterView.BossDecisionCenterSheet` 风险事件）
-    /// 均改用本 accessor 过滤维护类前缀，避免技术细节挤占老板首页"最近风险" widget 的
+    /// 均改用本 accessor 过滤维护类前缀，避免技术细节挤占老板首页"最近风险".L() widget 的
     /// prefix(5) / prefix(3) 容量。**没有任何 view 仍在直接读 `selectedProductRiskEvents`**
     /// （由 `selectedProductRiskEventsHasNoUIConsumerAfterBossViewMigration` 守门），后者只用于
     /// 本 accessor 自身派生 + 内部团队负责人手机汇报报告文本计数。
@@ -458,17 +458,17 @@ public final class CompanyStore: ObservableObject {
     /// **白名单设计原则**（角色继承期轮 11 加固）：
     /// - 进入白名单的判定标准：纯后端/文件系统/进程层失败，老板无法处理也不需要决策。
     /// - 不进入白名单的判定标准：老板的某个动作被阻止 / 涉及业务审批 / 涉及交付物状态 — 这些都是
-    ///   老板的"待决策"或"待理解"信号，必须保留可见。
+    ///   老板的"待决策".L()或"待理解"信号，必须保留可见。
     /// - 例：「命令行作业目录创建失败」「命令行作业档案写入失败」属于 .opc/jobs/ 后端文件操作失败，
     ///   后端继续运行不阻断业务，老板看不懂也无法处理 → 进入白名单。
     /// - 例：「命令行发车被阻止」是老板试图运行命令行任务但前置检查不通过 → 老板需要知道，**不**进入白名单。
     public static let bossViewExcludedRiskTitlePrefixes: [String] = [
-        "命令行健康预警：",
-        "命令行作业",
-        "旧任务产品归属迁移"
+        "命令行健康预警：".L(),
+        "命令行作业".L(),
+        "旧任务产品归属迁移".L()
     ]
 
-    public static let closureDrillGoalMarker = "[演练]"
+    public static let closureDrillGoalMarker = "[演练]".L()
 
     public var selectedProductBossRiskEvents: [CompanyEvent] {
         selectedProductRiskEvents.filter { event in
@@ -511,11 +511,11 @@ public final class CompanyStore: ObservableObject {
     /// 过滤；旧 state.json 里的 nil 消息仍用产品名前缀 fallback，避免历史报告消失。
     /// 已知限制：legacy prefix 匹配在产品重命名后会失效；等历史消息迁移后可移除 fallback。
     public var selectedProductBossReportMessages: [ChatMessage] {
-        let productName = selectedProduct?.name ?? "当前产品"
-        let header = "老板报告：\(productName)"
+        let productName = selectedProduct?.name ?? "当前产品".L()
+        let header = "老板报告：".L() + "\(productName)"
         let scopedReports = messages(for: bossID, in: selectedProductID, includingLegacyGlobal: false)
             .reversed()
-            .filter { $0.text.hasPrefix("老板报告：") }
+            .filter { $0.text.hasPrefix("老板报告：".L()) }
         if !scopedReports.isEmpty {
             return Array(scopedReports)
         }
@@ -547,20 +547,20 @@ public final class CompanyStore: ObservableObject {
     /// 集中分类守门由 `artifactRecordTitleLiteralsAreClassifiedInCompanyStore` 测试在 `swift test`
     /// 阶段强制执行——任何未登记的字面量标题会让测试立刻失败。
     public static let technicalMaintenanceArtifactTitleExactMatches: Set<String> = [
-        "安全检查点"
+        "安全检查点".L()
     ]
 
     public static let technicalMaintenanceArtifactTitlePrefixes: [String] = [
-        "闭环审计报告：",
-        "命令行作业档案：",
-        "本地文件索引："
+        "闭环审计报告：".L(),
+        "命令行作业档案：".L(),
+        "本地文件索引：".L()
     ]
 
     public static let deliveryArtifactTitleExactMatches: Set<String> = []
 
     public static let deliveryArtifactTitlePrefixes: [String] = [
-        "验收产物：",
-        "验收报告："
+        "验收产物：".L(),
+        "验收报告：".L()
     ]
 
     public func isTechnicalMaintenanceArtifact(_ record: ArtifactRecord) -> Bool {
@@ -616,8 +616,8 @@ public final class CompanyStore: ObservableObject {
     private func isClosureDrillEvent(_ event: CompanyEvent) -> Bool {
         event.title.contains(Self.closureDrillGoalMarker)
             || event.detail.contains(Self.closureDrillGoalMarker)
-            || event.title.contains("闭环演练")
-            || event.detail.contains("闭环演练")
+            || event.title.contains("闭环演练".L())
+            || event.detail.contains("闭环演练".L())
     }
 
     private func isClosureDrillAgentMessage(_ message: AgentMessageEnvelope) -> Bool {
@@ -644,11 +644,11 @@ public final class CompanyStore: ObservableObject {
         selectedProductRecentArtifacts.filter { isTechnicalMaintenanceArtifact($0) }
     }
 
-    /// 当前产品下"本地文件索引"维护产物的数量。
+    /// 当前产品下"本地文件索引".L()维护产物的数量。
     /// 售前方案工厂等需要引用本地资料索引的内部模型 prompt 用此 helper：技术负责人维护侧（不是老板/交付）
     /// 才能看到这些索引产物，但模型仍可基于 prompt 里的索引数量做判断；老板/交付视图不展示。
     public var selectedProductLocalFileIndexArtifactCount: Int {
-        selectedProductMaintenanceArtifacts.filter { $0.title.hasPrefix("本地文件索引：") }.count
+        selectedProductMaintenanceArtifacts.filter { $0.title.hasPrefix("本地文件索引：".L()) }.count
     }
 
     /// 当前产品下未分类的 VerificationRecord：既不是维护类、也不是交付类。
@@ -696,27 +696,27 @@ public final class CompanyStore: ObservableObject {
         let unclassifiedVR = selectedProductUnclassifiedVerificationRecords
         let unclassifiedAR = selectedProductUnclassifiedArtifactRecords
         var lines: [String] = [
-            "运行证据分类巡检：\(selectedProduct?.name ?? "当前产品")",
-            "未分类验证记录：\(unclassifiedVR.count) 条",
-            "未分类产物档案：\(unclassifiedAR.count) 条"
+            "运行证据分类巡检：".L() + "\(selectedProduct?.name ?? "当前产品")",
+            "未分类验证记录：".L() + "\(unclassifiedVR.count)" + " 条".L(),
+            "未分类产物档案：".L() + "\(unclassifiedAR.count)" + " 条".L()
         ]
         if !unclassifiedVR.isEmpty {
-            lines.append("⚠️ 未分类验证记录会从老板/交付视图过滤掉，也不在维护视图——请把标题登记到「技术维护」或「交付验收」分类清单。")
+            lines.append("⚠️ 未分类验证记录会从老板/交付视图过滤掉，也不在维护视图——请把标题登记到「技术维护」或「交付验收」分类清单。".L())
             for record in unclassifiedVR.prefix(10) {
-                lines.append("- \(record.title)（状态：\(record.status.title)）")
+                lines.append("- " + "\(record.title)" + "（状态：".L() + "\(record.status.title)" + "）")
             }
         }
         if !unclassifiedAR.isEmpty {
-            lines.append("⚠️ 未分类结构化产物会按默认进入老板/交付视图——请把标题登记到「技术维护」或「交付验收」的产物分类清单。")
-            lines.append("识别规则：标题含全角「：」或半角「: 」（冒号 + 空格，前缀不含 `/` `\\` 路径标记）视为结构化前缀；URL、文件路径、时间戳和普通动态文件名不会被巡检报告。")
+            lines.append("⚠️ 未分类结构化产物会按默认进入老板/交付视图——请把标题登记到「技术维护」或「交付验收」的产物分类清单。".L())
+            lines.append("识别规则：标题含全角「：」或半角「: 」（冒号 + 空格，前缀不含 `/` `\\` 路径标记）视为结构化前缀；URL、文件路径、时间戳和普通动态文件名不会被巡检报告。".L())
             for record in unclassifiedAR.prefix(10) {
                 lines.append("- \(record.title)")
             }
         }
         if unclassifiedVR.isEmpty && unclassifiedAR.isEmpty {
-            lines.append("结论：当前产品所有运行证据都已显式分类。")
+            lines.append("结论：当前产品所有运行证据都已显式分类。".L())
         } else {
-            lines.append("说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不删除任何证据。")
+            lines.append("说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不删除任何证据。".L())
         }
         return lines.joined(separator: "\n")
     }
@@ -732,7 +732,7 @@ public final class CompanyStore: ObservableObject {
         let record = VerificationRecord(
             productID: selectedProductID,
             status: status,
-            title: "运行证据分类巡检",
+            title: "运行证据分类巡检".L(),
             detail: detail
         )
         verifications.insert(record, at: 0)
@@ -764,39 +764,39 @@ public final class CompanyStore: ObservableObject {
         let exceedsJobArchiveBytes = jobArchiveSummary.bytes >= Self.maintenanceJobArchiveBytesAdvisoryThreshold
 
         var lines: [String] = [
-            "维护数据增长预览：\(selectedProduct?.name ?? "当前产品")",
-            "维护验证记录：\(vrCount) 条（建议阈值 \(vrThreshold) 条）",
-            "维护产物档案：\(arCount) 条（建议阈值 \(arThreshold) 条）",
-            "主状态快照：\(stateSnapshotBytes > 0 ? Self.byteCountText(stateSnapshotBytes) : "尚未生成")（建议阈值 \(Self.byteCountText(Self.maintenanceStateSnapshotAdvisoryBytes))）",
-            "命令行作业档案：\(jobArchiveSummary.jobCount) 个 · \(Self.byteCountText(jobArchiveSummary.bytes))（建议阈值 \(Self.maintenanceJobArchiveCountAdvisoryThreshold) 个 / \(Self.byteCountText(Self.maintenanceJobArchiveBytesAdvisoryThreshold))）"
+            "维护数据增长预览：".L() + "\(selectedProduct?.name ?? "当前产品")",
+            "维护验证记录：".L() + "\(vrCount)" + " 条（建议阈值 ".L() + "\(vrThreshold)" + " 条）".L(),
+            "维护产物档案：".L() + "\(arCount)" + " 条（建议阈值 ".L() + "\(arThreshold)" + " 条）".L(),
+            "主状态快照：".L() + "\(stateSnapshotBytes > 0 ? Self.byteCountText(stateSnapshotBytes) : "尚未生成")" + "（建议阈值 ".L() + "\(Self.byteCountText(Self.maintenanceStateSnapshotAdvisoryBytes))" + "）",
+            "命令行作业档案：".L() + "\(jobArchiveSummary.jobCount)" + " 个 · " + "\(Self.byteCountText(jobArchiveSummary.bytes))" + "（建议阈值 " + "\(Self.maintenanceJobArchiveCountAdvisoryThreshold)" + " 个 / " + "\(Self.byteCountText(Self.maintenanceJobArchiveBytesAdvisoryThreshold))" + "）"
         ]
         if let vrLatest {
-            lines.append("最近维护验证：\(vrLatest.opcDateTimeText)")
+            lines.append("最近维护验证：".L() + "\(vrLatest.opcDateTimeText)")
         } else {
-            lines.append("最近维护验证：暂无")
+            lines.append("最近维护验证：暂无".L())
         }
         if let arLatest {
-            lines.append("最近维护产物：\(arLatest.opcDateTimeText)")
+            lines.append("最近维护产物：".L() + "\(arLatest.opcDateTimeText)")
         } else {
-            lines.append("最近维护产物：暂无")
+            lines.append("最近维护产物：暂无".L())
         }
 
         if exceedsVR || exceedsAR || exceedsState || exceedsJobArchiveCount || exceedsJobArchiveBytes {
-            lines.append("⚠️ 已经达到或超过建议阈值。当前不会自动删除或裁剪主快照——主快照仍是权威状态，请按需在终端大厅维护区运行「历史索引巡检」或「历史归档迁移」把旧记录复制到本地归档表。")
-            if exceedsVR { lines.append("  · 维护验证已达 \(vrCount) 条，超过 \(vrThreshold) 条阈值。") }
-            if exceedsAR { lines.append("  · 维护产物已达 \(arCount) 条，超过 \(arThreshold) 条阈值。") }
-            if exceedsState { lines.append("  · 主状态快照已达 \(Self.byteCountText(stateSnapshotBytes))，超过 \(Self.byteCountText(Self.maintenanceStateSnapshotAdvisoryBytes)) 阈值。") }
-            if exceedsJobArchiveCount { lines.append("  · 命令行作业档案已达 \(jobArchiveSummary.jobCount) 个，超过 \(Self.maintenanceJobArchiveCountAdvisoryThreshold) 个阈值。") }
-            if exceedsJobArchiveBytes { lines.append("  · 命令行作业档案体积已达 \(Self.byteCountText(jobArchiveSummary.bytes))，超过 \(Self.byteCountText(Self.maintenanceJobArchiveBytesAdvisoryThreshold)) 阈值。") }
+            lines.append("⚠️ 已经达到或超过建议阈值。当前不会自动删除或裁剪主快照——主快照仍是权威状态，请按需在终端大厅维护区运行「历史索引巡检」或「历史归档迁移」把旧记录复制到本地归档表。".L())
+            if exceedsVR { lines.append("  · 维护验证已达 ".L() + "\(vrCount)" + " 条，超过 ".L() + "\(vrThreshold)" + " 条阈值。".L()) }
+            if exceedsAR { lines.append("  · 维护产物已达 ".L() + "\(arCount)" + " 条，超过 ".L() + "\(arThreshold)" + " 条阈值。".L()) }
+            if exceedsState { lines.append("  · 主状态快照已达 " + "\(Self.byteCountText(stateSnapshotBytes))" + "，超过 " + "\(Self.byteCountText(Self.maintenanceStateSnapshotAdvisoryBytes))" + " 阈值。") }
+            if exceedsJobArchiveCount { lines.append("  · 命令行作业档案已达 ".L() + "\(jobArchiveSummary.jobCount)" + " 个，超过 ".L() + "\(Self.maintenanceJobArchiveCountAdvisoryThreshold)" + " 个阈值。") }
+            if exceedsJobArchiveBytes { lines.append("  · 命令行作业档案体积已达 " + "\(Self.byteCountText(jobArchiveSummary.bytes))" + "，超过 " + "\(Self.byteCountText(Self.maintenanceJobArchiveBytesAdvisoryThreshold))" + " 阈值。") }
         } else {
-            lines.append("结论：维护数据未达建议阈值，暂不需要归档处理。")
+            lines.append("结论：维护数据未达建议阈值，暂不需要归档处理。".L())
         }
-        lines.append("说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不删除任何数据、不裁剪主快照。")
+        lines.append("说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不删除任何数据、不裁剪主快照。".L())
         return lines.joined(separator: "\n")
     }
 
     public func linkedLocalFileRootAllowlistText() -> String {
-        guard let product = selectedProduct else { return "本地文件索引根白名单\n当前没有选中的产品。" }
+        guard let product = selectedProduct else { return "本地文件索引根白名单\n当前没有选中的产品。".L() }
         let rawRoot = URL(fileURLWithPath: NSString(string: product.rootDirectory).expandingTildeInPath).standardizedFileURL
         let resolvedRoot = rawRoot.resolvingSymlinksInPath()
         let allowedRoots = Self.linkedLocalFileAllowedRootPaths(from: products)
@@ -804,20 +804,20 @@ public final class CompanyStore: ObservableObject {
         let visibleRoots = allowedRoots.sorted().prefix(8).map { "- \($0)" }
         let hiddenCount = max(0, allowedRoots.count - visibleRoots.count)
         var lines: [String] = [
-            "本地文件索引根白名单",
-            "产品：\(product.name)",
-            "当前根目录：\(rawRoot.path)",
-            "解析后目录：\(resolvedRoot.path)",
-            "当前状态：\(allowed ? "已登记，可索引" : "未登记，索引会被拒绝")",
+            "本地文件索引根白名单".L(),
+            "产品：".L() + "\(product.name)",
+            "当前根目录：".L() + "\(rawRoot.path)",
+            "解析后目录：".L() + "\(resolvedRoot.path)",
+            "当前状态：".L() + "\(allowed ? "已登记，可索引" : "未登记，索引会被拒绝")",
             "",
-            "已登记工作区根目录："
+            "已登记工作区根目录：".L()
         ]
         lines.append(contentsOf: visibleRoots)
         if hiddenCount > 0 {
-            lines.append("- 其余 \(hiddenCount) 个根目录已隐藏")
+            lines.append("- 其余 ".L() + "\(hiddenCount)" + " 个根目录已隐藏".L())
         }
         lines.append("")
-        lines.append("说明：本白名单来自已导入或已创建的产品工作区根目录；本地文件索引只允许扫描这些根目录内的文件。新增根目录请通过产品导入或项目设置登记。")
+        lines.append("说明：本白名单来自已导入或已创建的产品工作区根目录；本地文件索引只允许扫描这些根目录内的文件。新增根目录请通过产品导入或项目设置登记。".L())
         return lines.joined(separator: "\n")
     }
 
@@ -829,7 +829,7 @@ public final class CompanyStore: ObservableObject {
         let legacyCount = legacyTaskWithoutProductIDCount
         return """
         旧任务产品归属迁移：预览
-        产品：\(selectedProduct?.name ?? "当前产品")
+        产品：\(selectedProduct?.name ?? "当前产品".L())
         待迁移旧任务：\(legacyCount) 个
         迁移目标：当前产品
 
@@ -854,9 +854,9 @@ public final class CompanyStore: ObservableObject {
         说明：
         本次只把没有产品归属的旧任务回填到当前产品；已有产品归属的任务未被改写。未迁移的旧任务不会进入任意产品视图，会继续留在本维护入口等待归属确认。
         """
-        let record = VerificationRecord(productID: selectedProductID, status: status, title: "旧任务产品归属迁移", detail: detail)
+        let record = VerificationRecord(productID: selectedProductID, status: status, title: "旧任务产品归属迁移".L(), detail: detail)
         verifications.insert(record, at: 0)
-        appendEvent(kind: .statusChanged, title: "旧任务产品归属迁移完成", detail: "已迁移 \(migrated) 个旧任务到当前产品，剩余 \(after) 个。", agentID: ctoID)
+        appendEvent(kind: .statusChanged, title: "旧任务产品归属迁移完成".L(), detail: "已迁移 " + "\(migrated)" + " 个旧任务到当前产品，剩余 " + "\(after)" + " 个。", agentID: ctoID)
         saveSnapshot()
         return record
     }
@@ -879,7 +879,7 @@ public final class CompanyStore: ObservableObject {
         let record = VerificationRecord(
             productID: selectedProductID,
             status: status,
-            title: "维护数据增长巡检",
+            title: "维护数据增长巡检".L(),
             detail: detail
         )
         verifications.insert(record, at: 0)
@@ -939,21 +939,21 @@ public final class CompanyStore: ObservableObject {
         let recentRisks = selectedProductEvents.filter { $0.kind == .risk }.prefix(5).count
         let nextStep: String
         if pendingApprovals > 0 {
-            nextStep = "下一步：先在老板决策中心处理 \(pendingApprovals) 项待审批。"
+            nextStep = "下一步：先在老板决策中心处理 ".L() + "\(pendingApprovals)" + " 项待审批。".L()
         } else if blocked > 0 {
-            nextStep = "下一步：阻塞/失败任务 \(blocked) 项，请在产品详情或员工工作台跟进。"
+            nextStep = "下一步：阻塞/失败任务 ".L() + "\(blocked)" + " 项，请在产品详情或员工工作台跟进。".L()
         } else if recentRisks > 0 {
-            nextStep = "下一步：最近风险 \(recentRisks) 条，可在事件流核对。"
+            nextStep = "下一步：最近风险 ".L() + "\(recentRisks)" + " 条，可在事件流核对。".L()
         } else if running == 0 && team > 0 {
-            nextStep = "下一步：选择员工运行任务，或在下方摘要工作台运行常用巡检。"
+            nextStep = "下一步：选择员工运行任务，或在下方摘要工作台运行常用巡检。".L()
         } else {
-            nextStep = "下一步：保持运行；下方摘要工作台展示架构 / 通信 / 维护核心指标。"
+            nextStep = "下一步：保持运行；下方摘要工作台展示架构 / 通信 / 维护核心指标。".L()
         }
         return [
-            "终端大厅运行状态：\(selectedProduct?.name ?? "当前产品")",
-            "团队 \(team) 人 · 运行中 \(running) · 待审批 \(pendingApprovals) · 阻塞/失败 \(blocked) · 最近风险 \(recentRisks)",
+            "终端大厅运行状态：".L() + "\(selectedProduct?.name ?? "当前产品")",
+            "团队 ".L() + "\(team)" + " 人 · 运行中 ".L() + "\(running)" + " · 待审批 ".L() + "\(pendingApprovals)" + " · 阻塞/失败 ".L() + "\(blocked)" + " · 最近风险 ".L() + "\(recentRisks)",
             nextStep,
-            "提示：下方摘要工作台默认可见架构体检 / 通信网关 / 本地稳定性的状态、核心指标与主要操作；点击「查看详情」按需打开完整面板。"
+            "提示：下方摘要工作台默认可见架构体检 / 通信网关 / 本地稳定性的状态、核心指标与主要操作；点击「查看详情」按需打开完整面板。".L()
         ].joined(separator: "\n")
     }
 
@@ -971,17 +971,17 @@ public final class CompanyStore: ObservableObject {
         let blocked = selectedProductTasks.filter { [.blocked, .failed, .needsApproval].contains($0.status) }.count
         let recentRisks = selectedProductEvents.filter { $0.kind == .risk }.prefix(5).count
         var metrics: [TerminalHallOverviewMetric] = [
-            TerminalHallOverviewMetric(title: "团队", value: team, kind: .neutral),
-            TerminalHallOverviewMetric(title: "运行中", value: running, kind: running > 0 ? .ok : .neutral),
-            TerminalHallOverviewMetric(title: "待审批", value: pendingApprovals, kind: pendingApprovals > 0 ? .warning : .neutral),
-            TerminalHallOverviewMetric(title: "阻塞/失败", value: blocked, kind: blocked > 0 ? .danger : .neutral),
-            TerminalHallOverviewMetric(title: "最近风险", value: recentRisks, kind: recentRisks > 0 ? .danger : .neutral)
+            TerminalHallOverviewMetric(title: "团队".L(), value: team, kind: .neutral),
+            TerminalHallOverviewMetric(title: "运行中".L(), value: running, kind: running > 0 ? .ok : .neutral),
+            TerminalHallOverviewMetric(title: "待审批".L(), value: pendingApprovals, kind: pendingApprovals > 0 ? .warning : .neutral),
+            TerminalHallOverviewMetric(title: "阻塞/失败".L(), value: blocked, kind: blocked > 0 ? .danger : .neutral),
+            TerminalHallOverviewMetric(title: "最近风险".L(), value: recentRisks, kind: recentRisks > 0 ? .danger : .neutral)
         ]
         // 健康预警 chip：当且仅当当前产品有员工处于轮 4 徽章可见状态（attention）时追加；
         // 默认情况（无 attention 员工）保持 5 个 chip 不变，避免常规场景下挤压窄屏卡片。
         let attentionCount = terminalHallOverviewAttentionAgentCount()
         if attentionCount > 0 {
-            metrics.append(TerminalHallOverviewMetric(title: "健康预警", value: attentionCount, kind: .danger))
+            metrics.append(TerminalHallOverviewMetric(title: "健康预警".L(), value: attentionCount, kind: .danger))
         }
         return metrics
     }
@@ -1002,15 +1002,15 @@ public final class CompanyStore: ObservableObject {
         let blocked = selectedProductTasks.filter { [.blocked, .failed, .needsApproval].contains($0.status) }.count
         let recentRisks = selectedProductEvents.filter { $0.kind == .risk }.prefix(5).count
         if pendingApprovals > 0 {
-            return "下一步：先在老板决策中心处理 \(pendingApprovals) 项待审批。"
+            return "下一步：先在老板决策中心处理 ".L() + "\(pendingApprovals)" + " 项待审批。".L()
         } else if blocked > 0 {
-            return "下一步：阻塞/失败任务 \(blocked) 项，请在产品详情或员工工作台跟进。"
+            return "下一步：阻塞/失败任务 ".L() + "\(blocked)" + " 项，请在产品详情或员工工作台跟进。".L()
         } else if recentRisks > 0 {
-            return "下一步：最近风险 \(recentRisks) 条，可在事件流核对。"
+            return "下一步：最近风险 ".L() + "\(recentRisks)" + " 条，可在事件流核对。".L()
         } else if running == 0 && team > 0 {
-            return "下一步：选择员工运行任务，或在下方摘要工作台运行常用巡检。"
+            return "下一步：选择员工运行任务，或在下方摘要工作台运行常用巡检。".L()
         } else {
-            return "下一步：保持运行；下方摘要工作台展示架构 / 通信 / 维护核心指标。"
+            return "下一步：保持运行；下方摘要工作台展示架构 / 通信 / 维护核心指标。".L()
         }
     }
 
@@ -1041,39 +1041,39 @@ public final class CompanyStore: ObservableObject {
     public static let technicalMaintenanceVerificationTitles: Set<String> = [
         terminalAutoInteractionAuditTitle,
         terminalAutoInteractionStopAuditTitle,
-        "真实终端工作区",
-        "真实终端日志刷新",
-        "持久终端可用性巡检",
-        "命令行链路压测预检",
-        "命令行任务发车计划",
-        "命令行与工作区隔离体检",
-        "多产品隔离体检",
-        "命令行作业幽灵巡检",
-        "员工交接待确认巡检",
-        "运行会话健康巡检",
-        "异常占用会话恢复",
-        "历史索引巡检",
-        "历史归档迁移",
-        "旧任务产品归属迁移",
-        "本地文件索引完成",
-        "本地文件索引被拒绝",
-        "安全检查点已创建",
-        "安全检查点失败",
-        "运行证据分类巡检",
-        "维护数据增长巡检",
-        "自动状态摘要去重清理"
+        "真实终端工作区".L(),
+        "真实终端日志刷新".L(),
+        "持久终端可用性巡检".L(),
+        "命令行链路压测预检".L(),
+        "命令行任务发车计划".L(),
+        "命令行与工作区隔离体检".L(),
+        "多产品隔离体检".L(),
+        "命令行作业幽灵巡检".L(),
+        "员工交接待确认巡检".L(),
+        "运行会话健康巡检".L(),
+        "异常占用会话恢复".L(),
+        "历史索引巡检".L(),
+        "历史归档迁移".L(),
+        "旧任务产品归属迁移".L(),
+        "本地文件索引完成".L(),
+        "本地文件索引被拒绝".L(),
+        "安全检查点已创建".L(),
+        "安全检查点失败".L(),
+        "运行证据分类巡检".L(),
+        "维护数据增长巡检".L(),
+        "自动状态摘要去重清理".L()
     ]
 
     /// 老板/交付视图必须保留的「交付/验收证据」精确标题。
     public static let deliveryVerificationTitleExactMatches: Set<String> = [
-        "自动验收检查",
-        "产物扫描完成",
-        "产物扫描失败"
+        "自动验收检查".L(),
+        "产物扫描完成".L(),
+        "产物扫描失败".L()
     ]
 
     /// 老板/交付视图必须保留的「交付/验收证据」前缀标题（带任务标题等动态后缀）。
     public static let deliveryVerificationTitlePrefixes: [String] = [
-        "老板验收通过："
+        "老板验收通过：".L()
     ]
 
     public func isTechnicalMaintenanceVerification(_ record: VerificationRecord) -> Bool {
@@ -1134,7 +1134,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 条长期记忆。关键决策、规则和风险会继续保留在产品记忆库。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 条长期记忆。关键决策、规则和风险会继续保留在产品记忆库。".L()
         )
     }
 
@@ -1205,50 +1205,50 @@ public final class CompanyStore: ObservableObject {
         return [
             MultiAgentArchitectureCheck(
                 id: "message-bus",
-                title: "结构化消息总线",
+                title: "结构化消息总线".L(),
                 status: messages.isEmpty ? .failed : (hasDispatch && hasWorkReturn ? .passed : .warning),
                 detail: messages.isEmpty
-                    ? "当前产品还没有员工协作消息。请在技术负责人后台点击「运行闭环演练」，生成任务派发、员工回传、审查和审批证据。"
-                    : "当前产品已有 \(messages.count) 条消息；派发 \(hasDispatch ? "已出现" : "未出现")，回传 \(hasWorkReturn ? "已出现" : "未出现")。"
+                    ? "当前产品还没有员工协作消息。请在技术负责人后台点击「运行闭环演练」，生成任务派发、员工回传、审查和审批证据。".L()
+                    : "当前产品已有 ".L() + "\(messages.count)" + " 条消息；派发 ".L() + "\(hasDispatch ? "已出现" : "未出现")" + "，回传 ".L() + "\(hasWorkReturn ? "已出现" : "未出现")" + "。"
             ),
             MultiAgentArchitectureCheck(
                 id: "task-graph",
-                title: "显式任务图",
+                title: "显式任务图".L(),
                 status: taskGraphNodeCount >= 4 && taskGraphEdgeCount >= 4 ? .passed : (supervisorTasks.isEmpty ? .failed : .warning),
                 detail: taskGraphNodeCount >= 4 && taskGraphEdgeCount >= 4
-                    ? "已派生 \(taskGraphNodeCount) 个节点、\(taskGraphEdgeCount) 条边；闭合边 \(taskGraphClosedEdgeCount) 条。"
-                    : "当前仍主要是普通任务；点击「运行闭环演练」后会形成技术负责人拆解、员工执行、审查验收和老板审批的标准任务图。"
+                    ? "已派生 ".L() + "\(taskGraphNodeCount)" + " 个节点、".L() + "\(taskGraphEdgeCount)" + " 条边；闭合边 ".L() + "\(taskGraphClosedEdgeCount)" + " 条。"
+                    : "当前仍主要是普通任务；点击「运行闭环演练」后会形成技术负责人拆解、员工执行、审查验收和老板审批的标准任务图。".L()
             ),
             MultiAgentArchitectureCheck(
                 id: "cto-loop",
-                title: "技术负责人调度闭环",
+                title: "技术负责人调度闭环".L(),
                 status: hasGoalStart && hasLoopProgress ? .passed : (hasGoalStart ? .warning : .failed),
                 detail: hasGoalStart
-                    ? "技术负责人目标已启动；\(hasLoopProgress ? "已有循环推进消息。" : "还缺少循环推进记录。")"
-                    : "还没有技术负责人启动目标记录。请运行闭环演练或启动技术负责人协作目标来生成调度证据。"
+                    ? "技术负责人目标已启动；".L() + "\(hasLoopProgress ? "已有循环推进消息。" : "还缺少循环推进记录。")"
+                    : "还没有技术负责人启动目标记录。请运行闭环演练或启动技术负责人协作目标来生成调度证据。".L()
             ),
             MultiAgentArchitectureCheck(
                 id: "artifact-store",
-                title: "交付证据库",
+                title: "交付证据库".L(),
                 status: strongestEvidenceStatus == .passed
                     ? .passed
                     : (strongestEvidenceStatus == .warning || hasArtifacts || hasVerifications ? .warning : .failed),
-                detail: "闭环关联产物 \(linkedArtifactCount) 条、验收 \(linkedVerificationCount) 条；当前产品总交付产物 \(selectedProductDeliveryArtifacts.count) 条、总交付验收 \(selectedProductDeliveryVerifications.count) 条。闭环关联为 0 时请运行闭环演练补齐证据。"
+                detail: "闭环关联产物 ".L() + "\(linkedArtifactCount)" + " 条、验收 ".L() + "\(linkedVerificationCount)" + " 条；当前产品总交付产物 ".L() + "\(selectedProductDeliveryArtifacts.count)" + " 条、总交付验收 " + "\(selectedProductDeliveryVerifications.count)" + " 条。闭环关联为 0 时请运行闭环演练补齐证据。"
             ),
             MultiAgentArchitectureCheck(
                 id: "review-gate",
-                title: "验收门禁",
+                title: "验收门禁".L(),
                 status: strongestReviewGateStatus == .passed
                     ? .passed
                     : (strongestReviewGateStatus == .warning || hasReviewGates || hasReview ? .warning : .failed),
-                detail: "闭环关联门禁 \(linkedReviewGateCount) 条；当前产品总门禁 \(selectedProductReviewGates.count) 条，审查/验收消息 \(hasReview ? "已出现" : "未出现")。闭环关联为 0 时请运行闭环演练补齐审查和验收证据。"
+                detail: "闭环关联门禁 ".L() + "\(linkedReviewGateCount)" + " 条；当前产品总门禁 ".L() + "\(selectedProductReviewGates.count)" + " 条，审查/验收消息 ".L() + "\(hasReview ? "已出现".L() : "未出现".L())" + "。闭环关联为 0 时请运行闭环演练补齐审查和验收证据。".L()
             ),
             terminalWorkspaceArchitectureCheck(),
             MultiAgentArchitectureCheck(
                 id: "boss-view",
-                title: "老板视图减噪",
+                title: "老板视图减噪".L(),
                 status: .passed,
-                detail: "老板侧使用决策中心和交付验收中心入口；当前待老板决策 \(bossDecisionCount) 项，审批追踪 \(hasApprovalTrace ? "已出现" : "暂无")。"
+                detail: "老板侧使用决策中心和交付验收中心入口；当前待老板决策 ".L() + "\(bossDecisionCount)" + " 项，审批追踪 " + "\(hasApprovalTrace ? "已出现" : "暂无")" + "。"
             )
         ]
     }
@@ -1291,7 +1291,7 @@ public final class CompanyStore: ObservableObject {
 
     public func closureTraceTasks(_ trace: MultiAgentClosureTrace) -> [CompanyTask] {
         let ids = Set(trace.taskIDs)
-        let order = ["技术负责人拆解：", "员工执行：", "审查验收：", "老板审批："]
+        let order = ["技术负责人拆解：".L(), "员工执行：".L(), "审查验收：".L(), "老板审批：".L()]
         return selectedProductTasks
             .filter { ids.contains($0.id) }
             .sorted { lhs, rhs in
@@ -1402,10 +1402,10 @@ public final class CompanyStore: ObservableObject {
             )
         }
 
-        let ctoTask = task(withPrefix: "技术负责人拆解：")
-        let engineerTask = task(withPrefix: "员工执行：")
-        let reviewerTask = task(withPrefix: "审查验收：")
-        let bossTask = task(withPrefix: "老板审批：")
+        let ctoTask = task(withPrefix: "技术负责人拆解：".L())
+        let engineerTask = task(withPrefix: "员工执行：".L())
+        let reviewerTask = task(withPrefix: "审查验收：".L())
+        let bossTask = task(withPrefix: "老板审批：".L())
 
         let hasDispatch = messages.contains { $0.kind == .taskDispatched }
         let hasWorkCompleted = messages.contains { $0.kind == .workCompleted }
@@ -1417,10 +1417,10 @@ public final class CompanyStore: ObservableObject {
         let hasAcceptanceCompleted = messages.contains { $0.kind == .acceptanceCompleted }
 
         let nodes = [
-            ctoTask.map { node(for: $0, role: "技术负责人") },
-            engineerTask.map { node(for: $0, role: "执行员工") },
-            reviewerTask.map { node(for: $0, role: "审查员") },
-            bossTask.map { node(for: $0, role: "老板") }
+            ctoTask.map { node(for: $0, role: "技术负责人".L()) },
+            engineerTask.map { node(for: $0, role: "执行员工".L()) },
+            reviewerTask.map { node(for: $0, role: "审查员".L()) },
+            bossTask.map { node(for: $0, role: "老板".L()) }
         ].compactMap { $0 }
 
         let edges = [
@@ -1428,33 +1428,33 @@ public final class CompanyStore: ObservableObject {
                 "dispatch",
                 from: ctoTask,
                 to: engineerTask,
-                relation: "任务派发",
+                relation: "任务派发".L(),
                 checks: [hasDispatch],
-                evidence: hasDispatch ? "消息总线已记录技术负责人派发任务。" : "缺少任务派发消息。"
+                evidence: hasDispatch ? "消息总线已记录技术负责人派发任务。".L() : "缺少任务派发消息。".L()
             ),
             edge(
                 "review",
                 from: engineerTask,
                 to: reviewerTask,
-                relation: "执行回传与审查",
+                relation: "执行回传与审查".L(),
                 checks: [hasWorkCompleted, hasReviewRequested],
-                evidence: "员工回传 \(hasWorkCompleted ? "已记录" : "未记录")；员工交接 \(hasEmployeeHandoff ? "已记录" : "未记录")；审查请求 \(hasReviewRequested ? "已记录" : "未记录")。"
+                evidence: "员工回传 ".L() + "\(hasWorkCompleted ? "已记录".L() : "未记录".L())" + "；员工交接 ".L() + "\(hasEmployeeHandoff ? "已记录".L() : "未记录".L())" + "；审查请求 ".L() + "\(hasReviewRequested ? "已记录".L() : "未记录".L())"
             ),
             edge(
                 "approval",
                 from: reviewerTask,
                 to: bossTask,
-                relation: "审查结论与审批",
+                relation: "审查结论与审批".L(),
                 checks: [hasReviewCompleted, hasApprovalRequested],
-                evidence: "审查结论 \(hasReviewCompleted ? "已记录" : "未记录")；审批请求 \(hasApprovalRequested ? "已记录" : "未记录")。"
+                evidence: "审查结论 ".L() + "\(hasReviewCompleted ? "已记录".L() : "未记录".L())" + "；审批请求 ".L() + "\(hasApprovalRequested ? "已记录".L() : "未记录".L())" + "。"
             ),
             edge(
                 "acceptance",
                 from: bossTask,
                 to: ctoTask,
-                relation: "老板决策回流",
+                relation: "老板决策回流".L(),
                 checks: [hasApprovalDecided, hasAcceptanceCompleted],
-                evidence: "审批结果 \(hasApprovalDecided ? "已记录" : "未记录")；验收回流 \(hasAcceptanceCompleted ? "已记录" : "未记录")。"
+                evidence: "审批结果 ".L() + "\(hasApprovalDecided ? "已记录".L() : "未记录".L())" + "；验收回流 ".L() + "\(hasAcceptanceCompleted ? "已记录".L() : "未记录".L())"
             )
         ].compactMap { $0 }
 
@@ -1462,7 +1462,7 @@ public final class CompanyStore: ObservableObject {
     }
 
     public func selectedProductClosureDrillSummaryText() -> String {
-        let productLabel = selectedProduct?.name ?? "当前产品"
+        let productLabel = selectedProduct?.name ?? "当前产品".L()
         guard let trace = latestSelectedProductClosureTrace else {
             return """
             闭环演练复盘摘要：暂无记录
@@ -1527,7 +1527,7 @@ public final class CompanyStore: ObservableObject {
     }
 
     public func selectedProductReworkSummaryText() -> String {
-        let productLabel = selectedProduct?.name ?? "当前产品"
+        let productLabel = selectedProduct?.name ?? "当前产品".L()
         let reworkItems = selectedProductReworkQueue.sorted { lhs, rhs in
             if lhs.updatedAt == rhs.updatedAt {
                 return lhs.id.uuidString < rhs.id.uuidString
@@ -1565,19 +1565,19 @@ public final class CompanyStore: ObservableObject {
         let taskTitlesByID = Dictionary(uniqueKeysWithValues: taskRecords.map { ($0.id, $0.title) })
         let taskGraph = closureTraceTaskGraph(trace)
         let tasks = taskRecords.map { task in
-            "- \(task.title)：\(task.status.title)，负责人 \(task.ownerID.map(agentName) ?? "未分配")。\(task.successCriteria)"
+            "- " + "\(task.title)" + "：".L() + "\(task.status.title)" + "，负责人 " + "\(task.ownerID.map(agentName) ?? "未分配")" + "。" + "\(task.successCriteria)"
         }
         let taskEdges = taskGraph.edges.map { edge in
-            "- \(taskTitlesByID[edge.fromTaskID] ?? "未知任务") → \(taskTitlesByID[edge.toTaskID] ?? "未知任务")：\(edge.relation)，\(edge.status.title)。\(edge.evidence)"
+            "- \(taskTitlesByID[edge.fromTaskID] ?? "未知任务".L()) → \(taskTitlesByID[edge.toTaskID] ?? "未知任务".L())：".L() + "\(edge.relation)，\(edge.status.title)。\(edge.evidence)"
         }
         let messages = closureTraceMessages(trace).map { message in
-            "- \(AgentMessageDisplay.title(for: message.kind))：\(message.subject)（\(agentName(message.fromAgentID)) → \(message.toAgentID.map(agentName) ?? "全员")，\(AgentMessageDisplay.statusTitle(for: message.status))）"
+            "- \(AgentMessageDisplay.title(for: message.kind))：".L() + "\(message.subject)（\(agentName(message.fromAgentID)) → \(message.toAgentID.map(agentName) ?? "全员".L())，\(AgentMessageDisplay.statusTitle(for: message.status))）"
         }
         let approvals = closureTraceApprovals(trace).map { approval in
             "- \(approval.title)：\(approval.status.title)。\(approval.reason)"
         }
         let gates = closureTraceReviewGates(trace).map { gate in
-            "- \(taskTitlesByID[gate.taskID] ?? "未知任务")：\(gate.status.title)。\(gate.summary)"
+            "- \(taskTitlesByID[gate.taskID] ?? "未知任务".L())：".L() + "\(gate.status.title)。\(gate.summary)"
         }
         let artifactsList = closureTraceArtifacts(trace).map { artifact in
             "- \(artifact.title)：\(artifact.kind.title)，\(artifact.path)。\(artifact.summary)"
@@ -1588,7 +1588,7 @@ public final class CompanyStore: ObservableObject {
 
         return """
         闭环审计报告：\(trace.goal)
-        产品：\(selectedProduct?.name ?? "当前产品")
+        产品：\(selectedProduct?.name ?? "当前产品".L())
         闭环状态：\(trace.status.title)
         完成度：\(trace.completionScore)%
         更新时间：\(trace.updatedAt.opcDateTimeText)
@@ -2250,11 +2250,11 @@ public final class CompanyStore: ObservableObject {
         """
         messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: brief))
         if let sourceAgentID, sourceAgentID != ctoID {
-            let confirmation = "已生成公司状态简报并同步给技术负责人。"
+            let confirmation = "已生成公司状态简报并同步给技术负责人。".L()
             messages.append(ChatMessage(productID: selectedProductID, agentID: sourceAgentID, author: .system, text: confirmation))
             appendTerminalLog("\n[OPC] \(confirmation)\n", for: sourceAgentID)
         }
-        appendEvent(kind: .ctoSummary, title: "技术负责人简报", detail: "老板要求生成状态简报。", agentID: ctoID)
+        appendEvent(kind: .ctoSummary, title: "技术负责人简报".L(), detail: "老板要求生成状态简报。".L(), agentID: ctoID)
         saveSnapshot()
     }
 
@@ -2268,13 +2268,13 @@ public final class CompanyStore: ObservableObject {
             title: cleanTitle,
             ownerID: ownerID,
             status: status,
-            successCriteria: cleanCriteria.isEmpty ? "完成后必须说明修改内容、验证命令和剩余风险。" : cleanCriteria,
+            successCriteria: cleanCriteria.isEmpty ? "完成后必须说明修改内容、验证命令和剩余风险。".L() : cleanCriteria,
             artifactPath: artifactPath?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
         )
         tasks.insert(task, at: 0)
-        appendEvent(kind: .taskCreated, title: "创建任务", detail: "\(cleanTitle) 已加入 \(selectedProduct?.name ?? "当前产品")。", agentID: ownerID)
+        appendEvent(kind: .taskCreated, title: "创建任务".L(), detail: "\(cleanTitle) 已加入 \(selectedProduct?.name ?? "当前产品")。", agentID: ownerID)
         if let ownerID {
-            appendEvent(kind: .taskAssigned, title: "任务已分配", detail: "\(cleanTitle) 分配给 \(agentName(ownerID))。", agentID: ownerID)
+            appendEvent(kind: .taskAssigned, title: "任务已分配".L(), detail: "\(cleanTitle)" + " 分配给 " + "\(agentName(ownerID))" + "。", agentID: ownerID)
         }
         saveSnapshot()
     }
@@ -2283,45 +2283,45 @@ public final class CompanyStore: ObservableObject {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         tasks[index].ownerID = ownerID
         tasks[index].status = ownerID == nil ? .planned : .assigned
-        appendEvent(kind: .taskAssigned, title: "任务负责人已更新", detail: "\(tasks[index].title) → \(ownerID.map(agentName) ?? "未分配")。", agentID: ownerID)
+        appendEvent(kind: .taskAssigned, title: "任务负责人已更新".L(), detail: "\(tasks[index].title) → \(ownerID.map(agentName) ?? "未分配")。", agentID: ownerID)
         saveSnapshot()
     }
 
     public func updateTaskStatus(_ taskID: UUID, status: TaskStatus, note: String = "") {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         tasks[index].status = status
-        let detail = note.isEmpty ? "\(tasks[index].title) 状态变更为 \(status.title)。" : note
-        appendEvent(kind: .statusChanged, title: "任务状态更新", detail: detail, agentID: tasks[index].ownerID)
+        let detail = note.isEmpty ? "\(tasks[index].title)" + " 状态变更为 ".L() + "\(status.title)" + "。" : note
+        appendEvent(kind: .statusChanged, title: "任务状态更新".L(), detail: detail, agentID: tasks[index].ownerID)
         saveSnapshot()
     }
 
     public func approveTaskRisk(_ taskID: UUID) {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         tasks[index].status = .running
-        appendEvent(kind: .statusChanged, title: "老板已批准", detail: "\(tasks[index].title) 的风险/继续执行请求已批准。", agentID: tasks[index].ownerID)
+        appendEvent(kind: .statusChanged, title: "老板已批准".L(), detail: "\(tasks[index].title)" + " 的风险/继续执行请求已批准。", agentID: tasks[index].ownerID)
         let productID = tasks[index].productID ?? selectedProductID
-        messages.append(ChatMessage(productID: productID, agentID: ctoID, author: .system, text: "老板已批准任务继续执行：\(tasks[index].title)。请技术负责人继续调度并记录结果。"))
+        messages.append(ChatMessage(productID: productID, agentID: ctoID, author: .system, text: "老板已批准任务继续执行：".L() + "\(tasks[index].title)" + "。请技术负责人继续调度并记录结果。"))
         saveSnapshot()
     }
 
     public func rejectTaskRisk(_ taskID: UUID) {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         tasks[index].status = .blocked
-        appendEvent(kind: .risk, title: "老板已驳回", detail: "\(tasks[index].title) 已被驳回，要求技术负责人重新设计方案。", agentID: tasks[index].ownerID)
+        appendEvent(kind: .risk, title: "老板已驳回".L(), detail: "\(tasks[index].title)" + " 已被驳回，要求技术负责人重新设计方案。", agentID: tasks[index].ownerID)
         let productID = tasks[index].productID ?? selectedProductID
-        messages.append(ChatMessage(productID: productID, agentID: ctoID, author: .system, text: "老板驳回任务：\(tasks[index].title)。请重新拆解方案，不要继续原执行路径。"))
+        messages.append(ChatMessage(productID: productID, agentID: ctoID, author: .system, text: "老板驳回任务：".L() + "\(tasks[index].title)" + "。请重新拆解方案，不要继续原执行路径。"))
         saveSnapshot()
     }
 
     public func requestCTOReview(for taskID: UUID) {
         guard let task = tasks.first(where: { $0.id == taskID }) else { return }
-        messages.append(ChatMessage(productID: task.productID ?? selectedProductID, agentID: ctoID, author: .system, text: "请技术负责人复核任务：\(task.title)。验收标准：\(task.successCriteria)"))
+        messages.append(ChatMessage(productID: task.productID ?? selectedProductID, agentID: ctoID, author: .system, text: "请技术负责人复核任务：".L() + "\(task.title)" + "。验收标准：".L() + "\(task.successCriteria)"))
         upsertReviewGate(
             for: task,
             status: .reviewRequested,
             requesterID: bossID,
             reviewerID: ctoID,
-            summary: "老板要求技术负责人复核任务，确认是否进入审查/验收。"
+            summary: "老板要求技术负责人复核任务，确认是否进入审查/验收。".L()
         )
         postAgentMessage(
             productID: task.productID ?? selectedProductID,
@@ -2329,11 +2329,11 @@ public final class CompanyStore: ObservableObject {
             toAgentID: ctoID,
             taskID: task.id,
             kind: .reviewRequested,
-            subject: "请求技术负责人复核：\(task.title)",
-            body: "请按验收标准复核任务，确认是否进入老板验收或返工。\n验收标准：\(task.successCriteria)",
+            subject: "请求技术负责人复核：".L() + "\(task.title)",
+            body: "请按验收标准复核任务，确认是否进入老板验收或返工。\n验收标准：".L() + "\(task.successCriteria)",
             persist: false
         )
-        appendEvent(kind: .ctoSummary, title: "已要求技术负责人复核", detail: task.title, agentID: ctoID)
+        appendEvent(kind: .ctoSummary, title: "已要求技术负责人复核".L(), detail: task.title, agentID: ctoID)
         saveSnapshot()
     }
 
@@ -2380,12 +2380,12 @@ public final class CompanyStore: ObservableObject {
         tasks[index].status = .done
         let task = tasks[index]
         let productID = task.productID ?? selectedProductID
-        let detail = "\(task.title) 已验收完成。"
+        let detail = "\(task.title)" + " 已验收完成。".L()
         let verification = VerificationRecord(
             productID: productID,
             status: .passed,
-            title: "老板验收通过：\(task.title)",
-            detail: "老板已确认任务满足验收标准：\(task.successCriteria)"
+            title: "老板验收通过：".L() + "\(task.title)",
+            detail: "老板已确认任务满足验收标准：".L() + "\(task.successCriteria)"
         )
         verifications.insert(verification, at: 0)
         if let artifactPath = task.artifactPath,
@@ -2395,9 +2395,9 @@ public final class CompanyStore: ObservableObject {
                     productID: productID,
                     taskID: task.id,
                     kind: artifactKind(for: URL(fileURLWithPath: artifactPath)),
-                    title: "验收产物：\(task.title)",
+                    title: "验收产物：".L() + "\(task.title)",
                     path: artifactPath,
-                    summary: "老板验收通过的任务产物。"
+                    summary: "老板验收通过的任务产物。".L()
                 ),
                 at: 0
             )
@@ -2408,8 +2408,8 @@ public final class CompanyStore: ObservableObject {
             toAgentID: task.ownerID ?? ctoID,
             taskID: task.id,
             kind: .acceptanceCompleted,
-            subject: "老板验收通过：\(task.title)",
-            body: "任务已通过老板验收，可进入交付记录。\n验收标准：\(task.successCriteria)",
+            subject: "老板验收通过：".L() + "\(task.title)",
+            body: "任务已通过老板验收，可进入交付记录。\n验收标准：".L() + "\(task.successCriteria)",
             persist: false
         )
         upsertReviewGate(
@@ -2417,10 +2417,10 @@ public final class CompanyStore: ObservableObject {
             status: .accepted,
             requesterID: bossID,
             reviewerID: task.ownerID ?? ctoID,
-            summary: "老板已验收通过，任务进入交付记录。",
+            summary: "老板已验收通过，任务进入交付记录。".L(),
             latestVerificationID: verification.id
         )
-        appendEvent(kind: .artifactCreated, title: "老板验收通过", detail: detail, agentID: task.ownerID)
+        appendEvent(kind: .artifactCreated, title: "老板验收通过".L(), detail: detail, agentID: task.ownerID)
         saveSnapshot()
     }
 
@@ -2508,7 +2508,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 位员工。这里先显示关键进度，完整团队仍在产品详情和员工工作台查看。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 位员工。这里先显示关键进度，完整团队仍在产品详情和员工工作台查看。".L()
         )
     }
 
@@ -2519,7 +2519,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 项任务。处理完上方任务后下一项会自动浮现。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 项任务。处理完上方任务后下一项会自动浮现。".L()
         )
     }
 
@@ -2530,7 +2530,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 条近期汇报。这里先显示最近重点，关键进展会继续浮现。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 条近期汇报。这里先显示最近重点，关键进展会继续浮现。".L()
         )
     }
 
@@ -2541,7 +2541,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 条汇报。这里保留最近重点，更多汇报会随进展继续浮现。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 条汇报。这里保留最近重点，更多汇报会随进展继续浮现。".L()
         )
     }
 
@@ -2581,8 +2581,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductPendingApprovals.count,
             limit: Self.commandCenterPendingApprovalsDefaultDisplayLimit,
-            noun: "项待处理审批",
-            continuation: "打开决策中心可处理完整队列。"
+            noun: "项待处理审批".L(),
+            continuation: "打开决策中心可处理完整队列。".L()
         )
     }
 
@@ -2590,8 +2590,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRiskTasks.count,
             limit: Self.commandCenterDecisionRiskTasksDefaultDisplayLimit,
-            noun: "项风险任务",
-            continuation: "打开决策中心可处理完整队列。"
+            noun: "项风险任务".L(),
+            continuation: "打开决策中心可处理完整队列。".L()
         )
     }
 
@@ -2599,8 +2599,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRecentDeliveryVerifications.count,
             limit: Self.commandCenterRecentDeliveryRecordsDefaultDisplayLimit,
-            noun: "条验收记录",
-            continuation: "打开交付验收中心可查看完整记录。"
+            noun: "条验收记录".L(),
+            continuation: "打开交付验收中心可查看完整记录。".L()
         )
     }
 
@@ -2608,8 +2608,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRecentDeliveryArtifacts.count,
             limit: Self.commandCenterRecentDeliveryRecordsDefaultDisplayLimit,
-            noun: "项交付物",
-            continuation: "打开交付验收中心可查看完整记录。"
+            noun: "项交付物".L(),
+            continuation: "打开交付验收中心可查看完整记录。".L()
         )
     }
 
@@ -2617,8 +2617,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductOpenTasks.count,
             limit: Self.commandCenterOpenTasksDefaultDisplayLimit,
-            noun: "项未完成任务",
-            continuation: "这里先显示最近任务，完整任务看板在产品详情。"
+            noun: "项未完成任务".L(),
+            continuation: "这里先显示最近任务，完整任务看板在产品详情。".L()
         )
     }
 
@@ -2626,8 +2626,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRiskTasks.count,
             limit: Self.commandCenterRiskPanelTasksDefaultDisplayLimit,
-            noun: "项风险任务",
-            continuation: "打开决策中心可处理完整队列。"
+            noun: "项风险任务".L(),
+            continuation: "打开决策中心可处理完整队列。".L()
         )
     }
 
@@ -2635,8 +2635,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductBossRiskEvents.count,
             limit: Self.commandCenterRiskPanelEventsDefaultDisplayLimit,
-            noun: "条风险汇报",
-            continuation: "这里先显示最近风险，关键进展会继续浮现。"
+            noun: "条风险汇报".L(),
+            continuation: "这里先显示最近风险，关键进展会继续浮现。".L()
         )
     }
 
@@ -2644,8 +2644,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRecentTasks.count,
             limit: Self.commandCenterAcceptanceCriteriaTasksDefaultDisplayLimit,
-            noun: "项验收标准",
-            continuation: "完整任务和标准在产品详情任务看板。"
+            noun: "项验收标准".L(),
+            continuation: "完整任务和标准在产品详情任务看板。".L()
         )
     }
 
@@ -2661,8 +2661,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRecentDeliveryVerifications.count,
             limit: Self.productDetailRecentDeliveryRecordsDefaultDisplayLimit,
-            noun: "条验收记录",
-            continuation: "查看全部可进入交付验收中心。"
+            noun: "条验收记录".L(),
+            continuation: "查看全部可进入交付验收中心。".L()
         )
     }
 
@@ -2670,8 +2670,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRecentDeliveryArtifacts.count,
             limit: Self.productDetailRecentDeliveryRecordsDefaultDisplayLimit,
-            noun: "项交付物",
-            continuation: "查看全部可进入交付验收中心。"
+            noun: "项交付物".L(),
+            continuation: "查看全部可进入交付验收中心。".L()
         )
     }
 
@@ -2683,8 +2683,8 @@ public final class CompanyStore: ObservableObject {
         listOverflow(
             total: selectedProductRecentAgentMessages.count,
             limit: Self.workflowMapMessageFlowDefaultDisplayLimit,
-            noun: "条协作消息",
-            continuation: "可在协作消息总览查看完整列表。"
+            noun: "条协作消息".L(),
+            continuation: "可在协作消息总览查看完整列表。".L()
         )
     }
 
@@ -2699,8 +2699,8 @@ public final class CompanyStore: ObservableObject {
         return listOverflow(
             total: total,
             limit: Self.workflowMapTaskStatusBoardPerStatusDefaultDisplayLimit,
-            noun: "项\(status.title)任务",
-            continuation: "完整任务看板在产品详情。"
+            noun: "项" + "\(status.title)" + "任务".L(),
+            continuation: "完整任务看板在产品详情。".L()
         )
     }
 
@@ -2708,7 +2708,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductAcceptanceTasks.count,
             limit: Self.deliveryAcceptanceCenterAcceptanceTasksDisplayLimit,
-            noun: "项验收任务"
+            noun: "项验收任务".L()
         )
     }
 
@@ -2716,7 +2716,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductDeliveryReviewGates.count,
             limit: Self.deliveryAcceptanceCenterReviewGatesDisplayLimit,
-            noun: "项审查门禁"
+            noun: "项审查门禁".L()
         )
     }
 
@@ -2724,7 +2724,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductRecentDeliveryVerifications.count,
             limit: Self.deliveryAcceptanceCenterVerificationsDisplayLimit,
-            noun: "条验收记录"
+            noun: "条验收记录".L()
         )
     }
 
@@ -2732,13 +2732,13 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductRecentDeliveryArtifacts.count,
             limit: Self.deliveryAcceptanceCenterArtifactsDisplayLimit,
-            noun: "项交付物"
+            noun: "项交付物".L()
         )
     }
 
     public var selectedProductBossReportEvents: [CompanyEvent] {
         selectedProductBossEvents.filter { event in
-            event.title.contains("报告") || event.title.contains("快照") || event.kind == .artifactCreated
+            event.title.contains("报告".L()) || event.title.contains("快照".L()) || event.kind == .artifactCreated
         }
     }
 
@@ -2754,7 +2754,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductBossReportEvents.count,
             limit: Self.bossReportCenterReportEventsDisplayLimit,
-            noun: "条汇报事件"
+            noun: "条汇报事件".L()
         )
     }
 
@@ -2762,7 +2762,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductBossReportMessages.count,
             limit: Self.bossReportCenterBossMessagesDisplayLimit,
-            noun: "条老板报告"
+            noun: "条老板报告".L()
         )
     }
 
@@ -2778,7 +2778,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductBossRiskEvents.count,
             limit: Self.bossDecisionCenterRiskEventsDisplayLimit,
-            noun: "条风险事件"
+            noun: "条风险事件".L()
         )
     }
 
@@ -2786,7 +2786,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductResolvedApprovals.count,
             limit: Self.bossDecisionCenterResolvedApprovalsDisplayLimit,
-            noun: "项已处理决策"
+            noun: "项已处理决策".L()
         )
     }
 
@@ -2798,7 +2798,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductCommunicationLogs.count,
             limit: Self.communicationGatewayLogDisplayLimit,
-            noun: "条通信日志"
+            noun: "条通信日志".L()
         )
     }
 
@@ -2810,7 +2810,7 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductRecentMaintenanceVerifications.count,
             limit: Self.localMaintenanceVerificationDisplayLimit,
-            noun: "条维护审计"
+            noun: "条维护审计".L()
         )
     }
 
@@ -2822,14 +2822,14 @@ public final class CompanyStore: ObservableObject {
         sheetTerminalOverflow(
             total: selectedProductRecentMaintenanceArtifacts.count,
             limit: Self.localMaintenanceArtifactDisplayLimit,
-            noun: "项维护产物"
+            noun: "项维护产物".L()
         )
     }
 
     /// 当前产品最近一次「运行会话健康巡检」VerificationRecord。
     /// 本地维护详情里运行会话健康巡检按钮下方就地预览用，按钮点击后会写入新记录，预览随之更新。
     public func selectedProductLatestRuntimeSessionHealthAudit() -> VerificationRecord? {
-        selectedProductMaintenanceVerifications.first { $0.title == "运行会话健康巡检" }
+        selectedProductMaintenanceVerifications.first { $0.title == "运行会话健康巡检".L() }
     }
 
     private func listOverflow(total: Int, limit: Int, noun: String, continuation: String) -> AgentDeskListOverflow? {
@@ -2837,7 +2837,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) \(noun)。\(continuation)"
+            summary: "后续还有 ".L() + "\(hidden)" + " " + "\(noun)" + "。" + "\(continuation)"
         )
     }
 
@@ -2846,7 +2846,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) \(noun)未显示。当前中心先显示最近 \(limit) 项。"
+            summary: "后续还有 ".L() + "\(hidden)" + " " + "\(noun)" + "未显示。当前中心先显示最近 ".L() + "\(limit)" + " 项。".L()
         )
     }
 
@@ -2857,7 +2857,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 项待审任务。处理完上方任务后下一项会自动浮现。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 项待审任务。处理完上方任务后下一项会自动浮现。".L()
         )
     }
 
@@ -2873,7 +2873,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 项分配任务。处理或入队上方任务后下一项会自动浮现。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 项分配任务。处理或入队上方任务后下一项会自动浮现。".L()
         )
     }
 
@@ -2888,7 +2888,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 项队列任务。处理完上方任务后下一项会自动浮现。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 项队列任务。处理完上方任务后下一项会自动浮现。".L()
         )
     }
 
@@ -2908,7 +2908,7 @@ public final class CompanyStore: ObservableObject {
         let hidden = total - limit
         return AgentDeskListOverflow(
             hiddenCount: hidden,
-            summary: "后续还有 \(hidden) 条协作消息。处理或确认上方消息后下一条会自动浮现，完整收件箱可在协作消息总览查看。"
+            summary: "后续还有 ".L() + "\(hidden)" + " 条协作消息。处理或确认上方消息后下一条会自动浮现，完整收件箱可在协作消息总览查看。".L()
         )
     }
 
@@ -2926,32 +2926,32 @@ public final class CompanyStore: ObservableObject {
 
     public func agentDeskProfileChips(forAgentID agentID: UUID?) -> [AgentDeskProfileChip] {
         guard let id = agentID, let agent = agents.first(where: { $0.id == id }) else { return [] }
-        let model = agent.backend.model.isEmpty ? "默认模型" : agent.backend.model
+        let model = agent.backend.model.isEmpty ? "默认模型".L() : agent.backend.model
         var chips: [AgentDeskProfileChip]
         switch agent.backend.type {
         case .subscriptionCLI:
             chips = [
-                .init(label: "来源", value: agent.backend.type.title),
-                .init(label: "命令行工具", value: opcBackendCommandDisplayName(agent.backend.command)),
-                .init(label: "模型", value: model),
-                .init(label: "推理强度", value: agent.backend.reasoningEffort.title)
+                .init(label: "来源".L(), value: agent.backend.type.title),
+                .init(label: "命令行工具".L(), value: opcBackendCommandDisplayName(agent.backend.command)),
+                .init(label: "模型".L(), value: model),
+                .init(label: "推理强度".L(), value: agent.backend.reasoningEffort.title)
             ]
         case .api:
             chips = [
-                .init(label: "来源", value: agent.backend.type.title),
-                .init(label: "模型", value: model),
-                .init(label: "推理强度", value: agent.backend.reasoningEffort.title)
+                .init(label: "来源".L(), value: agent.backend.type.title),
+                .init(label: "模型".L(), value: model),
+                .init(label: "推理强度".L(), value: agent.backend.reasoningEffort.title)
             ]
         case .local:
             chips = [
-                .init(label: "来源", value: agent.backend.type.title),
-                .init(label: "占位标识", value: model)
+                .init(label: "来源".L(), value: agent.backend.type.title),
+                .init(label: "占位标识".L(), value: model)
             ]
         }
         if let session = runtimeSession(for: agent.id) {
-            chips.append(.init(label: "会话", value: "\(session.state.title) · \(session.capability.title)"))
+            chips.append(.init(label: "会话".L(), value: "\(session.state.title) · \(session.capability.title)"))
             if !session.keepAlive {
-                chips.append(.init(label: "保活", value: "关闭"))
+                chips.append(.init(label: "保活".L(), value: "关闭".L()))
             }
         }
         return chips
@@ -2969,17 +2969,17 @@ public final class CompanyStore: ObservableObject {
 
         let cleanSummary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedSummary = cleanSummary.isEmpty
-            ? "\(reviewer.displayName) 完成审查，任务可进入交付记录。"
+            ? "\(reviewer.displayName)" + " 完成审查，任务可进入交付记录。".L()
             : cleanSummary
 
-        updateTaskStatus(taskID, status: .done, note: "\(reviewer.displayName) 已完成审查并签字通过。")
+        updateTaskStatus(taskID, status: .done, note: "\(reviewer.displayName)" + " 已完成审查并签字通过。".L())
         postAgentMessage(
             productID: selectedProductID,
             fromAgentID: reviewer.id,
             toAgentID: ctoID,
             taskID: task.id,
             kind: .reviewCompleted,
-            subject: "审查通过：\(task.title)",
+            subject: "审查通过：".L() + "\(task.title)",
             body: resolvedSummary,
             reviewOutcome: .passed,
             persist: false
@@ -2989,12 +2989,12 @@ public final class CompanyStore: ObservableObject {
             status: .verificationPassed,
             requesterID: ctoID,
             reviewerID: reviewer.id,
-            summary: "审查员 \(reviewer.displayName) 已签字通过：\(resolvedSummary)"
+            summary: "审查员 ".L() + "\(reviewer.displayName)" + " 已签字通过：".L() + "\(resolvedSummary)"
         )
         appendEvent(
             kind: .ctoSummary,
-            title: "审查员已完成审查",
-            detail: "\(reviewer.displayName) 通过 \(task.title)：\(resolvedSummary)",
+            title: "审查员已完成审查".L(),
+            detail: "\(reviewer.displayName)" + " 通过 ".L() + "\(task.title)" + "：" + "\(resolvedSummary)",
             agentID: reviewer.id
         )
         requestBossApprovalAfterSupervisorReviewPass(reviewTask: task, summary: resolvedSummary)
@@ -3014,17 +3014,17 @@ public final class CompanyStore: ObservableObject {
 
         let cleanReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedReason = cleanReason.isEmpty
-            ? "审查员 \(reviewer.displayName) 打回返工，需补充材料或修复问题。"
+            ? "审查员 ".L() + "\(reviewer.displayName)" + " 打回返工，需补充材料或修复问题。".L()
             : cleanReason
 
-        updateTaskStatus(taskID, status: .assigned, note: "\(reviewer.displayName) 打回返工：\(resolvedReason)")
+        updateTaskStatus(taskID, status: .assigned, note: "\(reviewer.displayName)" + " 打回返工：".L() + "\(resolvedReason)")
         postAgentMessage(
             productID: selectedProductID,
             fromAgentID: reviewer.id,
             toAgentID: ctoID,
             taskID: task.id,
             kind: .reviewCompleted,
-            subject: "审查不通过：\(task.title)",
+            subject: "审查不通过：".L() + "\(task.title)",
             body: resolvedReason,
             reviewOutcome: .rejected,
             persist: false
@@ -3034,12 +3034,12 @@ public final class CompanyStore: ObservableObject {
             status: .verificationWarning,
             requesterID: ctoID,
             reviewerID: reviewer.id,
-            summary: "审查员 \(reviewer.displayName) 打回返工：\(resolvedReason)"
+            summary: "审查员 ".L() + "\(reviewer.displayName)" + " 打回返工：".L() + "\(resolvedReason)"
         )
         appendEvent(
             kind: .risk,
-            title: "审查员打回返工",
-            detail: "\(reviewer.displayName) 打回 \(task.title)：\(resolvedReason)",
+            title: "审查员打回返工".L(),
+            detail: "\(reviewer.displayName)" + " 打回 ".L() + "\(task.title)" + "：" + "\(resolvedReason)",
             agentID: reviewer.id
         )
         requeueExecutionTaskAfterReviewRejection(reviewTask: task, reason: resolvedReason)
@@ -3048,10 +3048,10 @@ public final class CompanyStore: ObservableObject {
     }
 
     private func requeueExecutionTaskAfterReviewRejection(reviewTask: CompanyTask, reason: String) {
-        guard reviewTask.title.hasPrefix("审查验收："),
+        guard reviewTask.title.hasPrefix("审查验收：".L()),
               let goal = ctoSupervisorGoalKey(for: reviewTask),
               let executionTask = selectedProductTasks.first(where: {
-                  $0.title == "员工执行：\(goal)" && $0.productID == selectedProductID
+                  $0.title == "员工执行：".L() + "\(goal)" && $0.productID == selectedProductID
               }),
               let executionOwnerID = executionTask.ownerID,
               selectedProductAgents.contains(where: { $0.id == executionOwnerID })
@@ -3060,7 +3060,7 @@ public final class CompanyStore: ObservableObject {
         updateTaskStatus(
             executionTask.id,
             status: .assigned,
-            note: "审查打回返工：\(reason)。任务已重新进入 \(agentName(executionOwnerID)) 的执行队列。"
+            note: "审查打回返工：".L() + "\(reason)" + "。任务已重新进入 ".L() + "\(agentName(executionOwnerID))" + " 的执行队列。".L()
         )
         let promptReason = Self.promptFragment(reason, limit: Self.reworkPromptReasonLimit)
         let promptSuccessCriteria = Self.promptFragment(executionTask.successCriteria, limit: Self.reworkPromptSuccessCriteriaLimit)
@@ -3249,8 +3249,8 @@ public final class CompanyStore: ObservableObject {
             taskID: executionTask.id,
             approvalID: approval.id,
             kind: .taskDispatched,
-            subject: "老板驳回后返工：\(goal)",
-            body: "老板已驳回最终交付，技术负责人已把同目标执行任务重新派发给 \(agentName(executionOwnerID))。\n原因：\(rejectionReason)",
+            subject: "老板驳回后返工：".L() + "\(goal)",
+            body: "老板已驳回最终交付，技术负责人已把同目标执行任务重新派发给 ".L() + "\(agentName(executionOwnerID))" + "。\n原因：".L() + "\(rejectionReason)",
             persist: false
         )
         postAgentMessage(
@@ -3260,15 +3260,15 @@ public final class CompanyStore: ObservableObject {
             taskID: bossTask.id,
             approvalID: approval.id,
             kind: .ctoLoopProgressed,
-            subject: "技术负责人已按老板驳回回拨返工：\(goal)",
-            body: "执行任务已重新入队，审查员等待返工后复审。\n打回原因：\(rejectionReason)",
+            subject: "技术负责人已按老板驳回回拨返工：".L() + "\(goal)",
+            body: "执行任务已重新入队，审查员等待返工后复审。\n打回原因：".L() + "\(rejectionReason)",
             persist: false
         )
         appendEvent(
             productID: productID,
             kind: .risk,
-            title: "老板驳回后已派发返工",
-            detail: "\(goal) 已退回 \(agentName(executionOwnerID)) 返工，完成后会重新提交审查。",
+            title: "老板驳回后已派发返工".L(),
+            detail: "\(goal)" + " 已退回 ".L() + "\(agentName(executionOwnerID))" + " 返工，完成后会重新提交审查。".L(),
             agentID: ctoID
         )
     }
@@ -3280,13 +3280,13 @@ public final class CompanyStore: ObservableObject {
             task.productID == productID && ctoSupervisorGoalKey(for: task) == goal
         }
         for task in goalTasks where task.status != .done && task.status != .canceled {
-            updateTaskStatus(task.id, status: .done, note: "老板已批准最终交付，技术负责人闭环任务组已收束。")
+            updateTaskStatus(task.id, status: .done, note: "老板已批准最终交付，技术负责人闭环任务组已收束。".L())
         }
         appendEvent(
             productID: productID,
             kind: .ctoSummary,
-            title: "技术负责人闭环已收束",
-            detail: "\(goal) 的拆解、执行、审查和老板审批任务已进入完成态。",
+            title: "技术负责人闭环已收束".L(),
+            detail: "\(goal)" + " 的拆解、执行、审查和老板审批任务已进入完成态。".L(),
             agentID: ctoID
         )
     }
@@ -3306,7 +3306,7 @@ public final class CompanyStore: ObservableObject {
             updatedNames.append(agents[index].displayName)
         }
         guard !updatedNames.isEmpty else { return }
-        appendEvent(kind: .statusChanged, title: "模型路由已更新", detail: "\(role.title)：\(updatedNames.joined(separator: "、"))。", agentID: nil)
+        appendEvent(kind: .statusChanged, title: "模型路由已更新".L(), detail: "\(role.title)：\(updatedNames.joined(separator: "、"))。", agentID: nil)
         saveSnapshot()
     }
 
@@ -3316,33 +3316,33 @@ public final class CompanyStore: ObservableObject {
         let report = product?.importReport
         let ruleLine = Self.promptInlineList(
             report?.ruleFiles ?? [],
-            empty: "无",
+            empty: "无".L(),
             itemLimit: Self.workOrderPromptRuleItemLimit,
             itemTextLimit: Self.workOrderPromptListItemLimit
         )
         let toolLine = Self.promptInlineList(
             report?.detectedTools ?? [],
-            empty: "未识别",
+            empty: "未识别".L(),
             itemLimit: Self.workOrderPromptToolItemLimit,
             itemTextLimit: Self.workOrderPromptListItemLimit
         )
         let projectFiles = Self.promptInlineList(
             report?.projectFiles ?? [],
-            empty: "无",
+            empty: "无".L(),
             itemLimit: Self.workOrderPromptProjectFileItemLimit,
             itemTextLimit: Self.workOrderPromptListItemLimit
         )
         let taskTitle = Self.promptFragment(task.title, limit: Self.workOrderPromptTextLimit)
         let successCriteria = Self.promptFragment(task.successCriteria, limit: Self.workOrderPromptTextLimit)
-        let artifactPath = Self.promptFragment(task.artifactPath ?? "未指定", limit: Self.workOrderPromptPathLimit)
-        let productName = Self.promptFragment(product?.name ?? "当前产品", limit: Self.workOrderPromptTextLimit)
-        let productRoot = Self.promptFragment(product?.rootDirectory ?? "未设置", limit: Self.workOrderPromptPathLimit)
+        let artifactPath = Self.promptFragment(task.artifactPath ?? "未指定".L(), limit: Self.workOrderPromptPathLimit)
+        let productName = Self.promptFragment(product?.name ?? "当前产品".L(), limit: Self.workOrderPromptTextLimit)
+        let productRoot = Self.promptFragment(product?.rootDirectory ?? "未设置".L(), limit: Self.workOrderPromptPathLimit)
 
         return """
-        你是 OPC 公司员工：\(owner?.displayName ?? "未分配员工")，职位：\(owner?.title ?? "待定")。
+        你是 OPC 公司员工：\(owner?.displayName ?? "未分配员工".L())，职位：\(owner?.title ?? "待定".L())。
         当前产品：\(productName)
         项目根目录：\(productRoot)
-        项目阶段：\(product?.stage.title ?? "未知") / \(product?.status.title ?? "未知")
+        项目阶段：\(product?.stage.title ?? "未知".L()) / \(product?.status.title ?? "未知".L())
 
         任务：\(taskTitle)
         当前状态：\(task.status.title)
@@ -4098,8 +4098,8 @@ public final class CompanyStore: ObservableObject {
 
         let productID = product?.id ?? selectedProductID
         messages.append(ChatMessage(productID: productID, agentID: bossID, author: .system, text: report))
-        messages.append(ChatMessage(productID: productID, agentID: ctoID, author: .system, text: "已生成老板报告，请按报告继续推进。\n\n\(report)"))
-        appendEvent(kind: .artifactCreated, title: "老板报告已生成", detail: "\(product?.name ?? "当前产品") 的状态报告已写入老板和技术负责人对话。", agentID: ctoID)
+        messages.append(ChatMessage(productID: productID, agentID: ctoID, author: .system, text: "已生成老板报告，请按报告继续推进。\n\n".L() + "\(report)"))
+        appendEvent(kind: .artifactCreated, title: "老板报告已生成".L(), detail: "\(product?.name ?? "当前产品".L())" + " 的状态报告已写入老板和技术负责人对话。".L(), agentID: ctoID)
         saveSnapshot()
     }
 
@@ -4108,11 +4108,11 @@ public final class CompanyStore: ObservableObject {
         let report = product?.importReport
         let snapshot = """
         产品交接快照
-        产品：\(product?.name ?? "当前产品")
-        根目录：\(product?.rootDirectory ?? "未设置")
-        阶段：\(product?.stage.title ?? "未知") / \(product?.status.title ?? "未知")
-        规则文件：\(report?.ruleFiles.joined(separator: "、") ?? "无")
-        工具线索：\(report?.detectedTools.joined(separator: "、") ?? "无")
+        产品：\(product?.name ?? "当前产品".L())
+        根目录：\(product?.rootDirectory ?? "未设置".L())
+        阶段：\(product?.stage.title ?? "未知".L()) / \(product?.status.title ?? "未知".L())
+        规则文件：\(report?.ruleFiles.joined(separator: "、") ?? "无".L())
+        工具线索：\(report?.detectedTools.joined(separator: "、") ?? "无".L())
         当前任务数：\(selectedProductTasks.count)
         员工数：\(selectedProductAgents.count)
         """
@@ -4291,7 +4291,7 @@ public final class CompanyStore: ObservableObject {
     }
 
     public func clearSelectedProductRunData() {
-        createSafetyCheckpoint(reason: "清理当前产品运行/测试数据前自动检查点")
+        createSafetyCheckpoint(reason: "清理当前产品运行/测试数据前自动检查点".L())
         let removableTaskIDs = Set(tasks.filter { task in
             task.productID == selectedProductID && isGeneratedOperationalTask(task)
         }.map(\.id))
@@ -4319,8 +4319,8 @@ public final class CompanyStore: ObservableObject {
 
         appendEvent(
             kind: .statusChanged,
-            title: "产品运行数据已清理",
-            detail: "任务 \(removedTasks)，队列 \(removedQueue)，分支计划 \(removedPlans)，验收门禁 \(removedGates)，审批 \(removedApprovals)，产物 \(removedArtifacts)，验收 \(removedVerifications)，记忆 \(removedMemories)，通信日志 \(removedLogs)。",
+            title: "产品运行数据已清理".L(),
+            detail: "任务 ".L() + "\(removedTasks)" + "，队列 ".L() + "\(removedQueue)" + "，分支计划 ".L() + "\(removedPlans)" + "，验收门禁 ".L() + "\(removedGates)" + "，审批 " + "\(removedApprovals)" + "，产物 " + "\(removedArtifacts)" + "，验收 " + "\(removedVerifications)" + "，记忆 " + "\(removedMemories)" + "，通信日志 " + "\(removedLogs)" + "。",
             agentID: ctoID
         )
         saveSnapshot()
@@ -4335,7 +4335,7 @@ public final class CompanyStore: ObservableObject {
         恢复默认公司状态会重建本地演示数据：
         - 产品工作区：\(products.count) 个 -> 1 个默认产品
         - 员工：\(agents.count) 个 -> 老板、Codex 技术负责人、Gemini 界面设计师、Claude Code 工程师、Codex 审查员
-        - 当前额外/专业员工：\(extraAgents.map(\.displayName).joined(separator: "、").nilIfBlank ?? "无")
+        - 当前额外/专业员工：\(extraAgents.map(\.displayName).joined(separator: "、").nilIfBlank ?? "无".L())
         - 自动/测试任务：\(generatedTaskCount) 个
         - 队列/审批/产物/验收/记忆/通信/分支：\(workQueue.count + approvals.count + artifacts.count + verifications.count + memories.count + communicationLogs.count + branchPlans.count) 条
         - 有终端日志员工：\(terminalLogCount) 个
@@ -4538,10 +4538,10 @@ public final class CompanyStore: ObservableObject {
 
     public func runProductIsolationAudit() {
         let report = productIsolationAuditText()
-        let passed = report.contains("多产品隔离体检：通过")
-        verifications.insert(VerificationRecord(productID: selectedProductID, status: passed ? .passed : .warning, title: "多产品隔离体检", detail: report), at: 0)
+        let passed = report.contains("多产品隔离体检：通过".L())
+        verifications.insert(VerificationRecord(productID: selectedProductID, status: passed ? .passed : .warning, title: "多产品隔离体检".L(), detail: report), at: 0)
         messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: report))
-        appendEvent(kind: passed ? .artifactCreated : .risk, title: "多产品隔离体检完成", detail: passed ? "通过" : "发现隔离风险", agentID: ctoID)
+        appendEvent(kind: passed ? .artifactCreated : .risk, title: "多产品隔离体检完成".L(), detail: passed ? "通过".L() : "发现隔离风险".L(), agentID: ctoID)
         saveSnapshot()
     }
 
@@ -4571,40 +4571,40 @@ public final class CompanyStore: ObservableObject {
             let hasMarker = FileManager.default.fileExists(atPath: marker.path)
             let executionDirectory = cliExecutionDirectoryURL(for: agent)
             let runnable = executionDirectory.standardizedFileURL.path != workingDirectory.standardizedFileURL.path
-            let status = runnable ? "可执行" : hasDirectory && hasMarker ? "已登记，待生成源码执行区" : "待创建"
-            let mode = isGitRepository ? "代码仓库独立工作区" : "源码快照隔离"
-            let executionSummary = runnable ? "已使用独立执行区" : "暂用主工作目录"
+            let status = runnable ? "可执行".L() : hasDirectory && hasMarker ? "已登记，待生成源码执行区".L() : "待创建".L()
+            let mode = isGitRepository ? "代码仓库独立工作区".L() : "源码快照隔离".L()
+            let executionSummary = runnable ? "已使用独立执行区".L() : "暂用主工作目录".L()
             return "- \(agent.displayName)：\(status) · \(mode) · \(executionSummary)"
         }
         let workspaceLines = workspaceRows.map { agent, workspace, hasDirectory, hasSessionLog in
-            "- \(agent.displayName)：员工工作区 \(hasDirectory ? "已创建" : "缺失") · 会话日志 \(hasSessionLog ? "已创建" : "缺失")"
+            "- ".L() + "\(agent.displayName)" + "：员工工作区 ".L() + "\(hasDirectory ? "已创建".L() : "缺失".L())" + " · 会话日志 ".L() + "\(hasSessionLog ? "已创建" : "缺失")"
         }
         let runtimeLines = runtimeRows.map { agent, session in
-            let detail = session.map { "\($0.state.title) / \($0.capability.title)" } ?? "缺失"
+            let detail = session.map { "\($0.state.title) / \($0.capability.title)" } ?? "缺失".L()
             return "- \(agent.displayName)：\(detail)"
         }
 
         let issueCount = duplicateWorkspaceCount + missingWorkspaceCount + missingSessionCount
         return """
-        命令行与工作区隔离体检：\(issueCount == 0 ? "通过" : "发现 \(issueCount) 项问题")
+        命令行与工作区隔离体检：\(issueCount == 0 ? "通过".L() : "发现 " + "\(issueCount)" + " 项问题")
 
         产品工作目录：
         - \(workingDirectory.path)
 
         员工工作区：
-        \(workspaceLines.isEmpty ? "- 当前产品没有可执行员工。" : workspaceLines.joined(separator: "\n"))
+        \(workspaceLines.isEmpty ? "- 当前产品没有可执行员工。".L() : workspaceLines.joined(separator: "\n"))
 
         运行会话：
-        \(runtimeLines.isEmpty ? "- 当前产品没有运行会话。" : runtimeLines.joined(separator: "\n"))
+        \(runtimeLines.isEmpty ? "- 当前产品没有运行会话。".L() : runtimeLines.joined(separator: "\n"))
 
         持续协作：
         - 可继续接收任务：\(persistentCount)/\(agents.count)
 
         代码类独立执行区：
-        \(isolationPlanLines.isEmpty ? "- 当前产品没有代码/测试类可执行员工。" : isolationPlanLines.joined(separator: "\n"))
+        \(isolationPlanLines.isEmpty ? "- 当前产品没有代码/测试类可执行员工。".L() : isolationPlanLines.joined(separator: "\n"))
 
         结论：
-        \(issueCount == 0 ? "当前产品的可执行员工已具备独立工作区、会话日志和运行会话；代码类员工会优先使用独立执行区，未生成独立执行区时才临时回退到主工作目录。" : "请先修复缺失工作区、会话日志或运行会话，再进入并行代码执行。")
+        \(issueCount == 0 ? "当前产品的可执行员工已具备独立工作区、会话日志和运行会话；代码类员工会优先使用独立执行区，未生成独立执行区时才临时回退到主工作目录。".L() : "请先修复缺失工作区、会话日志或运行会话，再进入并行代码执行。")
         """
     }
 
@@ -4658,7 +4658,7 @@ public final class CompanyStore: ObservableObject {
             """
         }
         let runtimeLines = runtimeRows.map { agent, session in
-            let detail = session.map { "\($0.state.title) / \($0.capability.title)" } ?? "缺失"
+            let detail = session.map { "\($0.state.title) / \($0.capability.title)" } ?? "缺失".L()
             return "- \(agent.displayName)：\(detail)"
         }
 
@@ -4669,13 +4669,13 @@ public final class CompanyStore: ObservableObject {
         - \(workingDirectory.path)
 
         员工工作区详情：
-        \(workspaceLines.isEmpty ? "- 当前产品没有可执行员工。" : workspaceLines.joined(separator: "\n"))
+        \(workspaceLines.isEmpty ? "- 当前产品没有可执行员工。".L() : workspaceLines.joined(separator: "\n"))
 
         运行会话详情：
-        \(runtimeLines.isEmpty ? "- 当前产品没有运行会话。" : runtimeLines.joined(separator: "\n"))
+        \(runtimeLines.isEmpty ? "- 当前产品没有运行会话。".L() : runtimeLines.joined(separator: "\n"))
 
         代码类隔离详情：
-        \(isolationPlanLines.isEmpty ? "- 当前产品没有代码/测试类可执行员工。" : isolationPlanLines.joined(separator: "\n"))
+        \(isolationPlanLines.isEmpty ? "- 当前产品没有代码/测试类可执行员工。".L() : isolationPlanLines.joined(separator: "\n"))
         """
     }
 
@@ -4725,12 +4725,12 @@ public final class CompanyStore: ObservableObject {
         let workingDirectory = cliWorkingDirectoryURL()
         let configuredRoot = selectedProduct?.rootDirectory.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let directoryStatus = configuredRoot.isEmpty || configuredRoot == workingDirectory.path
-            ? "使用产品根目录"
-            : "产品根目录不可用，实际已回退到 \(workingDirectory.path)"
+            ? "使用产品根目录".L()
+            : "产品根目录不可用，实际已回退到 ".L() + "\(workingDirectory.path)"
         let agentLines = agents.map { agent in
             let windowName = terminalWorkspaceWindowName(for: agent)
             let executionDirectory = cliExecutionDirectoryURL(for: agent)
-            let status = windowNames.contains(windowName) ? "已连接" : "待创建"
+            let status = windowNames.contains(windowName) ? "已连接".L() : "待创建".L()
             return """
             - \(agent.displayName)：\(status)
               窗口名：\(windowName)
@@ -4758,14 +4758,14 @@ public final class CompanyStore: ObservableObject {
     }
 
     private func terminalWorkspaceHealthAuditText(using snapshot: TerminalWorkspaceHealthSnapshot) -> String {
-        let missingLines = snapshot.missingAgents.map { "- \($0.displayName)：终端席位待创建" }.joined(separator: "\n")
-        let toolStatus = snapshot.isKnown ? (snapshot.tmuxReady ? "已就绪" : "未找到") : "待巡检"
-        let sessionStatus = snapshot.isKnown ? (snapshot.sessionExists ? "已存在" : "未启动") : "待巡检"
-        let controlStatus = snapshot.isKnown ? (snapshot.hasControlWindow ? "已连接" : "未连接") : "待巡检"
+        let missingLines = snapshot.missingAgents.map { "- " + "\($0.displayName)" + "：终端席位待创建".L() }.joined(separator: "\n")
+        let toolStatus = snapshot.isKnown ? (snapshot.tmuxReady ? "已就绪".L() : "未找到".L()) : "待巡检".L()
+        let sessionStatus = snapshot.isKnown ? (snapshot.sessionExists ? "已存在".L() : "未启动".L()) : "待巡检".L()
+        let controlStatus = snapshot.isKnown ? (snapshot.hasControlWindow ? "已连接".L() : "未连接".L()) : "待巡检".L()
 
         return """
         持久终端可用性巡检：\(snapshot.status.title)
-        产品：\(selectedProduct?.name ?? "当前产品")
+        产品：\(selectedProduct?.name ?? "当前产品".L())
         主要待处理：\(snapshot.primaryIssue)
         终端工具：\(toolStatus)
         工作区会话：\(sessionStatus)
@@ -4773,7 +4773,7 @@ public final class CompanyStore: ObservableObject {
         员工席位：\(snapshot.connectedAgentCount)/\(snapshot.totalAgentCount)
 
         待处理席位：
-        \(missingLines.isEmpty ? "- 无" : missingLines)
+        \(missingLines.isEmpty ? "- 无".L() : missingLines)
 
         说明：
         本巡检只读取本机终端工作区状态，不启动模型任务、不创建作业档案、不修改员工状态。若存在待创建席位，请先使用「启动真实终端工作区」补齐，再从 OPC 运行入口发起任务。
@@ -4790,7 +4790,7 @@ public final class CompanyStore: ObservableObject {
             at: 0
         )
         messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: report))
-        appendEvent(kind: status == .passed ? .statusChanged : .risk, title: "持久终端可用性巡检完成", detail: "\(selectedProduct?.name ?? "当前产品") · \(status.title)", agentID: ctoID)
+        appendEvent(kind: status == .passed ? .statusChanged : .risk, title: "持久终端可用性巡检完成", detail: "\(selectedProduct?.name ?? "当前产品".L())" + " · ".L() + "\(status.title)", agentID: ctoID)
         saveSnapshot()
         return status
     }
@@ -5006,9 +5006,9 @@ public final class CompanyStore: ObservableObject {
         产品：\(selectedProduct?.name ?? "当前产品")
         捕获席位：\(capturedCount)/\(executableAgents.count)
         """
-        verifications.insert(VerificationRecord(productID: selectedProductID, status: capturedCount > 0 ? .passed : .warning, title: "真实终端日志刷新", detail: report), at: 0)
+        verifications.insert(VerificationRecord(productID: selectedProductID, status: capturedCount > 0 ? .passed : .warning, title: "真实终端日志刷新".L(), detail: report), at: 0)
         messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: report))
-        appendEvent(kind: capturedCount > 0 ? .artifactCreated : .risk, title: "真实终端日志刷新完成", detail: "捕获 \(capturedCount) 个员工终端席位", agentID: ctoID)
+        appendEvent(kind: capturedCount > 0 ? .artifactCreated : .risk, title: "真实终端日志刷新完成".L(), detail: "捕获 " + "\(capturedCount)" + " 个员工终端席位", agentID: ctoID)
         saveSnapshot()
     }
 
@@ -5029,16 +5029,16 @@ public final class CompanyStore: ObservableObject {
     public func persistentTerminalTargetPreviewForTesting(agentID: UUID) -> String {
         guard let agent = agents.first(where: { $0.id == agentID }),
               let target = preparePersistentTerminalTarget(for: agent)
-        else { return "未接入" }
+        else { return "未接入".L() }
         return "\(target.sessionName):\(target.windowName)"
     }
 
     public func persistentTerminalTurnObservationPreviewForTesting(capture: String, startMarker: String, endMarker: String, command: String) -> String {
         let profile = CLIInteractionProfileCatalog.profile(forCommand: command)
         let snapshot = persistentTerminalTurnSnapshot(from: capture, startMarker: startMarker, endMarker: endMarker, profile: profile)
-        let resultLine = snapshot.result.map { "结果：退出码 \($0.exitCode)" } ?? "结果：未完成"
-        let phaseLine = snapshot.observation.map { "状态：\($0.reasonTitle)" } ?? "状态：未识别"
-        let sessionLine = snapshot.observation?.sessionID == nil ? "会话编号：未识别" : "会话编号：已识别"
+        let resultLine = snapshot.result.map { "结果：退出码 " + "\($0.exitCode)" } ?? "结果：未完成".L()
+        let phaseLine = snapshot.observation.map { "状态：".L() + "\($0.reasonTitle)" } ?? "状态：未识别".L()
+        let sessionLine = snapshot.observation?.sessionID == nil ? "会话编号：未识别".L() : "会话编号：已识别".L()
         return "\(resultLine)\n\(phaseLine)\n\(sessionLine)"
     }
 
@@ -5085,7 +5085,7 @@ public final class CompanyStore: ObservableObject {
         let action = session?.cliInteractionRecoveryAction
             ?? phase.map { CLIInteractionStateMachine.recoveryAction(for: $0) }
             ?? .noAction
-        let phaseTitle = session?.cliInteractionReason ?? "尚未观察"
+        let phaseTitle = session?.cliInteractionReason ?? "尚未观察".L()
         let canRetry = (phase == .transientFailure) && (action == .waitAndRetryLater)
         return CLIRecoveryAdviceEntry(
             agentID: agentID,
@@ -5120,16 +5120,16 @@ public final class CompanyStore: ObservableObject {
         case .unknown, .ready, .completedTurn:
             return nil
         case .awaitingResponse:
-            title = "等待回复"
+            title = "等待回复".L()
             severity = .info
         case .busy:
-            title = "忙碌中"
+            title = "忙碌中".L()
             severity = .warning
         case .authenticationBlocked:
-            title = "授权异常"
+            title = "授权异常".L()
             severity = .danger
         case .transientFailure:
-            title = "临时异常"
+            title = "临时异常".L()
             severity = .danger
         }
 
@@ -5150,7 +5150,7 @@ public final class CompanyStore: ObservableObject {
 
     public func cliRecoveryAdviceSummaryText() -> String {
         let advices = cliRecoveryAdvicesForSelectedProduct()
-        let productLabel = selectedProduct?.name ?? "当前产品"
+        let productLabel = selectedProduct?.name ?? "当前产品".L()
         guard !advices.isEmpty else {
             return """
             员工恢复建议：暂无可执行员工
@@ -5180,20 +5180,20 @@ public final class CompanyStore: ObservableObject {
     @discardableResult
     public func manualRetryTransientForAgent(agentID: UUID) -> CLIRecoveryRetryReport {
         guard let agent = agents.first(where: { $0.id == agentID }) else {
-            return CLIRecoveryRetryReport(success: false, reason: "未找到该员工，无法发起手动重试。")
+            return CLIRecoveryRetryReport(success: false, reason: "未找到该员工，无法发起手动重试。".L())
         }
         guard agent.role != .boss else {
-            return CLIRecoveryRetryReport(success: false, reason: "老板视角不参与命令行手动重试。")
+            return CLIRecoveryRetryReport(success: false, reason: "老板视角不参与命令行手动重试。".L())
         }
         guard let advice = cliRecoveryAdvice(for: agentID), advice.canManualRetry else {
-            let phaseTitle = runtimeSessions[agentID]?.cliInteractionReason ?? "尚未观察"
-            return CLIRecoveryRetryReport(success: false, reason: "当前状态为「\(phaseTitle)」，不在「临时异常」范围内，已拒绝手动重试。")
+            let phaseTitle = runtimeSessions[agentID]?.cliInteractionReason ?? "尚未观察".L()
+            return CLIRecoveryRetryReport(success: false, reason: "当前状态为「".L() + "\(phaseTitle)" + "」，不在「临时异常」范围内，已拒绝手动重试。".L())
         }
         guard !isRunning(agentID: agentID) else {
-            return CLIRecoveryRetryReport(success: false, reason: "\(agent.displayName) 当前正在运行任务，请等待完成后再发起手动重试。")
+            return CLIRecoveryRetryReport(success: false, reason: "\(agent.displayName)" + " 当前正在运行任务，请等待完成后再发起手动重试。".L())
         }
-        restartAgentSession(agentID: agentID, reason: "技术负责人针对临时异常手动发起一次重开。")
-        return CLIRecoveryRetryReport(success: true, reason: "已为 \(agent.displayName) 发起一次受控的手动重试。")
+        restartAgentSession(agentID: agentID, reason: "技术负责人针对临时异常手动发起一次重开。".L())
+        return CLIRecoveryRetryReport(success: true, reason: "已为 ".L() + "\(agent.displayName)" + " 发起一次受控的手动重试。".L())
     }
 
     public struct ManualREPLTurnReport: Sendable {
@@ -5235,14 +5235,14 @@ public final class CompanyStore: ObservableObject {
 
         public var summaryText: String {
             var lines = [
-                "内部自动交互循环：\(rejected ? "已拒绝" : execution.finalState.phase.title)",
-                "发送轮次：\(execution.sentTurnCount)/\(execution.finalState.maxTurns)",
-                "停止原因：\(execution.finalState.stopReason.title)"
+                "内部自动交互循环：".L() + "\(rejected ? "已拒绝" : execution.finalState.phase.title)",
+                "发送轮次：".L() + "\(execution.sentTurnCount)" + "/" + "\(execution.finalState.maxTurns)",
+                "停止原因：".L() + "\(execution.finalState.stopReason.title)"
             ]
             if let rejectionReason {
-                lines.append("拒绝原因：\(rejectionReason)")
+                lines.append("拒绝原因：".L() + "\(rejectionReason)")
             }
-            lines.append("说明：当前仅为技术负责人维护侧内部协调，不调用真实命令行、不创建作业档案、不写老板聊天。")
+            lines.append("说明：当前仅为技术负责人维护侧内部协调，不调用真实命令行、不创建作业档案、不写老板聊天。".L())
             return lines.joined(separator: "\n")
         }
     }
@@ -5279,19 +5279,19 @@ public final class CompanyStore: ObservableObject {
         public var summaryText: String {
             let state = internalReport.execution.finalState
             var lines = [
-                "真实终端自动交互循环：\(rejected ? "已拒绝" : state.phase.title)",
-                "发送链路：\(usedRealTerminal ? "真实终端席位" : "注入发送闭包")",
-                "已发送轮次：\(internalReport.execution.sentTurnCount)/\(state.maxTurns)",
-                "停止原因：\(state.stopReason.title)",
-                "操作建议：\(state.stopReason.operatorHint)"
+                "真实终端自动交互循环：".L() + "\(rejected ? "已拒绝" : state.phase.title)",
+                "发送链路：".L() + "\(usedRealTerminal ? "真实终端席位" : "注入发送闭包")",
+                "已发送轮次：".L() + "\(internalReport.execution.sentTurnCount)" + "/" + "\(state.maxTurns)",
+                "停止原因：".L() + "\(state.stopReason.title)",
+                "操作建议：".L() + "\(state.stopReason.operatorHint)"
             ]
             if usedRealTerminal, let terminalReadinessAudit {
                 lines.append(terminalReadinessAudit)
             }
             if let rejectionReason {
-                lines.append("拒绝原因：\(rejectionReason)")
+                lines.append("拒绝原因：".L() + "\(rejectionReason)")
             }
-            lines.append("说明：仅在技术负责人维护区显式启动；不创建命令行作业档案、不写老板聊天、不绕过交付验收。")
+            lines.append("说明：仅在技术负责人维护区显式启动；不创建命令行作业档案、不写老板聊天、不绕过交付验收。".L())
             return lines.joined(separator: "\n")
         }
     }
@@ -5299,26 +5299,26 @@ public final class CompanyStore: ObservableObject {
     @discardableResult
     public func runManualREPLTurnForSelectedAgent(text: String, timeoutSeconds: TimeInterval = 8) async -> ManualREPLTurnReport {
         if text.contains(where: { $0.isNewline }) {
-            return ManualREPLTurnReport(summary: "未发送", outputPreview: "", timedOut: false, rejected: true, rejectionReason: "为避免多行粘贴误触发，长期会话输入一次只允许一行。")
+            return ManualREPLTurnReport(summary: "未发送".L(), outputPreview: "", timedOut: false, rejected: true, rejectionReason: "为避免多行粘贴误触发，长期会话输入一次只允许一行。".L())
         }
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else {
-            return ManualREPLTurnReport(summary: "未发送", outputPreview: "", timedOut: false, rejected: true, rejectionReason: "请先输入要发送给员工长期席位的一行内容。")
+            return ManualREPLTurnReport(summary: "未发送".L(), outputPreview: "", timedOut: false, rejected: true, rejectionReason: "请先输入要发送给员工长期席位的一行内容。".L())
         }
         guard let agent = selectedAgent, agent.role != .boss else {
-            return ManualREPLTurnReport(summary: "未发送", outputPreview: "", timedOut: false, rejected: true, rejectionReason: "请先在员工列表选中一名要交互的员工，老板视角不参与手动交互轮次。")
+            return ManualREPLTurnReport(summary: "未发送".L(), outputPreview: "", timedOut: false, rejected: true, rejectionReason: "请先在员工列表选中一名要交互的员工，老板视角不参与手动交互轮次。".L())
         }
         guard selectedProductAgents.contains(where: { $0.id == agent.id }) else {
-            return ManualREPLTurnReport(summary: "未发送", outputPreview: "", timedOut: false, rejected: true, rejectionReason: "该员工还未加入当前产品团队，请先在产品详情里加入团队。")
+            return ManualREPLTurnReport(summary: "未发送".L(), outputPreview: "", timedOut: false, rejected: true, rejectionReason: "该员工还未加入当前产品团队，请先在产品详情里加入团队。".L())
         }
         guard let result = await runPersistentTerminalREPLTurn(cleaned, to: agent, timeoutSeconds: max(timeoutSeconds, 0.1)) else {
-            return ManualREPLTurnReport(summary: "未发送", outputPreview: "", timedOut: false, rejected: true, rejectionReason: "未找到可用的真实终端席位。请先在维护区点击「启动真实终端工作区」并确认终端工具已就绪。")
+            return ManualREPLTurnReport(summary: "未发送".L(), outputPreview: "", timedOut: false, rejected: true, rejectionReason: "未找到可用的真实终端席位。请先在维护区点击「启动真实终端工作区」并确认终端工具已就绪。".L())
         }
         let preview = String(result.output.prefix(240))
         if result.exitCode == 126 || result.exitCode == 127 {
             return ManualREPLTurnReport(summary: result.observation.reasonTitle, outputPreview: "", timedOut: false, rejected: true, rejectionReason: result.output)
         }
-        let summary = result.timedOut ? "等待超时，未中断终端席位" : result.observation.reasonTitle
+        let summary = result.timedOut ? "等待超时，未中断终端席位".L() : result.observation.reasonTitle
         return ManualREPLTurnReport(summary: summary, outputPreview: preview, timedOut: result.timedOut, rejected: false, rejectionReason: nil)
     }
 
@@ -5346,10 +5346,10 @@ public final class CompanyStore: ObservableObject {
         }
 
         guard let agent = selectedAgent, agent.role != .boss else {
-            return rejectedReport(reason: "请选择当前产品团队中的员工；老板视角不参与内部自动交互循环。", stopReason: .missingTaskContext)
+            return rejectedReport(reason: "请选择当前产品团队中的员工；老板视角不参与内部自动交互循环。".L(), stopReason: .missingTaskContext)
         }
         guard selectedProductAgents.contains(where: { $0.id == agent.id }) else {
-            return rejectedReport(reason: "该员工还未加入当前产品团队，已拒绝内部自动交互循环。", stopReason: .missingTaskContext)
+            return rejectedReport(reason: "该员工还未加入当前产品团队，已拒绝内部自动交互循环。".L(), stopReason: .missingTaskContext)
         }
         guard !taskContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             let execution = await CLIAutoInteractionLoopExecutor.run(
@@ -5363,7 +5363,7 @@ public final class CompanyStore: ObservableObject {
                 productID: productID,
                 execution: execution,
                 rejected: true,
-                rejectionReason: "请先绑定技术负责人任务上下文，再启动内部自动交互循环。"
+                rejectionReason: "请先绑定技术负责人任务上下文，再启动内部自动交互循环。".L()
             )
         }
 
@@ -5435,12 +5435,12 @@ public final class CompanyStore: ObservableObject {
             sender = { [self] text in
                 guard let agent else {
                     return CLIAutoInteractionTurnObservation(
-                        observation: CLIInteractionObservation(phase: .transientFailure, reasonTitle: "未选中员工")
+                        observation: CLIInteractionObservation(phase: .transientFailure, reasonTitle: "未选中员工".L())
                     )
                 }
                 guard let result = await runPersistentTerminalREPLTurn(text, to: agent, timeoutSeconds: max(timeoutSeconds, 0.1), logSource: .autoLoop) else {
                     return CLIAutoInteractionTurnObservation(
-                        observation: CLIInteractionObservation(phase: .transientFailure, reasonTitle: "终端席位不可用")
+                        observation: CLIInteractionObservation(phase: .transientFailure, reasonTitle: "终端席位不可用".L())
                     )
                 }
                 let observation: CLIInteractionObservation
@@ -5478,7 +5478,7 @@ public final class CompanyStore: ObservableObject {
     }
 
     public func terminalAutoInteractionNextInputPreviewForTesting(taskContext: String, sentTurns: Int = 0) -> String {
-        let state = CLIAutoInteractionLoopState(taskContext: taskContext, maxTurns: 8, sentInputs: Array(repeating: "已发送", count: max(sentTurns, 0)))
+        let state = CLIAutoInteractionLoopState(taskContext: taskContext, maxTurns: 8, sentInputs: Array(repeating: "已发送".L(), count: max(sentTurns, 0)))
         return Self.terminalAutoInteractionNextInput(taskContext: taskContext, state: state)
     }
 
@@ -5488,8 +5488,8 @@ public final class CompanyStore: ObservableObject {
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let clipped = String(normalized.prefix(140))
-        let context = clipped.isEmpty ? "当前技术负责人任务" : clipped
-        return "第\(state.sentInputs.count + 1)轮：围绕「\(context)」继续执行当前任务，只回复当前进展、阻塞和下一步。"
+        let context = clipped.isEmpty ? "当前技术负责人任务".L() : clipped
+        return "第".L() + "\(state.sentInputs.count + 1)" + "轮：围绕「".L() + "\(context)" + "」继续执行当前任务，只回复当前进展、阻塞和下一步。".L()
     }
 
     struct TerminalAutoInteractionReadinessAudit: Sendable {
@@ -5503,44 +5503,44 @@ public final class CompanyStore: ObservableObject {
 
     private func terminalAutoInteractionReadinessAudit(for agent: CompanyAgent) -> TerminalAutoInteractionReadinessAudit {
         let profile = CLIAgentCommandBuilder.interactionProfile(for: agent)
-        let protocolName = profile?.displayName ?? "订阅制命令行"
+        let protocolName = profile?.displayName ?? "订阅制命令行".L()
 
         guard agent.backend.type == .subscriptionCLI else {
             return readinessAuditFailed(
-                reason: "该员工不是订阅制命令行员工，真实终端自动交互循环已拒绝。",
-                detail: "未匹配订阅制命令行来源"
+                reason: "该员工不是订阅制命令行员工，真实终端自动交互循环已拒绝。".L(),
+                detail: "未匹配订阅制命令行来源".L()
             )
         }
         guard currentRuntimeCapability(for: agent) == .persistentProtocol else {
             return readinessAuditFailed(
-                reason: "该员工来源不支持持续交互，真实终端自动交互循环已拒绝。",
-                detail: "员工来源不支持持续交互"
+                reason: "该员工来源不支持持续交互，真实终端自动交互循环已拒绝。".L(),
+                detail: "员工来源不支持持续交互".L()
             )
         }
         guard let profile, !profile.replReadySignals.isEmpty else {
             return readinessAuditFailed(
-                reason: "该员工命令行工具没有配置专用就绪提示，真实终端自动交互循环已拒绝。",
-                detail: "\(protocolName) 缺少专用就绪提示配置"
+                reason: "该员工命令行工具没有配置专用就绪提示，真实终端自动交互循环已拒绝。".L(),
+                detail: "\(protocolName)" + " 缺少专用就绪提示配置".L()
             )
         }
         guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else {
             return readinessAuditFailed(
-                reason: "未找到本机终端控制工具，请先完成终端工具安装或配置。",
-                detail: "未找到本机终端控制工具"
+                reason: "未找到本机终端控制工具，请先完成终端工具安装或配置。".L(),
+                detail: "未找到本机终端控制工具".L()
             )
         }
         let sessionName = terminalWorkspaceSessionName()
         let windowName = terminalWorkspaceWindowName(for: agent)
         guard tmuxSessionExists(sessionName, tmuxPath: tmuxPath) else {
             return readinessAuditFailed(
-                reason: "请先在维护区点击「启动真实终端工作区」，再启动真实终端自动交互循环。",
-                detail: "真实终端工作区尚未启动"
+                reason: "请先在维护区点击「启动真实终端工作区」，再启动真实终端自动交互循环。".L(),
+                detail: "真实终端工作区尚未启动".L()
             )
         }
         guard tmuxWindowNames(sessionName, tmuxPath: tmuxPath).contains(windowName) else {
             return readinessAuditFailed(
-                reason: "当前员工真实终端席位还未创建，请先启动真实终端工作区并确认席位齐全。",
-                detail: "员工真实终端席位未创建"
+                reason: "当前员工真实终端席位还未创建，请先启动真实终端工作区并确认席位齐全。".L(),
+                detail: "员工真实终端席位未创建".L()
             )
         }
         let capture = runLocalProcess(
@@ -5550,32 +5550,32 @@ public final class CompanyStore: ObservableObject {
         )
         guard capture.exitCode == 0 else {
             return readinessAuditFailed(
-                reason: "读取员工真实终端席位失败，请先运行持久终端可用性巡检。",
-                detail: "读取员工真实终端席位失败"
+                reason: "读取员工真实终端席位失败，请先运行持久终端可用性巡检。".L(),
+                detail: "读取员工真实终端席位失败".L()
             )
         }
         guard profile.endsWithReplReadyPrompt(capture.output) else {
             return readinessAuditFailed(
-                reason: "该员工终端席位最近一行不是 \(profile.displayName) 的专用就绪提示，已拒绝自动发送。",
-                detail: "终端最近一行未命中 \(profile.displayName) 专用就绪提示"
+                reason: "该员工终端席位最近一行不是 ".L() + "\(profile.displayName)" + " 的专用就绪提示，已拒绝自动发送。".L(),
+                detail: "终端最近一行未命中 ".L() + "\(profile.displayName)" + " 专用就绪提示".L()
             )
         }
         return TerminalAutoInteractionReadinessAudit(
             rejectionReason: nil,
-            auditLine: "就绪校验：最近一行已确认 \(profile.displayName) 的专用就绪提示。"
+            auditLine: "就绪校验：最近一行已确认 ".L() + "\(profile.displayName)" + " 的专用就绪提示。".L()
         )
     }
 
     private func readinessAuditFailed(reason: String, detail: String) -> TerminalAutoInteractionReadinessAudit {
         TerminalAutoInteractionReadinessAudit(
             rejectionReason: reason,
-            auditLine: "就绪校验：未确认最近专用就绪提示，已拒绝自动发送。原因：\(detail)。"
+            auditLine: "就绪校验：未确认最近专用就绪提示，已拒绝自动发送。原因：".L() + "\(detail)" + "。"
         )
     }
 
     private func appendTerminalAutoInteractionAuditLog(agent: CompanyAgent, audit: TerminalAutoInteractionReadinessAudit) {
         appendTerminalLog(
-            "\n[OPC 自动循环就绪审计]\n\(audit.auditLine)\n",
+            "\n[OPC 自动循环就绪审计]\n".L() + "\(audit.auditLine)" + "\n",
             for: agent.id
         )
     }
@@ -5587,13 +5587,13 @@ public final class CompanyStore: ObservableObject {
         let employee = "\(agent.displayName)（\(agent.role.title)）"
         let status: VerificationStatus = audit.rejectionReason == nil ? .passed : .warning
         var detailLines: [String] = [
-            "员工：\(employee)",
+            "员工：".L() + "\(employee)",
             audit.auditLine
         ]
         if let reason = audit.rejectionReason {
-            detailLines.append("拒绝说明：\(reason)")
+            detailLines.append("拒绝说明：".L() + "\(reason)")
         }
-        detailLines.append("说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不创建命令行作业档案、不写老板聊天。")
+        detailLines.append("说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不创建命令行作业档案、不写老板聊天。".L())
         let record = VerificationRecord(
             productID: selectedProductID,
             status: status,
@@ -5603,8 +5603,8 @@ public final class CompanyStore: ObservableObject {
         verifications.insert(record, at: 0)
     }
 
-    public static let terminalAutoInteractionAuditTitle = "真实终端自动循环就绪审计"
-    public static let terminalAutoInteractionStopAuditTitle = "真实终端自动循环停止审计"
+    public static let terminalAutoInteractionAuditTitle = "真实终端自动循环就绪审计".L()
+    public static let terminalAutoInteractionStopAuditTitle = "真实终端自动循环停止审计".L()
 
     /// 当前产品最近一次真实终端自动循环 preflight 审计记录；技术负责人维护视图使用。
     public var selectedProductLatestTerminalAutoLoopReadinessAudit: VerificationRecord? {
@@ -5643,11 +5643,11 @@ public final class CompanyStore: ObservableObject {
 
         let employee = "\(agent.displayName)（\(agent.role.title)）"
         let detailLines = [
-            "员工：\(employee)",
-            "停止原因：\(stopReason.title)",
-            "操作建议：\(stopReason.operatorHint)",
-            "已发送轮次：\(finalState.sentInputs.count) / \(finalState.maxTurns)",
-            "说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不创建命令行作业档案、不写老板聊天。"
+            "员工：".L() + "\(employee)",
+            "停止原因：".L() + "\(stopReason.title)",
+            "操作建议：".L() + "\(stopReason.operatorHint)",
+            "已发送轮次：".L() + "\(finalState.sentInputs.count)" + " / " + "\(finalState.maxTurns)",
+            "说明：仅技术负责人维护侧记录；不进入老板总控台或交付验收中心、不创建命令行作业档案、不写老板聊天。".L()
         ]
         let record = VerificationRecord(
             productID: selectedProductID,
@@ -5657,7 +5657,7 @@ public final class CompanyStore: ObservableObject {
         )
         verifications.insert(record, at: 0)
         appendTerminalLog(
-            "\n[OPC 自动循环停止审计]\n停止原因：\(stopReason.title)。\n操作建议：\(stopReason.operatorHint)\n",
+            "\n[OPC 自动循环停止审计]\n停止原因：".L() + "\(stopReason.title)" + "。\n操作建议：".L() + "\(stopReason.operatorHint)" + "\n",
             for: agent.id
         )
     }
@@ -5666,13 +5666,13 @@ public final class CompanyStore: ObservableObject {
     /// 用于架构体检和终端大厅维护视图；不暴露底层参数。
     public func selectedProductTerminalAutoLoopReadinessAuditSummary() -> String {
         guard let record = selectedProductLatestTerminalAutoLoopReadinessAudit else {
-            return "最近真实终端自动循环就绪审计：暂无记录。"
+            return "最近真实终端自动循环就绪审计：暂无记录。".L()
         }
         let firstAuditLine = record.detail
             .split(whereSeparator: \.isNewline)
             .map(String.init)
-            .first { $0.hasPrefix("就绪校验：") } ?? "暂无就绪校验摘要"
-        return "最近真实终端自动循环就绪审计：\(record.status.title) · \(firstAuditLine)"
+            .first { $0.hasPrefix("就绪校验：".L()) } ?? "暂无就绪校验摘要".L()
+        return "最近真实终端自动循环就绪审计：".L() + "\(record.status.title)" + " · " + "\(firstAuditLine)"
     }
 
     public struct CLIAutoInteractionLoopRunReport: Sendable {
@@ -5742,10 +5742,10 @@ public final class CompanyStore: ObservableObject {
 
                 员工：\(agent.displayName)
                 角色：\(agent.role.title)
-                产品：\(selectedProduct?.name ?? "当前产品")
+                产品：\(selectedProduct?.name ?? "当前产品".L())
                 产品工作目录：\(workingDirectory.path)
                 源码执行区：\(sourceDirectory.path)
-                隔离模式：\(isGitRepository ? "代码仓库独立工作区" : "源码快照隔离")
+                隔离模式：\(isGitRepository ? "代码仓库独立工作区".L() : "源码快照隔离".L())
 
                 这个目录用于代码类员工的隔离执行。并行实现产生的改动需要经过审查和验收后，才应合入主产品工作目录。
                 """
@@ -5796,8 +5796,8 @@ public final class CompanyStore: ObservableObject {
     public func generateHealthAudit() {
         let audit = productHealthSnapshotText()
         messages.append(ChatMessage(productID: selectedProductID, agentID: bossID, author: .system, text: audit))
-        messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: "请根据健康体检修正计划：\n\n\(audit)"))
-        appendEvent(kind: .artifactCreated, title: "产品健康体检已生成", detail: "健康体检已写入老板和技术负责人对话。", agentID: ctoID)
+        messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: "请根据健康体检修正计划：\n\n".L() + "\(audit)"))
+        appendEvent(kind: .artifactCreated, title: "产品健康体检已生成".L(), detail: "健康体检已写入老板和技术负责人对话。".L(), agentID: ctoID)
         saveSnapshot()
     }
 
@@ -5812,7 +5812,7 @@ public final class CompanyStore: ObservableObject {
         let failedCount = checks.filter { $0.status == .failed }.count
         let warningCount = checks.filter { $0.status == .warning }.count
         return """
-        多员工架构体检：\(selectedProduct?.name ?? "当前产品")
+        多员工架构体检：\(selectedProduct?.name ?? "当前产品".L())
         完成度：\(selectedProductArchitectureCompletionScore)%
 
         检查项：
@@ -5821,7 +5821,7 @@ public final class CompanyStore: ObservableObject {
         \(selectedProductTerminalAutoLoopReadinessAuditSummary())
 
         CTO 下一步：
-        \(failedCount > 0 ? "优先补齐 \(failedCount) 个未闭合模块。" : warningCount > 0 ? "继续加强 \(warningCount) 个待加强模块。" : "主链路已闭合，进入真实命令行持续协作和独立执行区隔离。")
+        \(failedCount > 0 ? "\("优先补齐 ".L())\(failedCount)\(" 个未闭合模块。".L())" : warningCount > 0 ? "继续加强 ".L() + "\(warningCount)" + " 个待加强模块。" : "主链路已闭合，进入真实命令行持续协作和独立执行区隔离。")
         """
     }
 
@@ -5905,9 +5905,9 @@ public final class CompanyStore: ObservableObject {
             productID: productID,
             taskID: task.id,
             kind: .report,
-            title: "验收报告：\(task.title)",
+            title: "验收报告：".L() + "\(task.title)",
             path: "opc://acceptance-reports/\(task.id.uuidString)",
-            summary: "任务状态：\(task.status.title)；负责人：\(owner)。"
+            summary: "任务状态：".L() + "\(task.status.title)" + "；负责人：".L() + "\(owner)" + "。"
         )
         artifacts.insert(artifact, at: 0)
         postAgentMessage(
@@ -5916,7 +5916,7 @@ public final class CompanyStore: ObservableObject {
             toAgentID: bossID,
             taskID: task.id,
             kind: .reviewCompleted,
-            subject: "验收报告已生成：\(task.title)",
+            subject: "验收报告已生成：".L() + "\(task.title)",
             body: report,
             persist: false
         )
@@ -5925,10 +5925,10 @@ public final class CompanyStore: ObservableObject {
             status: .verificationWarning,
             requesterID: ctoID,
             reviewerID: task.ownerID ?? ctoID,
-            summary: "验收报告已生成，等待自动验收或老板最终确认。",
+            summary: "验收报告已生成，等待自动验收或老板最终确认。".L(),
             reportArtifactID: artifact.id
         )
-        appendEvent(kind: .artifactCreated, title: "验收报告已生成", detail: task.title, agentID: task.ownerID)
+        appendEvent(kind: .artifactCreated, title: "验收报告已生成".L(), detail: task.title, agentID: task.ownerID)
         saveSnapshot()
     }
 
@@ -5936,7 +5936,7 @@ public final class CompanyStore: ObservableObject {
         guard let product = selectedProduct else { return }
         let root = URL(fileURLWithPath: NSString(string: product.rootDirectory).expandingTildeInPath)
         guard FileManager.default.fileExists(atPath: root.path) else {
-            verifications.insert(VerificationRecord(productID: selectedProductID, status: .failed, title: "产物扫描失败", detail: "项目目录不存在：\(root.path)"), at: 0)
+            verifications.insert(VerificationRecord(productID: selectedProductID, status: .failed, title: "产物扫描失败".L(), detail: "项目目录不存在：" + "\(root.path)"), at: 0)
             saveSnapshot()
             return
         }
@@ -5959,12 +5959,12 @@ public final class CompanyStore: ObservableObject {
             let url = root.appendingPathComponent(candidate.0)
             guard FileManager.default.fileExists(atPath: url.path) else { continue }
             if artifacts.contains(where: { $0.productID == selectedProductID && $0.path == url.path }) { continue }
-            artifacts.insert(ArtifactRecord(productID: selectedProductID, taskID: nil, kind: candidate.1, title: candidate.0, path: url.path, summary: "项目扫描发现 \(candidate.1.title)：\(candidate.0)"), at: 0)
+            artifacts.insert(ArtifactRecord(productID: selectedProductID, taskID: nil, kind: candidate.1, title: candidate.0, path: url.path, summary: "项目扫描发现 ".L() + "\(candidate.1.title)" + "：".L() + "\(candidate.0)"), at: 0)
             inserted += 1
         }
 
-        verifications.insert(VerificationRecord(productID: selectedProductID, status: inserted > 0 ? .passed : .warning, title: "产物扫描完成", detail: "新增 \(inserted) 条产物记录。"), at: 0)
-        appendEvent(kind: .artifactCreated, title: "产物扫描完成", detail: "新增 \(inserted) 条产物记录。", agentID: ctoID)
+        verifications.insert(VerificationRecord(productID: selectedProductID, status: inserted > 0 ? .passed : .warning, title: "产物扫描完成".L(), detail: "新增 " + "\(inserted)" + " 条产物记录。"), at: 0)
+        appendEvent(kind: .artifactCreated, title: "产物扫描完成".L(), detail: "新增 " + "\(inserted)" + " 条产物记录。", agentID: ctoID)
         saveSnapshot()
     }
 
@@ -5979,25 +5979,25 @@ public final class CompanyStore: ObservableObject {
         var details: [String] = []
         if !rootExists {
             status = .failed
-            details.append("产品根目录不存在。")
+            details.append("产品根目录不存在。".L())
         }
         if !pendingApprovals.isEmpty {
             status = maxSeverity(status, .warning)
-            details.append("存在 \(pendingApprovals.count) 个待审批请求。")
+            details.append("存在 ".L() + "\(pendingApprovals.count)" + " 个待审批请求。".L())
         }
         if !failedTasks.isEmpty {
             status = .failed
-            details.append("存在 \(failedTasks.count) 个阻塞/失败任务。")
+            details.append("存在 ".L() + "\(failedTasks.count)" + " 个阻塞/失败任务。".L())
         }
         if !missingOwners.isEmpty {
             status = maxSeverity(status, .warning)
-            details.append("存在 \(missingOwners.count) 个未分配任务。")
+            details.append("存在 ".L() + "\(missingOwners.count)" + " 个未分配任务。".L())
         }
         if details.isEmpty {
-            details.append("任务、审批、目录基础检查通过。")
+            details.append("任务、审批、目录基础检查通过。".L())
         }
 
-        let verification = VerificationRecord(productID: selectedProductID, status: status, title: "自动验收检查", detail: details.joined(separator: "\n"))
+        let verification = VerificationRecord(productID: selectedProductID, status: status, title: "自动验收检查".L(), detail: details.joined(separator: "\n"))
         verifications.insert(verification, at: 0)
         let gateStatus: ReviewGateStatus = switch status {
         case .passed: .verificationPassed
@@ -6010,11 +6010,11 @@ public final class CompanyStore: ObservableObject {
                 status: gateStatus,
                 requesterID: ctoID,
                 reviewerID: task.ownerID ?? ctoID,
-                summary: "自动验收检查：\(status.title)。\(details.joined(separator: " "))",
+                summary: "自动验收检查：".L() + "\(status.title)" + "。".L() + "\(details.joined(separator: " "))",
                 latestVerificationID: verification.id
             )
         }
-        appendEvent(kind: status == .failed ? .risk : .artifactCreated, title: "自动验收检查完成", detail: status.title, agentID: ctoID)
+        appendEvent(kind: status == .failed ? .risk : .artifactCreated, title: "自动验收检查完成".L(), detail: status.title, agentID: ctoID)
         saveSnapshot()
     }
 
@@ -6023,14 +6023,14 @@ public final class CompanyStore: ObservableObject {
         let cleanDetail = detail.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
         memories.insert(ProductMemoryNote(productID: selectedProductID, kind: kind, title: cleanTitle, detail: cleanDetail), at: 0)
-        appendEvent(kind: .artifactCreated, title: "产品记忆已保存", detail: cleanTitle, agentID: ctoID)
+        appendEvent(kind: .artifactCreated, title: "产品记忆已保存".L(), detail: cleanTitle, agentID: ctoID)
         saveSnapshot()
     }
 
     /// 自动状态摘要在产品记忆中保留 1 小时去重窗口的标题前缀。
     /// 只用于识别 `captureDecisionMemoryFromLatestReport` 自动写入的条目；
     /// 用户通过 `addMemory` 手工保存的同名条目不会受影响（手工保存不会以此前缀开头）。
-    static let autoCapturedSummaryTitlePrefix = "自动记录："
+    static let autoCapturedSummaryTitlePrefix = "自动记录：".L()
 
     /// 自动状态摘要去重窗口（秒）。同一产品、相同 detail 前 200 字、1 小时内只写入一条。
     static let autoCapturedSummaryDedupeWindow: TimeInterval = 3600
@@ -6049,7 +6049,7 @@ public final class CompanyStore: ObservableObject {
             // 跳过重复写入；不同产品 / 不同 detail 前缀 / 超出窗口仍照常写入。
             return
         }
-        addMemory(kind: .summary, title: "\(Self.autoCapturedSummaryTitlePrefix)\(selectedProduct?.name ?? "当前产品") 状态摘要", detail: trimmedDetail)
+        addMemory(kind: .summary, title: "\(Self.autoCapturedSummaryTitlePrefix)" + "\(selectedProduct?.name ?? "当前产品".L())" + " 状态摘要".L(), detail: trimmedDetail)
     }
 
     private func hasRecentAutoCapturedSummary(forProduct productID: UUID, detailPrefix: String) -> Bool {
@@ -6117,16 +6117,16 @@ public final class CompanyStore: ObservableObject {
 
         memories.removeAll { idsToRemove.contains($0.id) }
 
-        let productName = selectedProduct?.name ?? "当前产品"
-        let detail = "已合并 \(groupCount) 组重复的自动状态摘要，共移除 \(idsToRemove.count) 条旧记忆，保留每组最新一条。范围：当前产品 \(productName)。"
+        let productName = selectedProduct?.name ?? "当前产品".L()
+        let detail = "已合并 ".L() + "\(groupCount)" + " 组重复的自动状态摘要，共移除 ".L() + "\(idsToRemove.count)" + " 条旧记忆，保留每组最新一条。范围：当前产品 " + "\(productName)" + "。"
         let record = VerificationRecord(
             productID: selectedProductID,
             status: .passed,
-            title: "自动状态摘要去重清理",
+            title: "自动状态摘要去重清理".L(),
             detail: detail
         )
         verifications.insert(record, at: 0)
-        appendEvent(kind: .ctoSummary, title: "自动状态摘要去重清理", detail: detail, agentID: ctoID)
+        appendEvent(kind: .ctoSummary, title: "自动状态摘要去重清理".L(), detail: detail, agentID: ctoID)
         saveSnapshot()
         return idsToRemove.count
     }
@@ -6135,12 +6135,12 @@ public final class CompanyStore: ObservableObject {
     public func autoCapturedSummaryDuplicatePreviewText() -> String {
         let p = previewSelectedProductAutoCapturedSummaryDuplicates()
         guard p.totalAutoSummaryCount > 0 else {
-            return "自动状态摘要去重：当前产品无自动状态摘要记忆。"
+            return "自动状态摘要去重：当前产品无自动状态摘要记忆。".L()
         }
         if !p.hasDuplicates {
-            return "自动状态摘要去重：共 \(p.totalAutoSummaryCount) 条，未发现重复，无需清理。"
+            return "自动状态摘要去重：共 ".L() + "\(p.totalAutoSummaryCount)" + " 条，未发现重复，无需清理。".L()
         }
-        return "自动状态摘要去重：共 \(p.totalAutoSummaryCount) 条自动摘要，发现 \(p.duplicateGroupCount) 组重复，可清理 \(p.removableNoteCount) 条旧摘要，每组保留最新一条。"
+        return "自动状态摘要去重：共 ".L() + "\(p.totalAutoSummaryCount)" + " 条自动摘要，发现 ".L() + "\(p.duplicateGroupCount)" + " 组重复，可清理 ".L() + "\(p.removableNoteCount)" + " 条旧摘要，每组保留最新一条。"
     }
 
     private func autoCapturedSummariesForSelectedProduct() -> [ProductMemoryNote] {
@@ -6152,11 +6152,11 @@ public final class CompanyStore: ObservableObject {
     }
 
     public func runCTOAutopilot() {
-        createSafetyCheckpoint(reason: "技术负责人自动调度前检查点")
+        createSafetyCheckpoint(reason: "技术负责人自动调度前检查点".L())
         assignExistingSpecialistsToSelectedProduct()
 
         if selectedProductTasks.filter({ $0.status != .done }).count < 5 {
-            seedStandardTaskTemplates(goal: selectedProduct?.name ?? "当前产品")
+            seedStandardTaskTemplates(goal: selectedProduct?.name ?? "当前产品".L())
         }
 
         let executableTaskIDs = Set(selectedProductWorkQueue.map(\.taskID))
@@ -6170,7 +6170,7 @@ public final class CompanyStore: ObservableObject {
 
         for task in selectedProductTasks where [.blocked, .failed].contains(task.status) {
             if !selectedProductApprovals.contains(where: { $0.taskID == task.id && $0.status == .pending }) {
-                requestApproval(taskID: task.id, title: "技术负责人请求处理阻塞：\(task.title)", reason: "任务处于 \(task.status.title)，需要老板批准继续、驳回或重新拆解。", requesterID: ctoID)
+                requestApproval(taskID: task.id, title: "技术负责人请求处理阻塞：".L() + "\(task.title)", reason: "任务处于 ".L() + "\(task.status.title)" + "，需要老板批准继续、驳回或重新拆解。", requesterID: ctoID)
             }
         }
 
@@ -6179,7 +6179,7 @@ public final class CompanyStore: ObservableObject {
         generateHealthAudit()
         captureDecisionMemoryFromLatestReport()
         _ = advanceCTOSupervisorLoop()
-        appendEvent(kind: .ctoSummary, title: "技术负责人自动调度完成", detail: "已完成团队、任务、队列、产物、验收、记忆和协作链路推进。", agentID: ctoID)
+        appendEvent(kind: .ctoSummary, title: "技术负责人自动调度完成".L(), detail: "已完成团队、任务、队列、产物、验收、记忆和协作链路推进。".L(), agentID: ctoID)
         saveSnapshot()
     }
 
@@ -6213,12 +6213,12 @@ public final class CompanyStore: ObservableObject {
         let rawRoot = URL(fileURLWithPath: NSString(string: product.rootDirectory).expandingTildeInPath).standardizedFileURL
         let resolvedRoot = rawRoot.resolvingSymlinksInPath()
         if Self.isSystemReservedPath(rawRoot) || Self.isSystemReservedPath(resolvedRoot) {
-            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后落在系统保留路径 (\(resolvedRoot.path))，已拒绝索引以避免污染产物列表。请把根目录指向用户可写目录。", eventTitle: "本地文件索引拒绝系统路径", eventDetail: "rootDirectory=\(product.rootDirectory) 解析为 \(resolvedRoot.path)，落在系统保留路径黑名单。")
+            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后落在系统保留路径 (" + "\(resolvedRoot.path)" + ")，已拒绝索引以避免污染产物列表。请把根目录指向用户可写目录。", eventTitle: "本地文件索引拒绝系统路径".L(), eventDetail: "rootDirectory=" + "\(product.rootDirectory)" + " 解析为 " + "\(resolvedRoot.path)" + "，落在系统保留路径黑名单。")
             return
         }
         let allowedRootPaths = Self.linkedLocalFileAllowedRootPaths(from: products)
         if !Self.isAllowedLinkedLocalFileRoot(rawRoot: rawRoot, resolvedRoot: resolvedRoot, allowedRootPaths: allowedRootPaths) {
-            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后不在已登记工作区根白名单内 (\(resolvedRoot.path))，已拒绝索引。请通过产品导入或项目设置登记该根目录。", eventTitle: "本地文件索引拒绝未登记根目录", eventDetail: "rootDirectory=\(product.rootDirectory) 解析为 \(resolvedRoot.path)，不在已登记工作区根白名单。")
+            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后不在已登记工作区根白名单内 (" + "\(resolvedRoot.path)" + ")，已拒绝索引。请通过产品导入或项目设置登记该根目录。", eventTitle: "本地文件索引拒绝未登记根目录".L(), eventDetail: "rootDirectory=" + "\(product.rootDirectory)" + " 解析为 " + "\(resolvedRoot.path)" + "，不在已登记工作区根白名单。")
             return
         }
         let root = rawRoot
@@ -6234,16 +6234,16 @@ public final class CompanyStore: ObservableObject {
             // title 必须以 `本地文件索引：` 前缀开头，进入 `technicalMaintenanceArtifactTitlePrefixes` 分类，
             // 让产物只出现在维护产物档案中心，不污染老板/交付视图。
             // summary 仍保留中文路径线索，便于技术负责人对照原文件名。
-            artifacts.insert(ArtifactRecord(productID: selectedProductID, kind: artifactKind(for: url), title: "本地文件索引：\(url.lastPathComponent)", path: url.path, summary: "本地文件索引：\(url.lastPathComponent)"), at: 0)
+            artifacts.insert(ArtifactRecord(productID: selectedProductID, kind: artifactKind(for: url), title: "本地文件索引：".L() + "\(url.lastPathComponent)", path: url.path, summary: "本地文件索引：".L() + "\(url.lastPathComponent)"), at: 0)
             count += 1
         }
-        verifications.insert(VerificationRecord(productID: selectedProductID, status: count > 0 ? .passed : .warning, title: "本地文件索引完成", detail: "新增 \(count) 个本地文件索引。"), at: 0)
-        appendEvent(kind: .artifactCreated, title: "本地文件已联动", detail: "新增 \(count) 个本地文件索引。", agentID: ctoID)
+        verifications.insert(VerificationRecord(productID: selectedProductID, status: count > 0 ? .passed : .warning, title: "本地文件索引完成".L(), detail: "新增 " + "\(count)" + " 个本地文件索引。"), at: 0)
+        appendEvent(kind: .artifactCreated, title: "本地文件已联动".L(), detail: "新增 " + "\(count)" + " 个本地文件索引。", agentID: ctoID)
         saveSnapshot()
     }
 
     private func rejectLinkedLocalFileIndexRoot(reason: String, eventTitle: String, eventDetail: String) {
-        verifications.insert(VerificationRecord(productID: selectedProductID, status: .failed, title: "本地文件索引被拒绝", detail: reason), at: 0)
+        verifications.insert(VerificationRecord(productID: selectedProductID, status: .failed, title: "本地文件索引被拒绝".L(), detail: reason), at: 0)
         appendEvent(kind: .risk, title: eventTitle, detail: eventDetail, agentID: ctoID)
         saveSnapshot()
     }
@@ -6323,12 +6323,12 @@ public final class CompanyStore: ObservableObject {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let data = try JSONEncoder.opcCheckpoint.encode(currentSnapshot())
             try data.write(to: url, options: [.atomic])
-            artifacts.insert(ArtifactRecord(productID: selectedProductID, kind: .report, title: "安全检查点", path: "本机安全检查点存档", summary: reason), at: 0)
-            verifications.insert(VerificationRecord(productID: selectedProductID, status: .passed, title: "安全检查点已创建", detail: "安全检查点已保存到本机存档。"), at: 0)
-            appendEvent(kind: .artifactCreated, title: "安全检查点已创建", detail: reason, agentID: ctoID)
+            artifacts.insert(ArtifactRecord(productID: selectedProductID, kind: .report, title: "安全检查点".L(), path: "本机安全检查点存档".L(), summary: reason), at: 0)
+            verifications.insert(VerificationRecord(productID: selectedProductID, status: .passed, title: "安全检查点已创建".L(), detail: "安全检查点已保存到本机存档。".L()), at: 0)
+            appendEvent(kind: .artifactCreated, title: "安全检查点已创建".L(), detail: reason, agentID: ctoID)
         } catch {
-            verifications.insert(VerificationRecord(productID: selectedProductID, status: .failed, title: "安全检查点失败", detail: error.localizedDescription), at: 0)
-            appendEvent(kind: .risk, title: "安全检查点失败", detail: error.localizedDescription, agentID: ctoID)
+            verifications.insert(VerificationRecord(productID: selectedProductID, status: .failed, title: "安全检查点失败".L(), detail: error.localizedDescription), at: 0)
+            appendEvent(kind: .risk, title: "安全检查点失败".L(), detail: error.localizedDescription, agentID: ctoID)
         }
         saveSnapshot()
     }
@@ -6366,7 +6366,7 @@ public final class CompanyStore: ObservableObject {
                 .appendingPathComponent(".opc/jobs", isDirectory: true)
                 .path
         } else {
-            jobArchive = "未选择产品，暂无命令行作业档案路径"
+            jobArchive = "未选择产品，暂无命令行作业档案路径".L()
         }
 
         return """
@@ -6507,11 +6507,11 @@ public final class CompanyStore: ObservableObject {
     }
 
     private func terminalCommandSummary(title: String, agent: CompanyAgent, executionDirectory: URL, prompt: String, job: CLIJobDirectory? = nil) -> String {
-        let task = prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "使用默认任务。" : String(prompt.replacingOccurrences(of: "\n", with: " ").prefix(120))
-        let jobLine = job == nil ? "" : "OPC 作业档案：已创建\n"
+        let task = prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "使用默认任务。".L() : String(prompt.replacingOccurrences(of: "\n", with: " ").prefix(120))
+        let jobLine = job == nil ? "" : "OPC 作业档案：已创建\n".L()
         return """
         \(jobLine)[\(title)]
-        执行位置：\(executionDirectory.standardizedFileURL.path == cliWorkingDirectoryURL().standardizedFileURL.path ? "主工作目录" : "独立执行区")
+        执行位置：\(executionDirectory.standardizedFileURL.path == cliWorkingDirectoryURL().standardizedFileURL.path ? "主工作目录".L() : "独立执行区".L())
         运行方式：\(visibleBackendSummary(for: agent))
         任务摘要：\(task)
 
@@ -6556,7 +6556,7 @@ public final class CompanyStore: ObservableObject {
     /// 提供，并通过显式的「预检」按钮 / `recordCLIPreflight` 写入终端日志归档。
     public func terminalAgentCardPreflightSummary(for agentID: UUID, prompt _: String) -> String {
         guard let agent = agents.first(where: { $0.id == agentID }) else {
-            return "未找到员工，无法生成运行前预检摘要。"
+            return "未找到员工，无法生成运行前预检摘要。".L()
         }
         let permissions = agent.permissions.map(\.title).sorted().joined(separator: "、")
         let product = selectedProduct
@@ -6565,11 +6565,11 @@ public final class CompanyStore: ObservableObject {
         return """
         运行前预检摘要
         员工：\(agent.displayName) / \(agent.title)
-        产品：\(product?.name ?? "当前产品")
+        产品：\(product?.name ?? "当前产品".L())
         执行位置：\(executionLabel)
         来源：\(visibleBackendSummary(for: agent))
-        权限：\(permissions.isEmpty ? "无特殊权限" : permissions)
-        风险提示：\(risks.isEmpty ? "只读或低风险执行" : risks.joined(separator: "；"))
+        权限：\(permissions.isEmpty ? "无特殊权限".L() : permissions)
+        风险提示：\(risks.isEmpty ? "只读或低风险执行".L() : risks.joined(separator: "；"))
         预检结论：以上员工、执行位置、权限和来源确认无误后再点击运行；完整目录、提示词与运行细节可通过「预检」按钮写入终端日志查看。
         """
     }
@@ -7038,16 +7038,16 @@ public final class CompanyStore: ObservableObject {
         }.joined(separator: "\n")
 
         return """
-        命令行链路压测预检：\(issueLines.isEmpty ? "通过" : "发现 \(issueLines.count) 项问题")
-        产品：\(selectedProduct?.name ?? "当前产品")
+        命令行链路压测预检：\(issueLines.isEmpty ? "通过".L() : "发现 " + "\(issueLines.count)" + " 项问题")
+        产品：\(selectedProduct?.name ?? "当前产品".L())
         工作目录：\(workingDirectory)
         可执行员工：\(agents.count)
 
         员工链路：
-        \(agentLines.isEmpty ? "- 暂无可执行员工" : agentLines)
+        \(agentLines.isEmpty ? "- 暂无可执行员工".L() : agentLines)
 
         问题：
-        \(issueLines.isEmpty ? "- 未发现配置问题。" : issueLines.map { "- \($0)" }.joined(separator: "\n"))
+        \(issueLines.isEmpty ? "- 未发现配置问题。".L() : issueLines.map { "- \($0)" }.joined(separator: "\n"))
 
         说明：
         这是本地干跑压测，不会真正调用 Codex、Claude、Gemini 或接口模型；用于确认命令、角色档案、目录和权限链路能完整生成。
@@ -7085,9 +7085,9 @@ public final class CompanyStore: ObservableObject {
         }.joined(separator: "\n")
 
         return """
-        命令行任务发车台计划：\(issueLines.isEmpty ? "可发车" : "暂缓发车")
-        产品：\(selectedProduct?.name ?? "当前产品")
-        团队负责人：\(teamLeadAgentIDForSelectedProduct().map(agentName) ?? "未设置")
+        命令行任务发车台计划：\(issueLines.isEmpty ? "可发车".L() : "暂缓发车".L())
+        产品：\(selectedProduct?.name ?? "当前产品".L())
+        团队负责人：\(teamLeadAgentIDForSelectedProduct().map(agentName) ?? "未设置".L())
         目标：\(taskPrompt)
         可执行团队员工：\(launchAgents.count)
 
@@ -7098,10 +7098,10 @@ public final class CompanyStore: ObservableObject {
         4. 员工输出进入各自终端日志，CTO 收到完成摘要。
 
         运行清单：
-        \(commandLines.isEmpty ? "- 暂无可执行团队员工。" : commandLines)
+        \(commandLines.isEmpty ? "- 暂无可执行团队员工。".L() : commandLines)
 
         阻塞项：
-        \(issueLines.isEmpty ? "- 未发现配置阻塞。" : issueLines.map { "- \($0)" }.joined(separator: "\n"))
+        \(issueLines.isEmpty ? "- 未发现配置阻塞。".L() : issueLines.map { "- \($0)" }.joined(separator: "\n"))
         """
     }
 
@@ -7162,13 +7162,13 @@ public final class CompanyStore: ObservableObject {
     }
 
     public func teamOperatingSummaryText() -> String {
-        guard let product = selectedProduct else { return "未选择产品。" }
+        guard let product = selectedProduct else { return "未选择产品。".L() }
         let leadID = teamLeadAgentIDForSelectedProduct()
-        let leadName = leadID.map(agentName) ?? "未设置"
+        let leadName = leadID.map(agentName) ?? "未设置".L()
         let memberLines = selectedProductAgents.map { agent in
             let taskCount = selectedProductTasks.filter { $0.ownerID == agent.id && $0.status != .done && $0.status != .canceled }.count
             let queueCount = selectedProductWorkQueue.filter { $0.agentID == agent.id }.count
-            return "- \(agent.displayName)：\(agent.role.title)，未完成任务 \(taskCount)，队列 \(queueCount)\(agent.id == leadID ? "，团队负责人" : "")"
+            return "- " + "\(agent.displayName)" + "：".L() + "\(agent.role.title)" + "，未完成任务 " + "\(taskCount)" + "，队列 ".L() + "\(queueCount)" + "\(agent.id == leadID ? "，团队负责人" : "")"
         }.joined(separator: "\n")
 
         return """
@@ -7178,7 +7178,7 @@ public final class CompanyStore: ObservableObject {
         汇报链路：成员 -> \(leadName) -> 老板
         负责人职责：拆分目标、分配成员、汇总结果、提示风险、给老板阶段性汇报。
         成员分工：
-        \(memberLines.isEmpty ? "- 暂无成员" : memberLines)
+        \(memberLines.isEmpty ? "- 暂无成员".L() : memberLines)
         """
     }
 
@@ -7265,7 +7265,7 @@ public final class CompanyStore: ObservableObject {
             VerificationRecord(
                 productID: selectedProductID,
                 status: recoveredIDs.isEmpty ? .passed : .warning,
-                title: "异常占用会话恢复",
+                title: "异常占用会话恢复".L(),
                 detail: report
             ),
             at: 0
@@ -7273,8 +7273,8 @@ public final class CompanyStore: ObservableObject {
         messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: report))
         appendEvent(
             kind: recoveredIDs.isEmpty ? .statusChanged : .risk,
-            title: "异常占用会话恢复完成",
-            detail: "\(productLabel) · 恢复 \(recoveredIDs.count) 个员工",
+            title: "异常占用会话恢复完成".L(),
+            detail: "\(productLabel)" + " · 恢复 ".L() + "\(recoveredIDs.count)" + " 个员工".L(),
             agentID: ctoID
         )
         saveSnapshot()
@@ -7283,9 +7283,9 @@ public final class CompanyStore: ObservableObject {
 
     public func employeeHandoffAuditText(staleAfter seconds: TimeInterval = 180) -> String {
         let summary = employeeHandoffAuditSummary(staleAfter: seconds)
-        let productLabel = selectedProduct?.name ?? "当前产品"
+        let productLabel = selectedProduct?.name ?? "当前产品".L()
         let header = """
-        员工交接待确认巡检：\(summary.passed ? "通过" : (summary.staleCount > 0 ? "存在超时" : "需关注"))
+        员工交接待确认巡检：\(summary.passed ? "通过".L() : (summary.staleCount > 0 ? "存在超时" : "需关注"))
         产品：\(productLabel)
         总员工交接：\(summary.totalCount)
         待确认：\(summary.pendingCount) · 已确认：\(summary.acknowledgedCount) · 超时待确认：\(summary.staleCount)
@@ -7321,7 +7321,7 @@ public final class CompanyStore: ObservableObject {
             VerificationRecord(
                 productID: selectedProductID,
                 status: status,
-                title: "员工交接待确认巡检",
+                title: "员工交接待确认巡检".L(),
                 detail: report
             ),
             at: 0
@@ -7330,15 +7330,15 @@ public final class CompanyStore: ObservableObject {
         let eventKind: CompanyEventKind = status == .passed ? .statusChanged : .risk
         appendEvent(
             kind: eventKind,
-            title: "员工交接待确认巡检完成",
-            detail: "\(selectedProduct?.name ?? "当前产品") · \(status.title)",
+            title: "员工交接待确认巡检完成".L(),
+            detail: "\(selectedProduct?.name ?? "当前产品".L())" + " · ".L() + "\(status.title)",
             agentID: ctoID
         )
         if summary.staleCount > 0 {
             appendEvent(
                 kind: .risk,
-                title: "员工交接超时待确认",
-                detail: "有 \(summary.staleCount) 条员工交接超过 \(Int(max(seconds, 60))) 秒仍未确认。",
+                title: "员工交接超时待确认".L(),
+                detail: "有 ".L() + "\(summary.staleCount)" + " 条员工交接超过 ".L() + "\(Int(max(seconds, 60)))" + " 秒仍未确认。".L(),
                 agentID: ctoID
             )
         }
@@ -7371,7 +7371,7 @@ public final class CompanyStore: ObservableObject {
 
         for envelope in handoffs {
             let fromName = agentName(envelope.fromAgentID)
-            let toName = envelope.toAgentID.map(agentName) ?? "未指定"
+            let toName = envelope.toAgentID.map(agentName) ?? "未指定".L()
             let elapsed = Int(now.timeIntervalSince(envelope.createdAt))
             switch envelope.status {
             case .pending:
@@ -7379,15 +7379,15 @@ public final class CompanyStore: ObservableObject {
                 let isStale = TimeInterval(elapsed) >= threshold
                 if isStale {
                     summary.staleCount += 1
-                    summary.lines.append("- 超时：\(fromName) → \(toName)：\(envelope.subject)（\(elapsed) 秒未确认）")
+                    summary.lines.append("- 超时：".L() + "\(fromName)" + " → " + "\(toName)" + "：" + "\(envelope.subject)" + "（" + "\(elapsed)" + " 秒未确认）")
                 } else {
-                    summary.lines.append("- 待确认：\(fromName) → \(toName)：\(envelope.subject)（\(elapsed) 秒）")
+                    summary.lines.append("- 待确认：".L() + "\(fromName)" + " → " + "\(toName)" + "：" + "\(envelope.subject)" + "（" + "\(elapsed)" + " 秒）".L())
                 }
             case .acknowledged:
                 summary.acknowledgedCount += 1
-                summary.lines.append("- 已确认：\(fromName) → \(toName)：\(envelope.subject)")
+                summary.lines.append("- 已确认：".L() + "\(fromName)" + " → " + "\(toName)" + "：" + "\(envelope.subject)")
             case .failed:
-                summary.lines.append("- 失败：\(fromName) → \(toName)：\(envelope.subject)")
+                summary.lines.append("- 失败：".L() + "\(fromName)" + " → " + "\(toName)" + "：" + "\(envelope.subject)")
             }
         }
         return summary
@@ -7395,9 +7395,9 @@ public final class CompanyStore: ObservableObject {
 
     public func jobArchiveStaleAuditText(staleAfter seconds: TimeInterval = 180) -> String {
         let summary = jobArchiveStaleAuditSummary(staleAfter: seconds)
-        let productLabel = selectedProduct?.name ?? "当前产品"
+        let productLabel = selectedProduct?.name ?? "当前产品".L()
         let header = """
-        命令行作业幽灵巡检：\(summary.passed ? "通过" : "需处理")
+        命令行作业幽灵巡检：\(summary.passed ? "通过".L() : "需处理")
         产品：\(productLabel)
         作业档案：\(summary.totalCount)
         运行中：\(summary.runningCount) · 幽灵运行：\(summary.staleGhostCount) · 真实运行：\(summary.activeRunningCount) · 未超时：\(summary.freshRunningCount) · 无法读取：\(summary.invalidCount)
@@ -7430,24 +7430,24 @@ public final class CompanyStore: ObservableObject {
             do {
                 if try interruptCLIJobArchive(record, now: now, formatter: formatter) {
                     let elapsed = Int(now.timeIntervalSince(record.updatedAt))
-                    interruptedLines.append("- \(record.visibleName)：已标记已中断（静置 \(elapsed) 秒）")
+                    interruptedLines.append("- " + "\(record.visibleName)" + "：已标记已中断（静置 ".L() + "\(elapsed)" + " 秒）".L())
                     interruptedCount += 1
                 } else {
-                    interruptedLines.append("- \(record.visibleName)：磁盘状态已变化，跳过写回。")
+                    interruptedLines.append("- " + "\(record.visibleName)" + "：磁盘状态已变化，跳过写回。".L())
                 }
             } catch {
                 summary.invalidCount += 1
-                interruptedLines.append("- \(record.visibleName)：写回失败，\(error.localizedDescription)")
+                interruptedLines.append("- " + "\(record.visibleName)" + "：写回失败，".L() + "\(error.localizedDescription)")
             }
         }
 
-        let productLabel = selectedProduct?.name ?? "当前产品"
+        let productLabel = selectedProduct?.name ?? "当前产品".L()
         let status: VerificationStatus = (summary.staleGhostCount == 0 && summary.invalidCount == 0) ? .passed : .warning
         let report = """
         \(reportBefore)
 
         处理结果：
-        \(interruptedLines.isEmpty ? "- 没有需要中断的幽灵作业档案。" : interruptedLines.joined(separator: "\n"))
+        \(interruptedLines.isEmpty ? "- 没有需要中断的幽灵作业档案。".L() : interruptedLines.joined(separator: "\n"))
         """
         verifications.insert(
             VerificationRecord(
@@ -7665,7 +7665,7 @@ public final class CompanyStore: ObservableObject {
         阈值：\(Int(max(seconds, 60))) 秒
         """
         let body = summary.lines.isEmpty
-            ? "- 当前产品没有可执行员工。"
+            ? "- 当前产品没有可执行员工。".L()
             : summary.lines.joined(separator: "\n")
         return """
         \(header)
@@ -7696,7 +7696,7 @@ public final class CompanyStore: ObservableObject {
         appendEvent(
             kind: status == .passed ? .statusChanged : .risk,
             title: "运行会话健康巡检完成",
-            detail: "\(selectedProduct?.name ?? "当前产品") · \(status.title)",
+            detail: "\(selectedProduct?.name ?? "当前产品".L())" + " · ".L() + "\(status.title)",
             agentID: ctoID
         )
         saveSnapshot()
@@ -7743,7 +7743,7 @@ public final class CompanyStore: ObservableObject {
             status = stats.recordCount > 0 ? .passed : .warning
             report = """
             历史索引巡检：\(status.title)
-            产品：\(selectedProduct?.name ?? "当前产品")
+            产品：\(selectedProduct?.name ?? "当前产品".L())
             索引位置：\(CompanyPersistence.historyIndexURL.path)
             记录数：\(stats.recordCount)
             产品数：\(stats.productCount)
@@ -7768,7 +7768,7 @@ public final class CompanyStore: ObservableObject {
             VerificationRecord(
                 productID: selectedProductID,
                 status: status,
-                title: "历史索引巡检",
+                title: "历史索引巡检".L(),
                 detail: report
             ),
             at: 0
@@ -7776,8 +7776,8 @@ public final class CompanyStore: ObservableObject {
         messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: report))
         appendEvent(
             kind: status == .failed ? .risk : .statusChanged,
-            title: "历史索引巡检完成",
-            detail: "\(selectedProduct?.name ?? "当前产品") · \(status.title)",
+            title: "历史索引巡检完成".L(),
+            detail: "\(selectedProduct?.name ?? "当前产品".L())" + " · ".L() + "\(status.title)",
             agentID: ctoID
         )
         saveSnapshot()
@@ -7789,10 +7789,10 @@ public final class CompanyStore: ObservableObject {
         let cutoffAt = Date(timeIntervalSinceNow: -TimeInterval(safeDays * 24 * 60 * 60))
         let archiveStats = try? CompanyPersistence.historyArchiveStats()
         let archiveCount = archiveStats?.archivedRecordCount ?? 0
-        let archivedAt = archiveStats?.lastArchivedAt?.opcDateTimeText ?? (archiveCount > 0 ? "未知（旧归档表）" : "尚未迁移")
+        let archivedAt = archiveStats?.lastArchivedAt?.opcDateTimeText ?? (archiveCount > 0 ? "未知（旧归档表）".L() : "尚未迁移".L())
         return """
         历史归档迁移：预览
-        产品：\(selectedProduct?.name ?? "当前产品")
+        产品：\(selectedProduct?.name ?? "当前产品".L())
         归档阈值：早于 \(cutoffAt.opcDateTimeText) 的历史记录
         已归档记录：\(archiveCount)
         最近归档：\(archivedAt)
@@ -7826,7 +7826,7 @@ public final class CompanyStore: ObservableObject {
             status = .failed
             report = """
             历史归档迁移：失败
-            产品：\(selectedProduct?.name ?? "当前产品")
+            产品：\(selectedProduct?.name ?? "当前产品".L())
             归档阈值：早于 \(cutoffAt.opcDateTimeText) 的历史记录
             错误：\(error.localizedDescription)
 
@@ -7847,7 +7847,7 @@ public final class CompanyStore: ObservableObject {
         appendEvent(
             kind: status == .failed ? .risk : .statusChanged,
             title: "历史归档迁移完成",
-            detail: "\(selectedProduct?.name ?? "当前产品") · \(status.title)",
+            detail: "\(selectedProduct?.name ?? "当前产品".L())" + " · ".L() + "\(status.title)",
             agentID: ctoID
         )
         saveSnapshot()
@@ -8368,9 +8368,9 @@ public final class CompanyStore: ObservableObject {
         下一步：技术负责人继续拆解、派发、验收，并把重要进展同步给老板。
         通道：\(targetNames)
         """
-        communicationLogs.insert(CommunicationLogEntry(channelID: readyChannels.first?.id ?? enabledChannels.first?.id, productID: selectedProductID, agentID: leadID, direction: .outbound, status: status, title: "团队负责人手机汇报", body: body), at: 0)
-        messages.append(ChatMessage(productID: selectedProductID, agentID: leadID ?? ctoID, author: .system, text: "OPC 通信网关已生成团队负责人汇报：\n\(body)"))
-        appendEvent(kind: .ctoSummary, title: "通信网关汇报", detail: "已生成 \(product.name) 的团队负责人手机汇报。", agentID: leadID)
+        communicationLogs.insert(CommunicationLogEntry(channelID: readyChannels.first?.id ?? enabledChannels.first?.id, productID: selectedProductID, agentID: leadID, direction: .outbound, status: status, title: "团队负责人手机汇报".L(), body: body), at: 0)
+        messages.append(ChatMessage(productID: selectedProductID, agentID: leadID ?? ctoID, author: .system, text: "OPC 通信网关已生成团队负责人汇报：\n".L() + "\(body)"))
+        appendEvent(kind: .ctoSummary, title: "通信网关汇报".L(), detail: "已生成 " + "\(product.name)" + " 的团队负责人手机汇报。", agentID: leadID)
         trimCommunicationLogs()
         saveSnapshot()
     }
@@ -8385,7 +8385,7 @@ public final class CompanyStore: ObservableObject {
         ensureCommunicationGatewayPlan()
         guard let product = selectedProduct else { return }
         let leadID = teamLeadAgentIDForSelectedProduct()
-        let leadName = leadID.map(agentName) ?? "团队负责人"
+        let leadName = leadID.map(agentName) ?? "团队负责人".L()
         let body = """
         \(product.name) 团队负责人汇报
         负责人：\(leadName)
@@ -8437,11 +8437,11 @@ public final class CompanyStore: ObservableObject {
             agentID: leadID,
             direction: .outbound,
             status: anyFailed ? .failed : .sent,
-            title: "团队负责人手机汇报发送",
+            title: "团队负责人手机汇报发送".L(),
             body: report
         ), at: 0)
         messages.append(ChatMessage(productID: selectedProductID, agentID: leadID ?? ctoID, author: .system, text: report))
-        appendEvent(kind: anyFailed ? .risk : .ctoSummary, title: "通信网关发送完成", detail: anyFailed ? "部分通道发送失败。" : "就绪通道已发送。", agentID: leadID)
+        appendEvent(kind: anyFailed ? .risk : .ctoSummary, title: "通信网关发送完成".L(), detail: anyFailed ? "部分通道发送失败。".L() : "就绪通道已发送。".L(), agentID: leadID)
         trimCommunicationLogs()
         saveSnapshot()
     }
@@ -8455,34 +8455,34 @@ public final class CompanyStore: ObservableObject {
                 agentID: teamLeadAgentIDForSelectedProduct(),
                 direction: .outbound,
                 status: .failed,
-                title: "通信通道测试",
-                body: "没有启用的通信通道。请先启用本地指挥台或配置外部网络回调/机器人。"
+                title: "通信通道测试".L(),
+                body: "没有启用的通信通道。请先启用本地指挥台或配置外部网络回调/机器人。".L()
             ), at: 0)
-            appendEvent(kind: .risk, title: "通信通道测试失败", detail: "没有启用的通信通道。", agentID: teamLeadAgentIDForSelectedProduct())
+            appendEvent(kind: .risk, title: "通信通道测试失败".L(), detail: "没有启用的通信通道。".L(), agentID: teamLeadAgentIDForSelectedProduct())
             saveSnapshot()
             return
         }
 
         let lines = enabledChannels.map { channel in
-            if let preview = CommunicationGatewayRequestBuilder.preview(for: channel, text: "OPC 通信测试") {
+            if let preview = CommunicationGatewayRequestBuilder.preview(for: channel, text: "OPC 通信测试".L()) {
                 let endpoint = preview.method == "LOCAL" ? preview.endpoint : CommunicationGatewayDispatcher.redactedEndpoint(preview.endpoint)
-                return "通过：\(channel.name) · \(preview.method) \(endpoint)"
+                return "通过：".L() + "\(channel.name)" + " · " + "\(preview.method)" + " " + "\(endpoint)"
             }
-            return "缺配置：\(channel.name) · 需要接口地址\(channel.kind == .telegramBot ? "和聊天标识" : "")"
+            return "缺配置：".L() + "\(channel.name)" + " · 需要接口地址" + "\(channel.kind == .telegramBot ? "和聊天标识" : "")"
         }
-        let hasMissingConfiguration = lines.contains { $0.hasPrefix("缺配置：") }
+        let hasMissingConfiguration = lines.contains { $0.hasPrefix("缺配置：".L()) }
         communicationLogs.insert(CommunicationLogEntry(
             channelID: enabledChannels.first?.id,
             productID: selectedProductID,
             agentID: teamLeadAgentIDForSelectedProduct(),
             direction: .outbound,
             status: hasMissingConfiguration ? .queued : .sent,
-            title: "通信通道测试",
+            title: "通信通道测试".L(),
             body: lines.joined(separator: "\n")
         ), at: 0)
         appendEvent(
             kind: hasMissingConfiguration ? .risk : .statusChanged,
-            title: hasMissingConfiguration ? "通信通道待补配置" : "通信通道测试通过",
+            title: hasMissingConfiguration ? "通信通道待补配置".L() : "通信通道测试通过".L(),
             detail: lines.joined(separator: "；"),
             agentID: teamLeadAgentIDForSelectedProduct()
         )
@@ -8495,24 +8495,24 @@ public final class CompanyStore: ObservableObject {
         let enabledInboundChannels = inboundChannels.filter { $0.isEnabled && $0.commandsEnabled }
         let readyInboundChannels = enabledInboundChannels.filter(communicationChannelCanDispatch)
         let inboundLogs = selectedProductCommunicationLogs.filter { $0.direction == .inbound }
-        let leadName = teamLeadAgentIDForSelectedProduct().map(agentName) ?? "团队负责人"
+        let leadName = teamLeadAgentIDForSelectedProduct().map(agentName) ?? "团队负责人".L()
         let channelLines = inboundChannels.map { channel in
             let state: String
             if !channel.isEnabled {
-                state = "未启用"
+                state = "未启用".L()
             } else if !channel.commandsEnabled {
-                state = "未开启指令"
+                state = "未开启指令".L()
             } else if communicationChannelCanDispatch(channel) {
-                state = "可接收"
+                state = "可接收".L()
             } else {
-                state = "缺配置"
+                state = "缺配置".L()
             }
             return "- \(channel.name)：\(channel.kind.title) · \(state)"
         }.joined(separator: "\n")
 
         return """
-        移动端指令联动：\(readyInboundChannels.isEmpty ? "待配置" : "可接收")
-        产品：\(selectedProduct?.name ?? "当前产品")
+        移动端指令联动：\(readyInboundChannels.isEmpty ? "待配置".L() : "可接收".L())
+        产品：\(selectedProduct?.name ?? "当前产品".L())
         接收负责人：\(leadName)
         可入站通道：\(inboundChannels.count)
         已启用指令通道：\(enabledInboundChannels.count)
@@ -8521,7 +8521,7 @@ public final class CompanyStore: ObservableObject {
         被拒绝/失败指令：\(inboundLogs.filter { $0.status == .failed }.count)
 
         通道状态：
-        \(channelLines.isEmpty ? "- 当前产品没有支持入站指令的通道。" : channelLines)
+        \(channelLines.isEmpty ? "- 当前产品没有支持入站指令的通道。".L() : channelLines)
 
         说明：
         手机指令只会写入通信日志、通知团队负责人并创建可追踪任务；不会直接执行命令、不会跳过老板/技术负责人审批，也不会修改本地文件。外部双向通道必须同时满足启用、允许指令、支持入站和配置完整。
@@ -8605,11 +8605,11 @@ public final class CompanyStore: ObservableObject {
         来源：\(source.title)
         内容：\(limited)
         """
-        communicationLogs.insert(CommunicationLogEntry(channelID: channel.id, productID: selectedProductID, agentID: leadID, direction: .inbound, status: .received, title: "手机端老板指令", body: logBody), at: 0)
-        messages.append(ChatMessage(productID: selectedProductID, agentID: leadID, author: .user, text: "【手机端指令】\(limited)"))
-        tasks.insert(CompanyTask(productID: selectedProductID, title: "手机指令：\(String(limited.prefix(24)))", ownerID: leadID, status: .assigned, successCriteria: "团队负责人理解手机端指令，拆解下一步并向老板汇报；涉及高风险操作时必须回到老板审批。"), at: 0)
+        communicationLogs.insert(CommunicationLogEntry(channelID: channel.id, productID: selectedProductID, agentID: leadID, direction: .inbound, status: .received, title: "手机端老板指令".L(), body: logBody), at: 0)
+        messages.append(ChatMessage(productID: selectedProductID, agentID: leadID, author: .user, text: "【手机端指令】".L() + "\(limited)"))
+        tasks.insert(CompanyTask(productID: selectedProductID, title: "手机指令：".L() + "\(String(limited.prefix(24)))", ownerID: leadID, status: .assigned, successCriteria: "团队负责人理解手机端指令，拆解下一步并向老板汇报；涉及高风险操作时必须回到老板审批。".L()), at: 0)
         setStatus(.thinking, for: leadID)
-        appendEvent(kind: .message, title: "收到手机端指令", detail: limited, agentID: leadID)
+        appendEvent(kind: .message, title: "收到手机端指令".L(), detail: limited, agentID: leadID)
         trimCommunicationLogs()
         saveSnapshot()
         return true
@@ -8617,7 +8617,7 @@ public final class CompanyStore: ObservableObject {
 
     private func recordInboundStatusQuery(channel: CommunicationChannelConfig) -> Bool {
         let leadID = teamLeadAgentIDForSelectedProduct() ?? ctoID
-        let productName = selectedProduct?.name ?? "当前产品"
+        let productName = selectedProduct?.name ?? "当前产品".L()
         let openTaskCount = selectedProductTasks.filter { $0.status != .done && $0.status != .canceled }.count
         let report = """
         外部状态查询已接收
@@ -9038,50 +9038,50 @@ public final class CompanyStore: ObservableObject {
     private func conversationalStyleGuide(for agent: CompanyAgent) -> String {
         switch agent.role {
         case .cto:
-            "你是老板身边的技术负责人，语气要像能扛事的合伙人，不要像说明书。"
+            "你是老板身边的技术负责人，语气要像能扛事的合伙人，不要像说明书。".L()
         case .uiDesigner:
-            "你是视觉设计同事，语气可以更轻快一点，但要给出清楚的设计判断。"
+            "你是视觉设计同事，语气可以更轻快一点，但要给出清楚的设计判断。".L()
         case .codeEngineer:
-            "你是工程同事，语气直接、务实，说明下一步会看哪里或改哪里。"
+            "你是工程同事，语气直接、务实，说明下一步会看哪里或改哪里。".L()
         case .reviewer:
-            "你是审查同事，语气冷静，优先把风险和判断说清楚。"
+            "你是审查同事，语气冷静，优先把风险和判断说清楚。".L()
         case .tester:
-            "你是测试同事，语气细致，优先说明验证方法。"
+            "你是测试同事，语气细致，优先说明验证方法。".L()
         case .researcher:
-            "你是研究同事，语气清楚，说明会查什么和如何避免编造。"
+            "你是研究同事，语气清楚，说明会查什么和如何避免编造。".L()
         case .productArchitect:
-            "你是产品架构同事，语气有结构，但不要列职责清单。"
+            "你是产品架构同事，语气有结构，但不要列职责清单。".L()
         case .boss:
-            "你是老板本人，不要冒充员工。"
+            "你是老板本人，不要冒充员工。".L()
         case .custom:
-            "按你的角色自然回复，不要念配置。"
+            "按你的角色自然回复，不要念配置。".L()
         }
     }
 
     private func conversationalWorkSummary(for agent: CompanyAgent, profile: AgentOperatingProfile) -> String {
         switch agent.role {
         case .cto:
-            return "把老板的目标拆成清楚的任务，安排合适的人推进，并把风险和结果讲明白"
+            return "把老板的目标拆成清楚的任务，安排合适的人推进，并把风险和结果讲明白".L()
         case .uiDesigner:
-            return "把产品想法转成界面结构、视觉方向、交互细节和动效状态"
+            return "把产品想法转成界面结构、视觉方向、交互细节和动效状态".L()
         case .codeEngineer:
-            return "在明确范围内改代码、修问题、跑验证，并把改动结果说清楚"
+            return "在明确范围内改代码、修问题、跑验证，并把改动结果说清楚".L()
         case .reviewer:
-            return "按成功标准检查产物，优先指出问题、风险和能不能交付"
+            return "按成功标准检查产物，优先指出问题、风险和能不能交付".L()
         case .tester:
-            return "把任务转成可重复验证步骤，发现失败场景并记录结果"
+            return "把任务转成可重复验证步骤，发现失败场景并记录结果".L()
         case .researcher:
-            return "查资料、看竞品和行业信息，把可靠结论整理出来"
+            return "查资料、看竞品和行业信息，把可靠结论整理出来".L()
         case .productArchitect:
-            return "梳理需求结构、模块边界、产品约束和成功标准"
+            return "梳理需求结构、模块边界、产品约束和成功标准".L()
         case .boss:
-            return "保存老板目标、偏好和关键决策"
+            return "保存老板目标、偏好和关键决策".L()
         case .custom:
             let mission = profile.mission
-                .replacingOccurrences(of: "作为", with: "")
-                .replacingOccurrences(of: "负责", with: "")
+                .replacingOccurrences(of: "作为".L(), with: "")
+                .replacingOccurrences(of: "负责".L(), with: "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            return mission.isEmpty ? "按配置的角色完成工作并同步进展" : mission
+            return mission.isEmpty ? "按配置的角色完成工作并同步进展".L() : mission
         }
     }
 
@@ -9092,7 +9092,7 @@ public final class CompanyStore: ObservableObject {
 
         let productID = selectedProductID
         let repairPrompt = agentChatRepairPrompt(agent: agent, userText: userText, draft: raw)
-        appendTerminalLog("\n[OPC 聊天修正]\n", for: agent.id, productID: productID)
+        appendTerminalLog("\n[OPC 聊天修正]\n".L(), for: agent.id, productID: productID)
 
         let repaired: CommandExecutionResult
         if agent.backend.type == .api {
@@ -9100,7 +9100,7 @@ public final class CompanyStore: ObservableObject {
         } else {
             let command = chatCommand(for: agent, prompt: repairPrompt)
             let executionDirectory = cliExecutionDirectoryURL(for: agent)
-            appendTerminalLog(terminalCommandSummary(title: "OPC 聊天修正", agent: agent, executionDirectory: executionDirectory, prompt: userText), for: agent.id, productID: productID)
+            appendTerminalLog(terminalCommandSummary(title: "OPC 聊天修正".L(), agent: agent, executionDirectory: executionDirectory, prompt: userText), for: agent.id, productID: productID)
             repaired = await AgentProcessRunner.runStreaming(command: command, workingDirectory: executionDirectory, environmentOverrides: environmentOverrides(for: agent), isolatedHome: isolatedHomeURL(for: agent, executionDirectory: executionDirectory), sandboxProfile: sandboxProfile(for: agent, executionDirectory: executionDirectory), timeoutSeconds: 45) { [weak self] chunk in
                 Task { @MainActor in
                     self?.appendTerminalLog(chunk, for: agent.id, productID: productID)
@@ -9112,7 +9112,7 @@ public final class CompanyStore: ObservableObject {
         if repaired.exitCode == 0 && !needsConversationalRepair(repairedText) && !isLegacySyntheticAgentReply(repairedText) {
             return repaired
         }
-        let blocked = "模型返回仍然像角色档案或流程背诵，OPC 已拦截这次员工回复。请重新发送一句更具体的问题，或检查该员工模型配置。"
+        let blocked = "模型返回仍然像角色档案或流程背诵，OPC 已拦截这次员工回复。请重新发送一句更具体的问题，或检查该员工模型配置。".L()
         return CommandExecutionResult(exitCode: 1, standardOutput: "", standardError: blocked)
     }
 
@@ -9385,7 +9385,7 @@ public final class CompanyStore: ObservableObject {
         if cliIsolationDirectoryIsRunnable(sourceDirectory, sourceRoot: sourceRoot) { return }
         if FileManager.default.fileExists(atPath: sourceDirectory.path),
            (try? FileManager.default.contentsOfDirectory(atPath: sourceDirectory.path).isEmpty) == false {
-            appendEvent(kind: .risk, title: "独立代码仓库工作区未创建", detail: "\(agent.displayName)：目标目录已有内容，暂不覆盖。\(sourceDirectory.path)", agentID: agent.id)
+            appendEvent(kind: .risk, title: "独立代码仓库工作区未创建".L(), detail: "\(agent.displayName)" + "：目标目录已有内容，暂不覆盖。" + "\(sourceDirectory.path)", agentID: agent.id)
             return
         }
 
@@ -9395,7 +9395,7 @@ public final class CompanyStore: ObservableObject {
             workingDirectory: sourceRoot
         )
         if result.exitCode != 0 {
-            appendEvent(kind: .risk, title: "独立代码仓库工作区创建失败", detail: "\(agent.displayName)：\(result.output)", agentID: agent.id)
+            appendEvent(kind: .risk, title: "独立代码仓库工作区创建失败".L(), detail: "\(agent.displayName)：\(result.output)", agentID: agent.id)
             if sourceRootLooksLikeProject(sourceRoot), !FileManager.default.fileExists(atPath: sourceDirectory.path) {
                 try? ensureDirectorySnapshotIsolationSource(sourceRoot: sourceRoot, sourceDirectory: sourceDirectory)
             }
@@ -9685,7 +9685,7 @@ public final class CompanyStore: ObservableObject {
             return CommandExecutionResult(
                 exitCode: 126,
                 standardOutput: "",
-                standardError: "为避免多行粘贴误触发，长期会话输入一次只允许一行。"
+                standardError: "为避免多行粘贴误触发，长期会话输入一次只允许一行。".L()
             )
         }
         guard let target = preparePersistentTerminalTarget(for: agent) else { return nil }
@@ -9705,9 +9705,9 @@ public final class CompanyStore: ObservableObject {
         var title: String {
             switch self {
             case .manual:
-                return "OPC 手动交互轮次"
+                return "OPC 手动交互轮次".L()
             case .autoLoop:
-                return "OPC 自动交互循环轮次"
+                return "OPC 自动交互循环轮次".L()
             }
         }
     }
@@ -9719,28 +9719,28 @@ public final class CompanyStore: ObservableObject {
         logSource: PersistentTerminalREPLLogSource = .manual
     ) async -> PersistentTerminalREPLTurnResult? {
         guard !text.contains(where: { $0.isNewline }) else {
-            let observation = CLIInteractionObservation(phase: .transientFailure, reasonTitle: "输入不合规")
+            let observation = CLIInteractionObservation(phase: .transientFailure, reasonTitle: "输入不合规".L())
             return PersistentTerminalREPLTurnResult(
                 exitCode: 126,
-                output: "为避免多行粘贴误触发，长期会话输入一次只允许一行。",
+                output: "为避免多行粘贴误触发，长期会话输入一次只允许一行。".L(),
                 observation: observation,
                 timedOut: false
             )
         }
         guard let profile = CLIAgentCommandBuilder.interactionProfile(for: agent) else {
-            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "暂不支持")
+            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "暂不支持".L())
             return PersistentTerminalREPLTurnResult(
                 exitCode: 127,
-                output: "该员工的命令行来源不在长期会话画像目录里，手动交互轮次暂不支持。",
+                output: "该员工的命令行来源不在长期会话画像目录里，手动交互轮次暂不支持。".L(),
                 observation: observation,
                 timedOut: false
             )
         }
         guard !profile.replReadySignals.isEmpty else {
-            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "暂不支持")
+            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "暂不支持".L())
             return PersistentTerminalREPLTurnResult(
                 exitCode: 127,
-                output: "\(opcBackendCommandDisplayName(profile.command)) 暂未配置专用就绪提示，手动交互轮次仅对配置了独立行就绪提示的命令行工具开放。",
+                output: "\(opcBackendCommandDisplayName(profile.command))" + " 暂未配置专用就绪提示，手动交互轮次仅对配置了独立行就绪提示的命令行工具开放。".L(),
                 observation: observation,
                 timedOut: false
             )
@@ -9751,14 +9751,14 @@ public final class CompanyStore: ObservableObject {
         let workingDirectory = cliWorkingDirectoryURL()
         let baseline = await terminalSession.capture(workingDirectory: workingDirectory)
         guard baseline.exitCode == 0 else {
-            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "终端不可用")
+            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "终端不可用".L())
             return PersistentTerminalREPLTurnResult(exitCode: baseline.exitCode, output: baseline.output, observation: observation, timedOut: false)
         }
         guard profile.endsWithReplReadyPrompt(baseline.output) else {
-            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "终端未就绪")
+            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "终端未就绪".L())
             return PersistentTerminalREPLTurnResult(
                 exitCode: 126,
-                output: "该员工终端席位最近一行不是 \(profile.displayName) 的交互就绪提示。为避免把手动输入误发到普通终端，请先通过员工任务运行入口启动对应命令行工具，看到最近一行的独立就绪提示后再发送手动交互轮次。",
+                output: "该员工终端席位最近一行不是 ".L() + "\(profile.displayName)" + " 的交互就绪提示。为避免把手动输入误发到普通终端，请先通过员工任务运行入口启动对应命令行工具，看到最近一行的独立就绪提示后再发送手动交互轮次。",
                 observation: observation,
                 timedOut: false
             )
@@ -9766,13 +9766,13 @@ public final class CompanyStore: ObservableObject {
 
         let send = await terminalSession.sendInputLine(text, workingDirectory: workingDirectory)
         guard send.exitCode == 0 else {
-            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "输入发送失败")
+            let observation = CLIInteractionObservation(phase: .unknown, reasonTitle: "输入发送失败".L())
             return PersistentTerminalREPLTurnResult(exitCode: send.exitCode, output: send.output, observation: observation, timedOut: false)
         }
 
         let deadline = Date().addingTimeInterval(max(timeoutSeconds, 0.1))
         var latestDelta = ""
-        var latestObservation = CLIInteractionObservation(phase: .awaitingResponse, reasonTitle: "等待回复")
+        var latestObservation = CLIInteractionObservation(phase: .awaitingResponse, reasonTitle: "等待回复".L())
         while Date() < deadline {
             try? await Task.sleep(nanoseconds: 150_000_000)
             let capture = await terminalSession.capture(workingDirectory: workingDirectory)
@@ -9845,9 +9845,9 @@ public final class CompanyStore: ObservableObject {
         timedOut: Bool,
         source: PersistentTerminalREPLLogSource = .manual
     ) {
-        let timeoutLine = timedOut ? "结果：本轮等待超时，未中断终端席位。\n" : ""
+        let timeoutLine = timedOut ? "结果：本轮等待超时，未中断终端席位。\n".L() : ""
         appendTerminalLog(
-            "\n[\(source.title)]\n\(timeoutLine)状态：\(observation.reasonTitle)。\n",
+            "\n[" + "\(source.title)" + "]\n" + "\(timeoutLine)" + "状态：".L() + "\(observation.reasonTitle)" + "。\n",
             for: agent.id
         )
     }
@@ -9860,7 +9860,7 @@ public final class CompanyStore: ObservableObject {
         onOutput: @escaping @Sendable (String) -> Void
     ) async -> CommandExecutionResult {
         guard !command.isEmpty else {
-            return CommandExecutionResult(exitCode: 127, standardOutput: "", standardError: "没有提供命令。")
+            return CommandExecutionResult(exitCode: 127, standardOutput: "", standardError: "没有提供命令。".L())
         }
 
         let marker = UUID().uuidString.replacingOccurrences(of: "-", with: "")
@@ -9872,7 +9872,7 @@ public final class CompanyStore: ObservableObject {
 
         let preflightCapture = await terminalSession.capture(workingDirectory: workingDirectory)
         if preflightCapture.exitCode == 0, persistentTerminalHasUnfinishedOPCJob(preflightCapture.output) {
-            let message = "\n终端席位仍有未完成的 OPC 命令行任务，已拒绝覆盖发送。请先刷新真实终端日志或恢复异常占用会话。\n"
+            let message = "\n终端席位仍有未完成的 OPC 命令行任务，已拒绝覆盖发送。请先刷新真实终端日志或恢复异常占用会话。\n".L()
             onOutput(message)
             return CommandExecutionResult(exitCode: 125, standardOutput: "", standardError: message)
         }
@@ -9883,7 +9883,7 @@ public final class CompanyStore: ObservableObject {
             startMarker: startMarker,
             endMarker: endMarker
         ) else {
-            let message = "OPC 未能创建长期终端任务 runner 脚本。"
+            let message = "OPC 未能创建长期终端任务 runner 脚本。".L()
             onOutput(message)
             return CommandExecutionResult(exitCode: 127, standardOutput: "", standardError: message)
         }
@@ -9921,8 +9921,8 @@ public final class CompanyStore: ObservableObject {
             startMarker: startMarker,
             endMarker: endMarker
         )
-        let observationLine = latestObservation.map { "最后观察状态：\($0.reasonTitle)。\n" } ?? ""
-        let message = "\n命令超时：\(Int(timeoutSeconds)) 秒内没有返回，OPC 已停止等待该终端任务，并尝试中断长期席位。\n\(observationLine)\(interruptSummary)"
+        let observationLine = latestObservation.map { "最后观察状态：".L() + "\($0.reasonTitle)" + "。\n" } ?? ""
+        let message = "\n命令超时：".L() + "\(Int(timeoutSeconds))" + " 秒内没有返回，OPC 已停止等待该终端任务，并尝试中断长期席位。\n".L() + "\(observationLine)" + "\(interruptSummary)"
         onOutput(message)
         return CommandExecutionResult(
             exitCode: 124,
@@ -9940,17 +9940,17 @@ public final class CompanyStore: ObservableObject {
         _ = await terminalSession.sendKeys(["C-c"], workingDirectory: workingDirectory)
         try? await Task.sleep(nanoseconds: 500_000_000)
         if await persistentTerminalTurnClosed(terminalSession: terminalSession, workingDirectory: workingDirectory, startMarker: startMarker, endMarker: endMarker) {
-            return "中断处理：普通中断已生效。\n"
+            return "中断处理：普通中断已生效。\n".L()
         }
 
         _ = await terminalSession.sendKeys(["C-\\"], workingDirectory: workingDirectory)
         try? await Task.sleep(nanoseconds: 1_000_000_000)
         if await persistentTerminalTurnClosed(terminalSession: terminalSession, workingDirectory: workingDirectory, startMarker: startMarker, endMarker: endMarker) {
-            return "中断处理：强中断已生效。\n"
+            return "中断处理：强中断已生效。\n".L()
         }
 
         _ = await terminalSession.killWindow(workingDirectory: workingDirectory)
-        return "中断处理：已关闭未响应的终端席位，下次运行会重新创建席位。\n"
+        return "中断处理：已关闭未响应的终端席位，下次运行会重新创建席位。\n".L()
     }
 
     private func persistentTerminalTurnClosed(
@@ -10128,32 +10128,32 @@ public final class CompanyStore: ObservableObject {
     private func cliToolchainIssueLines() -> [String] {
         var issues: [String] = []
         if executableAgents.isEmpty {
-            issues.append("当前产品没有可执行员工。")
+            issues.append("当前产品没有可执行员工。".L())
         }
         let workingDirectory = cliWorkingDirectoryURL()
         if !FileManager.default.fileExists(atPath: workingDirectory.path) {
-            issues.append("工作目录不存在：\(workingDirectory.path)")
+            issues.append("工作目录不存在：".L() + "\(workingDirectory.path)")
         }
         for agent in executableAgents {
             let command = agent.backend.command.trimmingCharacters(in: .whitespacesAndNewlines)
             if command.isEmpty {
-                issues.append("\(agent.displayName) 没有配置命令。")
+                issues.append("\(agent.displayName)" + " 没有配置命令。".L())
             }
             switch agent.backend.type {
             case .api:
                 if agent.backend.endpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    issues.append("\(agent.displayName) 是接口模式，但没有接口地址。")
+                    issues.append("\(agent.displayName)" + " 是接口模式，但没有接口地址。".L())
                 }
                 if agent.backend.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    issues.append("\(agent.displayName) 是接口模式，但没有接口密钥。")
+                    issues.append("\(agent.displayName)" + " 是接口模式，但没有接口密钥。".L())
                 }
             case .subscriptionCLI:
                 if command == "api-agent" || command == "human" {
-                    issues.append("\(agent.displayName) 是订阅制命令行模式，但命令配置不合理：\(command)。")
+                    issues.append("\(agent.displayName)" + " 是订阅制命令行模式，但命令配置不合理：".L() + "\(command)" + "。")
                 }
             case .local:
                 if agent.role != .boss {
-                    issues.append("\(agent.displayName) 是本地占位模式，不能真正运行外部模型。")
+                    issues.append("\(agent.displayName)" + " 是本地占位模式，不能真正运行外部模型。".L())
                 }
             }
         }
@@ -10161,7 +10161,7 @@ public final class CompanyStore: ObservableObject {
     }
 
     private func agentName(_ id: UUID) -> String {
-        agents.first { $0.id == id }?.displayName ?? "未知员工"
+        agents.first { $0.id == id }?.displayName ?? "未知员工".L()
     }
 
     public func agentHasSkill(_ agentID: UUID, skill: String) -> Bool {
@@ -10268,10 +10268,10 @@ public final class CompanyStore: ObservableObject {
         }
         guard let agent = agents.first(where: { $0.id == agentID }) else {
             return AgentOperatingProfile(
-                mission: "接收消息并按上下文回复。",
-                responsibilities: ["确认消息"],
-                boundaries: ["不执行未知操作"],
-                responseRules: ["简洁回复"],
+                mission: "接收消息并按上下文回复。".L(),
+                responsibilities: ["确认消息".L()],
+                boundaries: ["不执行未知操作".L()],
+                responseRules: ["简洁回复".L()],
                 memory: [],
                 skills: []
             )
@@ -10299,7 +10299,7 @@ public final class CompanyStore: ObservableObject {
         姓名：\(agent.displayName)
         职位：\(agent.title)
         角色：\(agent.role.title)
-        汇报对象：\(agent.reportsToCTO ? agentName(ctoID) : "老板")
+        汇报对象：\(agent.reportsToCTO ? agentName(ctoID) : "老板".L())
 
         使命：
         \(Self.promptFragment(profile.mission, limit: Self.agentProfileMissionPromptLimit))
@@ -10314,10 +10314,10 @@ public final class CompanyStore: ObservableObject {
         \(promptList(profile.responseRules, limit: Self.agentProfileListItemPromptLimit, itemLimit: Self.agentProfilePromptItemLimit))
 
         长期记忆：
-        \(profile.memory.isEmpty ? "- 暂无" : promptList(profile.memory, limit: Self.agentProfileMemoryPromptLimit, itemLimit: Self.agentProfilePromptMemoryItemLimit))
+        \(profile.memory.isEmpty ? "- 暂无".L() : promptList(profile.memory, limit: Self.agentProfileMemoryPromptLimit, itemLimit: Self.agentProfilePromptMemoryItemLimit))
 
         可用技能：
-        \(profile.skillDescriptions.isEmpty ? "- 暂无" : promptList(profile.skillDescriptions, limit: Self.agentProfileSkillPromptLimit, itemLimit: Self.agentProfilePromptItemLimit))
+        \(profile.skillDescriptions.isEmpty ? "- 暂无".L() : promptList(profile.skillDescriptions, limit: Self.agentProfileSkillPromptLimit, itemLimit: Self.agentProfilePromptItemLimit))
         """
     }
 
@@ -10373,7 +10373,7 @@ public final class CompanyStore: ObservableObject {
                 try "".write(to: sessionURL, atomically: true, encoding: .utf8)
             }
         } catch {
-            appendEvent(kind: .risk, title: "员工工作区同步失败", detail: "\(agent.displayName)：\(error.localizedDescription)", agentID: agentID)
+            appendEvent(kind: .risk, title: "员工工作区同步失败".L(), detail: "\(agent.displayName)：\(error.localizedDescription)", agentID: agentID)
         }
     }
 
@@ -10392,7 +10392,7 @@ public final class CompanyStore: ObservableObject {
             try handle.write(contentsOf: Data((line + "\n").utf8))
             try handle.close()
         } catch {
-            appendEvent(kind: .risk, title: "员工会话日志写入失败", detail: error.localizedDescription, agentID: agentID)
+            appendEvent(kind: .risk, title: "员工会话日志写入失败".L(), detail: error.localizedDescription, agentID: agentID)
         }
     }
 
@@ -10402,12 +10402,12 @@ public final class CompanyStore: ObservableObject {
             "\(messageAuthorTitle(message.author))：\(message.text)"
         }
         guard !recent.isEmpty else { return }
-        let summary = "自动压缩记忆 \(Date().opcDateTimeText)：\(recent.joined(separator: " / ").prefix(900))"
-        memories.insert(ProductMemoryNote(productID: selectedProductID, agentID: agentID, kind: .summary, title: "员工记忆：\(agent.displayName)", detail: String(summary)), at: 0)
+        let summary = "自动压缩记忆 " + "\(Date().opcDateTimeText)" + "：".L() + "\(recent.joined(separator: " / ").prefix(900))"
+        memories.insert(ProductMemoryNote(productID: selectedProductID, agentID: agentID, kind: .summary, title: "员工记忆：".L() + "\(agent.displayName)", detail: String(summary)), at: 0)
         trimProductAgentMemories(agentID: agentID, productID: selectedProductID, limit: 12)
         syncAgentWorkspace(for: agentID)
-        appendAgentSession(agentID: agentID, kind: .memory, actor: "system", text: "已压缩近期对话为长期记忆。")
-        appendEvent(kind: .artifactCreated, title: "员工记忆已压缩", detail: "\(agent.displayName) 的近期对话已写入长期记忆。", agentID: agentID)
+        appendAgentSession(agentID: agentID, kind: .memory, actor: "system", text: "已压缩近期对话为长期记忆。".L())
+        appendEvent(kind: .artifactCreated, title: "员工记忆已压缩".L(), detail: "\(agent.displayName)" + " 的近期对话已写入长期记忆。", agentID: agentID)
     }
 
     private func writeTextIfChanged(_ text: String, to url: URL) throws {
@@ -10442,10 +10442,10 @@ public final class CompanyStore: ObservableObject {
         # MEMORY
 
         ## 全局员工记忆
-        \(profile.memory.isEmpty ? "- 暂无" : markdownList(profile.memory))
+        \(profile.memory.isEmpty ? "- 暂无".L() : markdownList(profile.memory))
 
         ## 当前产品员工记忆
-        \(productMemories.isEmpty ? "- 暂无" : markdownList(productMemories))
+        \(productMemories.isEmpty ? "- 暂无".L() : markdownList(productMemories))
         """
     }
 
@@ -10524,7 +10524,7 @@ public final class CompanyStore: ObservableObject {
         """
         # SKILLS
 
-        \(profile.skills.isEmpty ? "- 暂无技能" : skillModuleList(profile.skills))
+        \(profile.skills.isEmpty ? "- 暂无技能".L() : skillModuleList(profile.skills))
         """
     }
 
@@ -10600,14 +10600,14 @@ public final class CompanyStore: ObservableObject {
     private func suggestedAgentName(for pack: AgentRolePack) -> String {
         let base: String
         switch pack.role {
-        case .cto: base = "Codex 技术负责人"
-        case .productArchitect: base = "产品架构师"
-        case .uiDesigner: base = "Gemini 界面设计师"
-        case .codeEngineer: base = "Claude Code 工程师"
-        case .reviewer: base = "Codex 审查员"
-        case .tester: base = "测试工程师"
-        case .researcher: base = "资料研究员"
-        case .boss: base = "老板"
+        case .cto: base = "Codex 技术负责人".L()
+        case .productArchitect: base = "产品架构师".L()
+        case .uiDesigner: base = "Gemini 界面设计师".L()
+        case .codeEngineer: base = "Claude Code 工程师".L()
+        case .reviewer: base = "Codex 审查员".L()
+        case .tester: base = "测试工程师".L()
+        case .researcher: base = "资料研究员".L()
+        case .boss: base = "老板".L()
         case .custom: base = pack.title
         }
         if !agents.contains(where: { $0.displayName == base }) {
@@ -10620,7 +10620,7 @@ public final class CompanyStore: ObservableObject {
     private func hydrateAPIKeysFromKeychain() {
         for index in agents.indices where agents[index].backend.type == .api {
             if !agents[index].backend.apiKey.isEmpty {
-                writeAPIKeyToKeychain(agents[index].backend.apiKey, agentID: agents[index].id, context: "启动时回写")
+                writeAPIKeyToKeychain(agents[index].backend.apiKey, agentID: agents[index].id, context: "启动时回写".L())
             } else {
                 agents[index].backend.apiKey = OPCKeychainStore.loadAPIKey(agentID: agents[index].id)
             }
@@ -10632,7 +10632,7 @@ public final class CompanyStore: ObservableObject {
             var copy = agent
             if copy.backend.type == .api {
                 if !copy.backend.apiKey.isEmpty {
-                    writeAPIKeyToKeychain(copy.backend.apiKey, agentID: copy.id, context: "快照前归档")
+                    writeAPIKeyToKeychain(copy.backend.apiKey, agentID: copy.id, context: "快照前归档".L())
                 }
                 // 即便 keychain 写失败也仍然清空 in-memory copy，保留「snapshot 不携带明文 apiKey」
                 // 的既有约束（持久化层未变更）；失败已经通过 writeAPIKeyToKeychain 转成 in-memory 风险事件，
@@ -10659,9 +10659,9 @@ public final class CompanyStore: ObservableObject {
     /// 2. **相邻同员工同状态去重**：避免锁屏 / 沙箱权限缺失等持续性故障刷屏老板事件流。
     /// 3. **保留员工 ID**：方便事件流按员工聚合，老板可定位到具体 API 员工的 Key 配置。
     private func recordKeychainSaveFailure(status: OSStatus, agentID: UUID, context: String) {
-        let title = "API Key 写入 Keychain 失败"
-        let name = agents.first(where: { $0.id == agentID })?.displayName ?? "未知员工"
-        let detail = "\(name) · \(context) · OSStatus=\(status)。本次输入的 Key 仍在内存中可用，但应用重启后会丢失，需要重新填写并确认 Keychain 是否被锁定或权限受限。"
+        let title = "API Key 写入 Keychain 失败".L()
+        let name = agents.first(where: { $0.id == agentID })?.displayName ?? "未知员工".L()
+        let detail = "\(name)" + " · " + "\(context)" + " · OSStatus=".L() + "\(status)" + "。本次输入的 Key 仍在内存中可用，但应用重启后会丢失，需要重新填写并确认 Keychain 是否被锁定或权限受限。".L()
         if let latest = events.first,
            latest.kind == .risk,
            latest.title == title,
@@ -10749,16 +10749,16 @@ public final class CompanyStore: ObservableObject {
     private func isLegacyAutoCreatedSpecialist(_ agent: CompanyAgent) -> Bool {
         switch agent.role {
         case .productArchitect:
-            agent.displayName == "Codex 产品架构师"
-                && agent.title == "需求与产品结构负责人"
+            agent.displayName == "Codex 产品架构师".L()
+                && agent.title == "需求与产品结构负责人".L()
                 && agent.backend.command == "codex"
         case .tester:
-            agent.displayName == "Codex 测试工程师"
-                && agent.title == "自动化验证负责人"
+            agent.displayName == "Codex 测试工程师".L()
+                && agent.title == "自动化验证负责人".L()
                 && agent.backend.command == "codex"
         case .researcher:
-            agent.displayName == "Gemini 研究员"
-                && agent.title == "资料与竞品研究员"
+            agent.displayName == "Gemini 研究员".L()
+                && agent.title == "资料与竞品研究员".L()
                 && agent.backend.command == "gemini"
         default:
             false
@@ -10767,17 +10767,17 @@ public final class CompanyStore: ObservableObject {
 
     private func isLegacySyntheticAgentReply(_ text: String) -> Bool {
         let patterns = [
-            "我的角色档案",
-            "我会把这件事拆成任务计划",
-            "我会结合记忆",
-            "OPC 公司已经上线",
-            "OPC 公司已经恢复到默认状态",
-            "我负责把产品想法转成视觉方向",
-            "我负责按技术负责人的任务卡实现代码",
-            "我负责按照成功标准审查结果",
-            "我已经配置完成",
-            "我已加入当前产品团队",
-            "我会按技术负责人 → UI/产品 → 工程 → 测试 → 审查 → 老板批准"
+            "我的角色档案".L(),
+            "我会把这件事拆成任务计划".L(),
+            "我会结合记忆".L(),
+            "OPC 公司已经上线".L(),
+            "OPC 公司已经恢复到默认状态".L(),
+            "我负责把产品想法转成视觉方向".L(),
+            "我负责按技术负责人的任务卡实现代码".L(),
+            "我负责按照成功标准审查结果".L(),
+            "我已经配置完成".L(),
+            "我已加入当前产品团队".L(),
+            "我会按技术负责人 → UI/产品 → 工程 → 测试 → 审查 → 老板批准".L()
         ]
         return patterns.contains { text.contains($0) }
     }
@@ -10871,11 +10871,11 @@ public final class CompanyStore: ObservableObject {
             conversations.removeValue(forKey: selectedProductID)
             session.cliSessionID = session.cliSessionID == usedResumeSessionID ? nil : session.cliSessionID
             session.cliSessionMode = session.cliSessionMode == mode ? nil : session.cliSessionMode
-            appendTerminalLog("\n[OPC 上下文已重置]\n当前产品的上一轮上下文连续不可用 \(nextFailureCount) 次，后续任务将重新开始。\n", for: agent.id)
-            appendEvent(kind: .statusChanged, title: "\(agent.displayName) 上下文已重置", detail: "当前产品的上一轮任务上下文连续不可用，已自动重置；下一次会重新开始。", agentID: agent.id)
+            appendTerminalLog("\n[OPC 上下文已重置]\n当前产品的上一轮上下文连续不可用 ".L() + "\(nextFailureCount)" + " 次，后续任务将重新开始。\n".L(), for: agent.id)
+            appendEvent(kind: .statusChanged, title: "\(agent.displayName)" + " 上下文已重置", detail: "当前产品的上一轮任务上下文连续不可用，已自动重置；下一次会重新开始。".L(), agentID: agent.id)
         } else {
             conversations[selectedProductID] = entry
-            appendTerminalLog("\n[OPC 上下文复用失败]\n当前产品的上一轮上下文暂时不可用 \(nextFailureCount) 次；再次不可用会自动重置。\n", for: agent.id)
+            appendTerminalLog("\n[OPC 上下文复用失败]\n当前产品的上一轮上下文暂时不可用 ".L() + "\(nextFailureCount)" + " 次；再次不可用会自动重置。\n".L(), for: agent.id)
         }
         session.cliSessionsByProduct = conversations.isEmpty ? nil : conversations
         runtimeSessions[agent.id] = session
@@ -10903,11 +10903,11 @@ public final class CompanyStore: ObservableObject {
         if previousPhase != observation.phase, observation.phase != .unknown {
             let recoveryLine: String
             if let operatorHint = recoveryAction.operatorHint {
-                recoveryLine = "建议：\(recoveryAction.title)。\(operatorHint)\n"
+                recoveryLine = "建议：".L() + "\(recoveryAction.title)" + "。" + "\(operatorHint)" + "\n"
             } else {
                 recoveryLine = ""
             }
-            appendTerminalLog("\n[OPC 交互状态]\n状态：\(observation.reasonTitle)。\n\(recoveryLine)", for: agent.id)
+            appendTerminalLog("\n[OPC 交互状态]\n状态：".L() + "\(observation.reasonTitle)" + "。\n" + "\(recoveryLine)", for: agent.id)
 
             // 升级到 attention 状态（技术负责人和老板都应看到的健康风险）写一条结构化事件，
             // 便于回查"过去一段时间出现过几次授权异常 / 忙碌 / 临时异常"。
@@ -10917,13 +10917,13 @@ public final class CompanyStore: ObservableObject {
             if isCLIAttentionPhaseForAuditEvent(observation.phase) {
                 let detail: String
                 if let hint = recoveryAction.operatorHint {
-                    detail = "\(observation.reasonTitle) · 建议：\(recoveryAction.title)。\(hint)"
+                    detail = "\(observation.reasonTitle)" + " · 建议：".L() + "\(recoveryAction.title)" + "。" + "\(hint)"
                 } else {
-                    detail = "\(observation.reasonTitle) · 建议：\(recoveryAction.title)。"
+                    detail = "\(observation.reasonTitle)" + " · 建议：".L() + "\(recoveryAction.title)" + "。"
                 }
                 appendEvent(
                     kind: .risk,
-                    title: "命令行健康预警：\(agent.displayName)",
+                    title: "命令行健康预警：".L() + "\(agent.displayName)",
                     detail: detail,
                     agentID: agent.id
                 )

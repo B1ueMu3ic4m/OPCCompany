@@ -9,9 +9,9 @@ enum CommandCenterSection: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .overview: "老板总览"
-        case .decisions: "待我决策"
-        case .reports: "汇报交付"
+        case .overview: "老板总览".L()
+        case .decisions: "待我决策".L()
+        case .reports: "汇报交付".L()
         }
     }
 
@@ -31,8 +31,8 @@ struct MultiAgentArchitectureAuditCenter: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "多员工架构体检")
-                Text("按升级方案检查结构化消息总线、显式任务图、技术负责人调度闭环、交付证据库、验收门禁、持久终端可用性和老板视图是否闭合。")
+                SectionHeader(title: "多员工架构体检".L())
+                Text("按升级方案检查结构化消息总线、显式任务图、技术负责人调度闭环、交付证据库、验收门禁、持久终端可用性和老板视图是否闭合。".L())
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
 
@@ -40,7 +40,7 @@ struct MultiAgentArchitectureAuditCenter: View {
                     Text("\(store.selectedProductArchitectureCompletionScore)%")
                         .font(.system(size: 34, weight: .heavy, design: .rounded))
                         .foregroundStyle(scoreColor)
-                    Text("架构完成度")
+                    Text("架构完成度".L())
                         .font(.system(size: 12, weight: .heavy))
                         .foregroundStyle(CompanyTheme.ink)
                     Spacer(minLength: 0)
@@ -50,7 +50,7 @@ struct MultiAgentArchitectureAuditCenter: View {
                     store.runMultiAgentArchitectureAudit()
                     store.selectAgent(store.ctoID)
                 } label: {
-                    Label("生成架构体检报告", systemImage: "checklist.checked")
+                    Label("生成架构体检报告".L(), systemImage: "checklist.checked")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -60,7 +60,7 @@ struct MultiAgentArchitectureAuditCenter: View {
                     _ = store.runMultiAgentArchitectureClosureDrill()
                     store.selectAgent(store.ctoID)
                 } label: {
-                    Label("运行闭环演练", systemImage: "arrow.trianglehead.2.clockwise")
+                    Label("运行闭环演练".L(), systemImage: "arrow.trianglehead.2.clockwise")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -69,7 +69,7 @@ struct MultiAgentArchitectureAuditCenter: View {
                     store.runCLIRuntimeIsolationAudit()
                     store.selectAgent(store.ctoID)
                 } label: {
-                    Label("运行命令行与工作区隔离体检", systemImage: "rectangle.connected.to.line.below")
+                    Label("运行命令行与工作区隔离体检".L(), systemImage: "rectangle.connected.to.line.below")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -77,14 +77,14 @@ struct MultiAgentArchitectureAuditCenter: View {
                 Button {
                     isShowingClosureTrace = true
                 } label: {
-                    Label("查看闭环详情", systemImage: "point.3.connected.trianglepath.dotted")
+                    Label("查看闭环详情".L(), systemImage: "point.3.connected.trianglepath.dotted")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .disabled(store.selectedProductClosureTraces.isEmpty)
 
                 if let trace = store.latestSelectedProductClosureTrace {
-                    Text("最近闭环：\(trace.goal) · \(trace.completionScore)% · 消息 \(trace.messageIDs.count) · 产物 \(trace.artifactIDs.count)")
+                    Text("最近闭环：\(trace.goal)\(" · ".L())\(trace.completionScore)% · 消息 \(trace.messageIDs.count) · 产物 \(trace.artifactIDs.count)")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(CompanyTheme.muted)
                         .lineLimit(2)
@@ -93,14 +93,14 @@ struct MultiAgentArchitectureAuditCenter: View {
                 ClosureDrillSummaryCard()
                 ProductReworkSummaryCard()
 
-                Text("报告写入技术负责人对话，不进入老板首页；老板只看结果、风险和交付摘要。")
+                Text("报告写入技术负责人对话，不进入老板首页；老板只看结果、风险和交付摘要。".L())
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
             }
             .commandPanel()
 
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "检查项")
+                SectionHeader(title: "检查项".L())
                 ForEach(store.selectedProductArchitectureChecks) { check in
                     ArchitectureCheckRow(check: check)
                 }
@@ -127,7 +127,7 @@ struct EmployeeHandoffAuditPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("员工交接巡检预览")
+            Text("员工交接巡检预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.employeeHandoffAuditText())
@@ -142,7 +142,7 @@ struct EmployeeHandoffAuditPreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.employeeHandoffAuditPreview.rawValue)
-        .accessibilityLabel("员工交接巡检预览")
+        .accessibilityLabel("员工交接巡检预览".L())
         .accessibilityValue(store.employeeHandoffAuditText())
     }
 }
@@ -156,11 +156,11 @@ struct RuntimeSessionHealthAuditPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("运行会话健康巡检预览")
+            Text("运行会话健康巡检预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             if let latest = store.selectedProductLatestRuntimeSessionHealthAudit() {
-                Text("最近一次巡检：\(latest.status.title) · \(latest.createdAt.opcDateTimeText)")
+                Text("最近一次巡检：\(latest.status.title)\(" · ".L())\(latest.createdAt.opcDateTimeText)")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CompanyTheme.muted)
                 Text(latest.detail)
@@ -170,7 +170,7 @@ struct RuntimeSessionHealthAuditPreview: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Text("尚未运行巡检 · 点击上方按钮可在此就地查看运行来源 / 来源配置 / 来源漂移结果。")
+                Text("尚未运行巡检 · 点击上方按钮可在此就地查看运行来源 / 来源配置 / 来源漂移结果。".L())
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CompanyTheme.muted)
                 Text(store.runtimeSessionHealthAuditText())
@@ -186,7 +186,7 @@ struct RuntimeSessionHealthAuditPreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.runtimeSessionHealthAuditPreview.rawValue)
-        .accessibilityLabel("运行会话健康巡检预览")
+        .accessibilityLabel("运行会话健康巡检预览".L())
         .accessibilityValue(accessibilityValue)
     }
 
@@ -209,7 +209,7 @@ struct JobArchiveStaleAuditPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("命令行作业幽灵巡检预览")
+            Text("命令行作业幽灵巡检预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.jobArchiveStaleAuditText())
@@ -224,7 +224,7 @@ struct JobArchiveStaleAuditPreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.jobArchiveStaleAuditPreview.rawValue)
-        .accessibilityLabel("命令行作业幽灵巡检预览")
+        .accessibilityLabel("命令行作业幽灵巡检预览".L())
         .accessibilityValue(store.jobArchiveStaleAuditText())
     }
 }
@@ -234,7 +234,7 @@ struct EvidenceClassificationAuditPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("运行证据分类巡检预览")
+            Text("运行证据分类巡检预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.evidenceClassificationAuditText())
@@ -249,7 +249,7 @@ struct EvidenceClassificationAuditPreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.evidenceClassificationAuditPreview.rawValue)
-        .accessibilityLabel("运行证据分类巡检预览")
+        .accessibilityLabel("运行证据分类巡检预览".L())
         .accessibilityValue(store.evidenceClassificationAuditText())
     }
 }
@@ -259,7 +259,7 @@ struct MaintenanceDataPressurePreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("维护数据增长预览")
+            Text("维护数据增长预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.maintenanceDataPressureText())
@@ -274,7 +274,7 @@ struct MaintenanceDataPressurePreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.maintenanceDataPressurePreview.rawValue)
-        .accessibilityLabel("维护数据增长预览")
+        .accessibilityLabel("维护数据增长预览".L())
         .accessibilityValue(store.maintenanceDataPressureText())
     }
 }
@@ -284,7 +284,7 @@ struct HistoryIndexAuditPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("历史索引预览")
+            Text("历史索引预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.historyIndexAuditText())
@@ -299,7 +299,7 @@ struct HistoryIndexAuditPreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.historyIndexAuditPreview.rawValue)
-        .accessibilityLabel("历史索引预览")
+        .accessibilityLabel("历史索引预览".L())
         .accessibilityValue(store.historyIndexAuditText())
     }
 }
@@ -309,7 +309,7 @@ struct HistoryArchiveMigrationPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("历史归档迁移预览")
+            Text("历史归档迁移预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.historyArchiveMigrationText())
@@ -324,7 +324,7 @@ struct HistoryArchiveMigrationPreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.historyArchiveMigrationPreview.rawValue)
-        .accessibilityLabel("历史归档迁移预览")
+        .accessibilityLabel("历史归档迁移预览".L())
         .accessibilityValue(store.historyArchiveMigrationText())
     }
 }
@@ -345,23 +345,23 @@ struct ManualREPLTurnPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("手动交互轮次（仅供运维和技术负责人调试）")
+            Text("手动交互轮次（仅供运维和技术负责人调试）".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
-            Text("向当前选中员工的真实终端席位发送一行输入，等待该员工的就绪提示或本轮结束信号；仅 Codex / Claude Code / Gemini 等已配置就绪提示的命令行工具可用，老板视图不展示。")
+            Text("向当前选中员工的真实终端席位发送一行输入，等待该员工的就绪提示或本轮结束信号；仅 Codex / Claude Code / Gemini 等已配置就绪提示的命令行工具可用，老板视图不展示。".L())
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
-            Text("当前员工：\(store.selectedAgent?.displayName ?? "未选中员工")")
+            Text("当前员工：" + "\(store.selectedAgent?.displayName ?? "未选中员工")")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(CompanyTheme.ink.opacity(0.82))
 
-            TextField("输入一行（不能含换行）", text: $inputText)
+            TextField("输入一行（不能含换行）".L(), text: $inputText)
                 .disabled(isSending)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 11))
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalManualREPLInputField.rawValue)
-                .accessibilityLabel("手动交互一行输入")
-                .accessibilityHint("向当前选中员工的真实终端席位发送一行输入，不能包含换行")
+                .accessibilityLabel("手动交互一行输入".L())
+                .accessibilityHint("向当前选中员工的真实终端席位发送一行输入，不能包含换行".L())
 
             Button {
                 let pending = inputText
@@ -375,31 +375,31 @@ struct ManualREPLTurnPanel: View {
                     }
                 }
             } label: {
-                Label(isSending ? "发送中…" : "发送一行手动输入", systemImage: "paperplane.fill")
+                Label(isSending ? "发送中…".L() : "发送一行手动输入".L(), systemImage: "paperplane.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .tint(CompanyTheme.accent)
             .disabled(!canSend)
             .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalManualREPLSendButton.rawValue)
-            .accessibilityLabel(isSending ? "正在发送手动交互输入" : "发送一行手动交互输入")
-            .accessibilityHint("发送输入框中的一行文本到当前选中员工真实终端席位；输入为空或正在发送时禁用")
+            .accessibilityLabel(isSending ? "正在发送手动交互输入".L() : "发送一行手动交互输入".L())
+            .accessibilityHint("发送输入框中的一行文本到当前选中员工真实终端席位；输入为空或正在发送时禁用".L())
 
             if let report = lastReport {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("最近一次结果")
+                    Text("最近一次结果".L())
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(CompanyTheme.muted)
                     if report.rejected, let reason = report.rejectionReason, !reason.isEmpty {
-                        Text("拒绝原因：\(reason)")
+                        Text("拒绝原因：".L() + "\(reason)")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(CompanyTheme.warning)
                     } else {
-                        Text("状态：\(report.summary)")
+                        Text("状态：".L() + "\(report.summary)")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(report.timedOut ? CompanyTheme.warning : CompanyTheme.ink)
                         if !report.outputPreview.isEmpty {
-                            Text("输出摘要：\(report.outputPreview)")
+                            Text("输出摘要：" + "\(report.outputPreview)")
                                 .font(.system(size: 10, design: .monospaced))
                                 .foregroundStyle(CompanyTheme.muted)
                                 .lineLimit(8)
@@ -434,33 +434,33 @@ struct TerminalAutoInteractionLoopPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("真实终端自动交互循环（技术负责人）")
+            Text("真实终端自动交互循环（技术负责人）".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalAutoInteractionLoopPanel.rawValue)
-                .accessibilityLabel("真实终端自动交互循环面板")
-            Text("由 OPC 生成每轮单行输入并发送到当前选中员工的真实终端席位；授权异常、忙碌、临时异常或等待超时会立即停止。")
+                .accessibilityLabel("真实终端自动交互循环面板".L())
+            Text("由 OPC 生成每轮单行输入并发送到当前选中员工的真实终端席位；授权异常、忙碌、临时异常或等待超时会立即停止。".L())
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
-            Text("当前员工：\(store.selectedAgent?.displayName ?? "未选中员工")")
+            Text("当前员工：" + "\(store.selectedAgent?.displayName ?? "未选中员工")")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(CompanyTheme.ink.opacity(0.82))
 
-            TextField("填写技术负责人任务上下文", text: $taskContext, axis: .vertical)
+            TextField("填写技术负责人任务上下文".L(), text: $taskContext, axis: .vertical)
                 .lineLimit(2...4)
                 .disabled(isRunning)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 11))
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalAutoLoopTaskContextField.rawValue)
-                .accessibilityLabel("技术负责人任务上下文")
-                .accessibilityHint("填写本轮自动循环要继续推进的任务上下文")
+                .accessibilityLabel("技术负责人任务上下文".L())
+                .accessibilityHint("填写本轮自动循环要继续推进的任务上下文".L())
 
-            Stepper("最大轮次：\(maxTurns)", value: $maxTurns, in: 1...CLIAutoInteractionLoopGate.hardTurnLimit)
+            Stepper("最大轮次：" + "\(maxTurns)", value: $maxTurns, in: 1...CLIAutoInteractionLoopGate.hardTurnLimit)
                 .font(.system(size: 10, weight: .semibold))
                 .disabled(isRunning)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalAutoLoopMaxTurnsStepper.rawValue)
-                .accessibilityLabel("最大轮次")
+                .accessibilityLabel("最大轮次".L())
                 .accessibilityValue("\(maxTurns)")
 
             Button {
@@ -477,15 +477,15 @@ struct TerminalAutoInteractionLoopPanel: View {
                     }
                 }
             } label: {
-                Label(isRunning ? "循环执行中…" : "启动受控循环", systemImage: "arrow.trianglehead.2.clockwise")
+                Label(isRunning ? "循环执行中…".L() : "启动受控循环".L(), systemImage: "arrow.trianglehead.2.clockwise")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .tint(CompanyTheme.blue)
             .disabled(!canRun)
             .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalAutoLoopStartButton.rawValue)
-            .accessibilityLabel(isRunning ? "循环执行中" : "启动受控自动循环")
-            .accessibilityHint("由 OPC 生成单行输入发送到当前员工真实终端席位；遇到授权异常、忙碌、临时异常或超时会立即停止")
+            .accessibilityLabel(isRunning ? "循环执行中".L() : "启动受控自动循环".L())
+            .accessibilityHint("由 OPC 生成单行输入发送到当前员工真实终端席位；遇到授权异常、忙碌、临时异常或超时会立即停止".L())
 
             if let report = lastReport {
                 Text(report.summaryText)
@@ -497,7 +497,7 @@ struct TerminalAutoInteractionLoopPanel: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 7))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalAutoLoopReportSummary.rawValue)
-                    .accessibilityLabel(report.rejected ? "真实终端自动循环已拒绝" : "真实终端自动循环报告")
+                    .accessibilityLabel(report.rejected ? "真实终端自动循环已拒绝".L() : "真实终端自动循环报告".L())
                     .accessibilityValue(report.summaryText)
             }
         }
@@ -505,7 +505,7 @@ struct TerminalAutoInteractionLoopPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(CompanyTheme.panelRaised.opacity(0.38), in: RoundedRectangle(cornerRadius: 9))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("真实终端自动交互循环面板")
+        .accessibilityLabel("真实终端自动交互循环面板".L())
     }
 }
 
@@ -515,10 +515,10 @@ struct CLIRecoveryAdvicePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("员工恢复建议（仅技术负责人调试）")
+            Text("员工恢复建议（仅技术负责人调试）".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
-            Text("根据最近一次命令行状态观察提示运维操作；授权异常和忙碌不允许自动重开，临时异常仅提供受控的单次手动重试入口；老板总控台不展示。")
+            Text("根据最近一次命令行状态观察提示运维操作；授权异常和忙碌不允许自动重开，临时异常仅提供受控的单次手动重试入口；老板总控台不展示。".L())
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
 
@@ -529,7 +529,7 @@ struct CLIRecoveryAdvicePanel: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.cliRecoveryAdviceSummary.rawValue)
-                .accessibilityLabel("员工恢复建议摘要")
+                .accessibilityLabel("员工恢复建议摘要".L())
                 .accessibilityValue(store.cliRecoveryAdviceSummaryText())
 
             let advices = store.cliRecoveryAdvicesForSelectedProduct()
@@ -544,22 +544,22 @@ struct CLIRecoveryAdvicePanel: View {
                             let report = store.manualRetryTransientForAgent(agentID: entry.agentID)
                             lastRetryReport = report
                         } label: {
-                            Label("手动重试一次", systemImage: "arrow.clockwise.circle")
+                            Label("手动重试一次".L(), systemImage: "arrow.clockwise.circle")
                                 .font(.system(size: 10, weight: .semibold))
                         }
                         .buttonStyle(.bordered)
                         .tint(CompanyTheme.warning)
                         .disabled(!entry.canManualRetry)
                         .accessibilityIdentifier(OPCUIAutomationIdentifier.cliRecoveryAdviceManualRetryButton.rawValue)
-                        .accessibilityLabel("\(entry.displayName) · 手动重试一次")
-                        .accessibilityHint("仅当员工最近一次状态为临时异常时可用；授权异常、忙碌或尚未观察状态不会自动重开")
+                        .accessibilityLabel("\(entry.displayName)" + " · 手动重试一次")
+                        .accessibilityHint("仅当员工最近一次状态为临时异常时可用；授权异常、忙碌或尚未观察状态不会自动重开".L())
                     }
                     .padding(.vertical, 2)
                 }
             }
 
             if let report = lastRetryReport {
-                Text(report.success ? "已发起一次：\(report.reason)" : "未发起：\(report.reason)")
+                Text(report.success ? "已发起一次：" + "\(report.reason)" : "未发起：" + "\(report.reason)")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(report.success ? CompanyTheme.green : CompanyTheme.warning)
                     .padding(8)
@@ -572,23 +572,23 @@ struct CLIRecoveryAdvicePanel: View {
         .background(CompanyTheme.panelRaised.opacity(0.38), in: RoundedRectangle(cornerRadius: 9))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.cliRecoveryAdvicePanel.rawValue)
-        .accessibilityLabel("员工恢复建议面板")
+        .accessibilityLabel("员工恢复建议面板".L())
         .accessibilityChildren {
             Text(store.cliRecoveryAdviceSummaryText())
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.cliRecoveryAdviceSummary.rawValue)
-                .accessibilityLabel("员工恢复建议摘要")
+                .accessibilityLabel("员工恢复建议摘要".L())
                 .accessibilityValue(store.cliRecoveryAdviceSummaryText())
             ForEach(store.cliRecoveryAdvicesForSelectedProduct(), id: \.agentID) { entry in
                 Button {
                     let report = store.manualRetryTransientForAgent(agentID: entry.agentID)
                     lastRetryReport = report
                 } label: {
-                    Text("手动重试一次")
+                    Text("手动重试一次".L())
                 }
                 .disabled(!entry.canManualRetry)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.cliRecoveryAdviceManualRetryButton.rawValue)
-                .accessibilityLabel("\(entry.displayName) · 手动重试一次")
-                .accessibilityHint("仅当员工最近一次状态为临时异常时可用；授权异常、忙碌或尚未观察状态不会自动重开")
+                .accessibilityLabel("\(entry.displayName)" + " · 手动重试一次")
+                .accessibilityHint("仅当员工最近一次状态为临时异常时可用；授权异常、忙碌或尚未观察状态不会自动重开".L())
             }
         }
     }
@@ -599,7 +599,7 @@ struct TerminalWorkspaceHealthPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("持久终端可用性预览")
+            Text("持久终端可用性预览".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.terminalWorkspaceHealthAuditText())
@@ -614,7 +614,7 @@ struct TerminalWorkspaceHealthPreview: View {
         .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalWorkspaceHealthPreview.rawValue)
-        .accessibilityLabel("持久终端可用性预览")
+        .accessibilityLabel("持久终端可用性预览".L())
         .accessibilityValue(store.terminalWorkspaceHealthAuditText())
     }
 }
@@ -624,7 +624,7 @@ struct ClosureDrillSummaryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("闭环演练复盘摘要")
+            Text("闭环演练复盘摘要".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.ink)
             Text(store.selectedProductClosureDrillSummaryText())
@@ -645,12 +645,12 @@ struct ProductReworkSummaryCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("返工追踪")
+                Text("返工追踪".L())
                     .font(.system(size: 11, weight: .heavy))
                     .foregroundStyle(CompanyTheme.ink)
                 Spacer()
                 if !store.selectedProductReworkQueue.isEmpty {
-                    StatusPill(text: "\(store.selectedProductReworkQueue.count) 项", color: CompanyTheme.warning)
+                    StatusPill(text: "\(store.selectedProductReworkQueue.count)" + " 项".L(), color: CompanyTheme.warning)
                 }
             }
             Text(store.selectedProductReworkSummaryText())
@@ -730,20 +730,20 @@ struct CommunicationGatewayCommandCenter: View {
 
     private var gatewayOverview: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "OPC 通信网关")
-            Text("目标是让每个产品团队负责人可以通过手机向老板汇报，也能接收老板的远程指令。本机应用负责调度和执行；外部通道负责通知、回传和唤醒。")
+            SectionHeader(title: "OPC 通信网关".L())
+            Text("目标是让每个产品团队负责人可以通过手机向老板汇报，也能接收老板的远程指令。本机应用负责调度和执行；外部通道负责通知、回传和唤醒。".L())
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
 
-            EngineMetricRow(title: "通道配置", value: "\(store.selectedProductCommunicationChannels.count)", color: CompanyTheme.blue)
-            EngineMetricRow(title: "启用通道", value: "\(store.selectedProductCommunicationChannels.filter(\.isEnabled).count)", color: CompanyTheme.green)
-            EngineMetricRow(title: "可接收指令", value: "\(store.selectedProductCommunicationChannels.filter { $0.isEnabled && $0.commandsEnabled && $0.kind.supportsInboundCommand }.count)", color: CompanyTheme.accent)
-            EngineMetricRow(title: "通信日志", value: "\(store.selectedProductCommunicationLogs.count)", color: CompanyTheme.warning)
+            EngineMetricRow(title: "通道配置".L(), value: "\(store.selectedProductCommunicationChannels.count)", color: CompanyTheme.blue)
+            EngineMetricRow(title: "启用通道".L(), value: "\(store.selectedProductCommunicationChannels.filter(\.isEnabled).count)", color: CompanyTheme.green)
+            EngineMetricRow(title: "可接收指令".L(), value: "\(store.selectedProductCommunicationChannels.filter { $0.isEnabled && $0.commandsEnabled && $0.kind.supportsInboundCommand }.count)", color: CompanyTheme.accent)
+            EngineMetricRow(title: "通信日志".L(), value: "\(store.selectedProductCommunicationLogs.count)", color: CompanyTheme.warning)
 
             Button {
                 store.ensureCommunicationGatewayPlan()
             } label: {
-                Label("生成默认通信方案", systemImage: "network")
+                Label("生成默认通信方案".L(), systemImage: "network")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -752,7 +752,7 @@ struct CommunicationGatewayCommandCenter: View {
             Button {
                 store.sendTeamLeadReportThroughGateway()
             } label: {
-                Label("生成手机汇报", systemImage: "doc.text.fill")
+                Label("生成手机汇报".L(), systemImage: "doc.text.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -760,7 +760,7 @@ struct CommunicationGatewayCommandCenter: View {
             Button {
                 store.dispatchTeamLeadReportThroughGateway()
             } label: {
-                Label("发送到就绪通道", systemImage: "paperplane.fill")
+                Label("发送到就绪通道".L(), systemImage: "paperplane.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -769,7 +769,7 @@ struct CommunicationGatewayCommandCenter: View {
             Button {
                 store.testCommunicationGatewayChannels()
             } label: {
-                Label("测试通信通道", systemImage: "checkmark.shield.fill")
+                Label("测试通信通道".L(), systemImage: "checkmark.shield.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -779,24 +779,24 @@ struct CommunicationGatewayCommandCenter: View {
 
     private var remoteCommandPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "手机指令模拟")
-            Text("真实接入前，先在本地模拟手机端发来的老板指令：网关会记录日志、通知团队负责人，并创建可追踪任务。")
+            SectionHeader(title: "手机指令模拟".L())
+            Text("真实接入前，先在本地模拟手机端发来的老板指令：网关会记录日志、通知团队负责人，并创建可追踪任务。".L())
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
-            TextField("例如：让默认产品团队今晚前给我一版售前方案", text: $mobileCommand, axis: .vertical)
+            TextField("例如：让默认产品团队今晚前给我一版售前方案".L(), text: $mobileCommand, axis: .vertical)
                 .commandTextField(lineLimit: 2...5)
             Button {
                 store.ingestRemoteCommand(mobileCommand)
                 mobileCommand = ""
             } label: {
-                Label("模拟手机发给 OPC", systemImage: "iphone.gen3.radiowaves.left.and.right")
+                Label("模拟手机发给 OPC".L(), systemImage: "iphone.gen3.radiowaves.left.and.right")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .tint(CompanyTheme.warning)
             .disabled(mobileCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-            RuleLine(title: "外部接入原则", detail: "网络回调通道先做外发汇报；双向指令优先走 Telegram 机器人或企业应用回调，不建议用个人微信做第一版。")
+            RuleLine(title: "外部接入原则".L(), detail: "网络回调通道先做外发汇报；双向指令优先走 Telegram 机器人或企业应用回调，不建议用个人微信做第一版。".L())
             Text(store.communicationGatewayMobileLinkText())
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(CompanyTheme.muted)
@@ -808,9 +808,9 @@ struct CommunicationGatewayCommandCenter: View {
 
     private var channelPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "通道")
+            SectionHeader(title: "通道".L())
             if store.selectedProductCommunicationChannels.isEmpty {
-                EmptyCommandLine(text: "还没有通信通道。点击“生成默认通信方案”。")
+                EmptyCommandLine(text: "还没有通信通道。点击“生成默认通信方案”。".L())
             } else {
                 ForEach(store.selectedProductCommunicationChannels) { channel in
                     CommunicationChannelCard(channel: channel)
@@ -822,9 +822,9 @@ struct CommunicationGatewayCommandCenter: View {
 
     private var logPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "最近通信")
+            SectionHeader(title: "最近通信".L())
             if store.selectedProductCommunicationLogs.isEmpty {
-                EmptyCommandLine(text: "暂无通信日志。")
+                EmptyCommandLine(text: "暂无通信日志。".L())
             } else {
                 ForEach(store.communicationGatewayVisibleLogs) { entry in
                     CommunicationLogCard(entry: entry)
@@ -847,33 +847,33 @@ private enum LocalMaintenanceDangerousAction: String, CaseIterable, Identifiable
 
     var buttonTitle: String {
         switch self {
-        case .cleanup: "清理当前产品运行/测试数据"
-        case .reset: "恢复默认公司状态"
-        case .rollback: "回滚到最近安全检查点"
+        case .cleanup: "清理当前产品运行/测试数据".L()
+        case .reset: "恢复默认公司状态".L()
+        case .rollback: "回滚到最近安全检查点".L()
         }
     }
 
     var title: String {
         switch self {
-        case .cleanup: "确认清理当前产品运行/测试数据"
-        case .reset: "确认恢复默认公司状态"
-        case .rollback: "确认回滚到最近安全检查点"
+        case .cleanup: "确认清理当前产品运行/测试数据".L()
+        case .reset: "确认恢复默认公司状态".L()
+        case .rollback: "确认回滚到最近安全检查点".L()
         }
     }
 
     var message: String {
         switch self {
-        case .cleanup: "只清理当前产品的运行、测试、通信和分支记录，不删除员工或项目文件。"
-        case .reset: "将重建本地默认公司、产品、员工和演示数据。操作前系统会创建安全检查点。"
-        case .rollback: "将恢复员工、产品、任务、消息、日志、审批、产物、记忆、通信和分支计划。"
+        case .cleanup: "只清理当前产品的运行、测试、通信和分支记录，不删除员工或项目文件。".L()
+        case .reset: "将重建本地默认公司、产品、员工和演示数据。操作前系统会创建安全检查点。".L()
+        case .rollback: "将恢复员工、产品、任务、消息、日志、审批、产物、记忆、通信和分支计划。".L()
         }
     }
 
     var confirmTitle: String {
         switch self {
-        case .cleanup: "确认清理运行/测试数据"
-        case .reset: "确认恢复默认公司状态"
-        case .rollback: "确认回滚到最近安全检查点"
+        case .cleanup: "确认清理运行/测试数据".L()
+        case .reset: "确认恢复默认公司状态".L()
+        case .rollback: "确认回滚到最近安全检查点".L()
         }
     }
 
@@ -904,25 +904,25 @@ private enum LocalMaintenanceDangerousAction: String, CaseIterable, Identifiable
     /// 动作专属确认短语：三项各不相同，避免 cleanup/reset/rollback 共用同一个 "确认" 导致误触或粘贴穿透。
     var confirmationPhrase: String {
         switch self {
-        case .cleanup: "清理运行数据"
-        case .reset: "恢复默认公司"
-        case .rollback: "回滚最近检查点"
+        case .cleanup: "清理运行数据".L()
+        case .reset: "恢复默认公司".L()
+        case .rollback: "回滚最近检查点".L()
         }
     }
 
     var phrasePromptPlaceholder: String {
-        "输入「\(confirmationPhrase)」"
+        "输入「".L() + "\(confirmationPhrase)" + "」"
     }
 
     var phraseFieldHint: String {
-        "输入「\(confirmationPhrase)」后才会启用执行按钮"
+        "输入「".L() + "\(confirmationPhrase)" + "」后才会启用执行按钮".L()
     }
 
     var executeHint: String {
         switch self {
-        case .cleanup: "输入「清理运行数据」后才会清理当前产品运行与测试数据，不会删除员工或项目文件"
-        case .reset: "输入「恢复默认公司」后才会把当前公司恢复到默认状态；操作不可撤销前请人工确认"
-        case .rollback: "输入「回滚最近检查点」后才会把当前公司回滚到最近一个安全检查点"
+        case .cleanup: "输入「清理运行数据」后才会清理当前产品运行与测试数据，不会删除员工或项目文件".L()
+        case .reset: "输入「恢复默认公司」后才会把当前公司恢复到默认状态；操作不可撤销前请人工确认".L()
+        case .rollback: "输入「回滚最近检查点」后才会把当前公司回滚到最近一个安全检查点".L()
         }
     }
 }
@@ -960,16 +960,16 @@ private struct LocalMaintenanceDangerousConfirmationPanel: View {
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 11, weight: .medium))
                 .accessibilityIdentifier(phraseFieldIdentifier)
-                .accessibilityLabel("\(action.buttonTitle)确认词")
+                .accessibilityLabel("\(action.buttonTitle)" + "确认词")
                 .accessibilityHint(action.phraseFieldHint)
             HStack(spacing: 8) {
-                Button("取消") {
+                Button("取消".L()) {
                     confirmationPhrase = ""
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier(cancelIdentifier)
-                .accessibilityLabel("取消危险操作确认")
-                .accessibilityHint("清空当前危险操作确认词，不执行任何维护动作")
+                .accessibilityLabel("取消危险操作确认".L())
+                .accessibilityHint("清空当前危险操作确认词，不执行任何维护动作".L())
 
                 Button(role: .destructive) {
                     guard executeEnabled else { return }
@@ -1008,8 +1008,8 @@ struct LocalMaintenanceCenter: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "本地稳定性维护")
-                Text("用于反复测试和多产品开发时保持状态干净。只清理当前产品的运行/测试记录，不删除员工、不删除项目文件。")
+                SectionHeader(title: "本地稳定性维护".L())
+                Text("用于反复测试和多产品开发时保持状态干净。只清理当前产品的运行/测试记录，不删除员工、不删除项目文件。".L())
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
 
@@ -1018,73 +1018,73 @@ struct LocalMaintenanceCenter: View {
                 Button {
                     store.runProductIsolationAudit()
                 } label: {
-                    Label("运行多产品隔离体检", systemImage: "square.stack.3d.down.right.fill")
+                    Label("运行多产品隔离体检".L(), systemImage: "square.stack.3d.down.right.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.accent)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.advancedMaintenanceLocalIsolationAuditButton.rawValue)
-                .accessibilityLabel("运行多产品隔离体检")
-                .accessibilityHint("为当前产品运行多产品隔离体检，写入维护审计并刷新本地稳定性摘要")
+                .accessibilityLabel("运行多产品隔离体检".L())
+                .accessibilityHint("为当前产品运行多产品隔离体检，写入维护审计并刷新本地稳定性摘要".L())
 
                 Button {
                     store.runCLIToolchainPreflightForSelectedProduct()
                 } label: {
-                    Label("运行命令行链路压测预检", systemImage: "terminal.fill")
+                    Label("运行命令行链路压测预检".L(), systemImage: "terminal.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.advancedMaintenanceLocalCLIPreflightButton.rawValue)
-                .accessibilityLabel("运行命令行链路压测预检")
-                .accessibilityHint("为当前产品运行命令行链路干跑预检，不调用真实模型任务")
+                .accessibilityLabel("运行命令行链路压测预检".L())
+                .accessibilityHint("为当前产品运行命令行链路干跑预检，不调用真实模型任务".L())
 
                 Button {
                     store.runCLIRuntimeIsolationAudit()
                 } label: {
-                    Label("运行命令行与工作区隔离体检", systemImage: "rectangle.connected.to.line.below")
+                    Label("运行命令行与工作区隔离体检".L(), systemImage: "rectangle.connected.to.line.below")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.green)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.cliRuntimeIsolationAuditButton.rawValue)
-                .accessibilityLabel("运行命令行与工作区隔离体检")
-                .accessibilityHint("为当前产品运行命令行与工作区隔离体检，写入维护审计并刷新预览，不会修改运行数据或员工")
+                .accessibilityLabel("运行命令行与工作区隔离体检".L())
+                .accessibilityHint("为当前产品运行命令行与工作区隔离体检，写入维护审计并刷新预览，不会修改运行数据或员工".L())
 
                 Button {
                     store.startTerminalWorkspaceForSelectedProduct()
                 } label: {
-                    Label("启动真实终端工作区", systemImage: "rectangle.3.group.fill")
+                    Label("启动真实终端工作区".L(), systemImage: "rectangle.3.group.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.warning)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalWorkspaceStartButton.rawValue)
-                .accessibilityLabel("启动真实终端工作区")
-                .accessibilityHint("为当前产品启动真实终端工作区，把员工任务路由到 macOS 终端真实席位")
+                .accessibilityLabel("启动真实终端工作区".L())
+                .accessibilityHint("为当前产品启动真实终端工作区，把员工任务路由到 macOS 终端真实席位".L())
 
                 Button {
                     store.refreshTerminalWorkspaceLogsForSelectedProduct()
                 } label: {
-                    Label("刷新真实终端日志", systemImage: "arrow.clockwise")
+                    Label("刷新真实终端日志".L(), systemImage: "arrow.clockwise")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalWorkspaceRefreshLogsButton.rawValue)
-                .accessibilityLabel("刷新真实终端日志")
-                .accessibilityHint("刷新当前产品真实终端工作区的可见日志，不影响真实任务执行")
+                .accessibilityLabel("刷新真实终端日志".L())
+                .accessibilityHint("刷新当前产品真实终端工作区的可见日志，不影响真实任务执行".L())
 
                 Button {
                     store.runTerminalWorkspaceHealthAuditForSelectedProduct()
                 } label: {
-                    Label("运行持久终端可用性巡检", systemImage: "terminal.fill")
+                    Label("运行持久终端可用性巡检".L(), systemImage: "terminal.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalWorkspaceHealthAuditButton.rawValue)
-                .accessibilityLabel("运行持久终端可用性巡检")
-                .accessibilityHint("巡检当前产品持久终端工作区的可用性，写入维护审计并就地刷新可用性预览卡片")
+                .accessibilityLabel("运行持久终端可用性巡检".L())
+                .accessibilityHint("巡检当前产品持久终端工作区的可用性，写入维护审计并就地刷新可用性预览卡片".L())
 
                 TerminalWorkspaceHealthPreview()
 
@@ -1097,82 +1097,82 @@ struct LocalMaintenanceCenter: View {
                 Button {
                     store.runRuntimeSessionHealthAuditForSelectedProduct()
                 } label: {
-                    Label("运行会话健康巡检", systemImage: "waveform.path.ecg")
+                    Label("运行会话健康巡检".L(), systemImage: "waveform.path.ecg")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.runtimeSessionHealthAuditButton.rawValue)
-                .accessibilityLabel("运行会话健康巡检")
-                .accessibilityHint("巡检当前产品员工会话健康度，写入维护审计并就地刷新会话健康预览卡片")
+                .accessibilityLabel("运行会话健康巡检".L())
+                .accessibilityHint("巡检当前产品员工会话健康度，写入维护审计并就地刷新会话健康预览卡片".L())
 
                 RuntimeSessionHealthAuditPreview()
 
                 Button {
                     store.runEmployeeHandoffAuditForSelectedProduct()
                 } label: {
-                    Label("运行员工交接巡检", systemImage: "person.2.wave.2.fill")
+                    Label("运行员工交接巡检".L(), systemImage: "person.2.wave.2.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.employeeHandoffAuditButton.rawValue)
-                .accessibilityLabel("运行员工交接巡检")
-                .accessibilityHint("巡检当前产品员工交接证据完整度，写入维护审计并刷新员工交接巡检预览")
+                .accessibilityLabel("运行员工交接巡检".L())
+                .accessibilityHint("巡检当前产品员工交接证据完整度，写入维护审计并刷新员工交接巡检预览".L())
 
                 EmployeeHandoffAuditPreview()
 
                 Button {
                     store.runJobArchiveStaleAuditForSelectedProduct()
                 } label: {
-                    Label("运行命令行作业幽灵巡检", systemImage: "doc.badge.gearshape")
+                    Label("运行命令行作业幽灵巡检".L(), systemImage: "doc.badge.gearshape")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.jobArchiveStaleAuditButton.rawValue)
-                .accessibilityLabel("运行命令行作业幽灵巡检")
-                .accessibilityHint("巡检当前产品命令行作业档案的幽灵或陈旧作业，只写维护审计，不删除作业产物")
+                .accessibilityLabel("运行命令行作业幽灵巡检".L())
+                .accessibilityHint("巡检当前产品命令行作业档案的幽灵或陈旧作业，只写维护审计，不删除作业产物".L())
 
                 JobArchiveStaleAuditPreview()
 
                 Button {
                     store.runEvidenceClassificationAuditForSelectedProduct()
                 } label: {
-                    Label("运行证据分类巡检", systemImage: "checklist.checked")
+                    Label("运行证据分类巡检".L(), systemImage: "checklist.checked")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.evidenceClassificationAuditButton.rawValue)
-                .accessibilityHint("巡检当前产品的验证记录与产物档案，发现既不属于交付也不属于维护的未分类证据；只写维护审计、不删除数据")
+                .accessibilityHint("巡检当前产品的验证记录与产物档案，发现既不属于交付也不属于维护的未分类证据；只写维护审计、不删除数据".L())
 
                 EvidenceClassificationAuditPreview()
 
                 Button {
                     store.runMaintenanceDataPressureAuditForSelectedProduct()
                 } label: {
-                    Label("运行维护数据增长巡检", systemImage: "chart.line.uptrend.xyaxis")
+                    Label("运行维护数据增长巡检".L(), systemImage: "chart.line.uptrend.xyaxis")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.maintenanceDataPressureAuditButton.rawValue)
-                .accessibilityHint("巡检当前产品的维护类记录与产物增长压力；只写维护审计、不删除数据，也不裁剪主快照")
+                .accessibilityHint("巡检当前产品的维护类记录与产物增长压力；只写维护审计、不删除数据，也不裁剪主快照".L())
 
                 MaintenanceDataPressurePreview()
 
                 Button {
                     store.runHistoryIndexAuditForSelectedProduct()
                 } label: {
-                    Label("运行历史索引巡检", systemImage: "cylinder.split.1x2.fill")
+                    Label("运行历史索引巡检".L(), systemImage: "cylinder.split.1x2.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.historyIndexAuditButton.rawValue)
-                .accessibilityLabel("运行历史索引巡检")
-                .accessibilityHint("巡检当前产品历史索引完整度与一致性，写入维护审计并刷新历史索引预览")
+                .accessibilityLabel("运行历史索引巡检".L())
+                .accessibilityHint("巡检当前产品历史索引完整度与一致性，写入维护审计并刷新历史索引预览".L())
 
                 HistoryIndexAuditPreview()
 
@@ -1185,7 +1185,7 @@ struct LocalMaintenanceCenter: View {
                     }
                 } label: {
                     Label(
-                        confirmHistoryArchiveMigration ? "再次点击确认运行历史归档迁移" : "运行历史归档迁移",
+                        confirmHistoryArchiveMigration ? "再次点击确认运行历史归档迁移".L() : "运行历史归档迁移".L(),
                         systemImage: "archivebox.fill"
                     )
                     .frame(maxWidth: .infinity)
@@ -1193,8 +1193,8 @@ struct LocalMaintenanceCenter: View {
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.historyArchiveMigrationButton.rawValue)
-                .accessibilityLabel("运行历史归档迁移")
-                .accessibilityHint("把当前产品旧历史记录按归档规则迁入历史归档，写入维护审计并刷新归档迁移预览；首次点击进入确认态，再次点击才会执行")
+                .accessibilityLabel("运行历史归档迁移".L())
+                .accessibilityHint("把当前产品旧历史记录按归档规则迁入历史归档，写入维护审计并刷新归档迁移预览；首次点击进入确认态，再次点击才会执行".L())
 
                 HistoryArchiveMigrationPreview()
 
@@ -1208,7 +1208,7 @@ struct LocalMaintenanceCenter: View {
                     }
                 } label: {
                     Label(
-                        confirmAutoSummaryCleanup ? "再次点击确认清理自动摘要重复" : "清理自动状态摘要重复",
+                        confirmAutoSummaryCleanup ? "再次点击确认清理自动摘要重复".L() : "清理自动状态摘要重复".L(),
                         systemImage: "doc.badge.minus"
                     )
                     .frame(maxWidth: .infinity)
@@ -1217,7 +1217,7 @@ struct LocalMaintenanceCenter: View {
                 .tint(CompanyTheme.warning)
                 .disabled(!store.previewSelectedProductAutoCapturedSummaryDuplicates().hasDuplicates)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.autoCapturedSummaryDuplicateCleanupButton.rawValue)
-                .accessibilityHint("清理当前产品中重复的自动状态摘要；按摘要前 200 字分组，每组保留最新一条，移除旧条目；只有确实存在重复时才可点击")
+                .accessibilityHint("清理当前产品中重复的自动状态摘要；按摘要前 200 字分组，每组保留最新一条，移除旧条目；只有确实存在重复时才可点击".L())
 
                 Button {
                     if confirmLegacyTaskMigration {
@@ -1227,32 +1227,32 @@ struct LocalMaintenanceCenter: View {
                         confirmLegacyTaskMigration = true
                     }
                 } label: {
-                    Label(confirmLegacyTaskMigration ? "再次点击确认迁入当前产品" : "迁移未归属旧任务到当前产品", systemImage: "tray.and.arrow.down.fill")
+                    Label(confirmLegacyTaskMigration ? "再次点击确认迁入当前产品".L() : "迁移未归属旧任务到当前产品".L(), systemImage: "tray.and.arrow.down.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.blue)
                 .disabled(store.legacyTaskWithoutProductIDCount == 0)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.legacyTaskProductMigrationButton.rawValue)
-                .accessibilityHint("仅当当前产品存在未归属旧任务时可用；首次点击进入确认态，再次点击才会迁入当前产品")
+                .accessibilityHint("仅当当前产品存在未归属旧任务时可用；首次点击进入确认态，再次点击才会迁入当前产品".L())
 
                 Button {
                     store.recoverStaleRuntimeSessionsForSelectedProduct()
                 } label: {
-                    Label("恢复异常占用员工会话", systemImage: "stethoscope")
+                    Label("恢复异常占用员工会话".L(), systemImage: "stethoscope")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.red)
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.staleRuntimeSessionRecoveryButton.rawValue)
-                .accessibilityLabel("恢复异常占用员工会话")
-                .accessibilityHint("恢复当前产品被异常占用的员工运行会话，释放席位但不会修改员工配置或项目文件")
+                .accessibilityLabel("恢复异常占用员工会话".L())
+                .accessibilityHint("恢复当前产品被异常占用的员工运行会话，释放席位但不会修改员工配置或项目文件".L())
 
             }
             .commandPanel()
 
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "清理预览")
+                SectionHeader(title: "清理预览".L())
                 Text(store.selectedProductRunDataSummary())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1261,10 +1261,10 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.runDataCleanupPreview.rawValue)
-                    .accessibilityLabel("清理预览")
+                    .accessibilityLabel("清理预览".L())
                     .accessibilityValue(store.selectedProductRunDataSummary())
 
-                SectionHeader(title: "命令行链路预检")
+                SectionHeader(title: "命令行链路预检".L())
                 Text(store.cliToolchainPreflightText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1273,10 +1273,10 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.cliToolchainPreflightPreview.rawValue)
-                    .accessibilityLabel("命令行链路预检")
+                    .accessibilityLabel("命令行链路预检".L())
                     .accessibilityValue(store.cliToolchainPreflightText())
 
-                SectionHeader(title: "默认状态预览")
+                SectionHeader(title: "默认状态预览".L())
                 Text(store.defaultCompanyStatePreviewText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1285,10 +1285,10 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.defaultCompanyStatePreview.rawValue)
-                    .accessibilityLabel("默认状态预览")
+                    .accessibilityLabel("默认状态预览".L())
                     .accessibilityValue(store.defaultCompanyStatePreviewText())
 
-                SectionHeader(title: "隔离体检预览")
+                SectionHeader(title: "隔离体检预览".L())
                 Text(store.productIsolationAuditText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1297,12 +1297,12 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.productIsolationAuditPreview.rawValue)
-                    .accessibilityLabel("隔离体检预览")
+                    .accessibilityLabel("隔离体检预览".L())
                     .accessibilityValue(store.productIsolationAuditText())
 
-                SectionHeader(title: "命令行与工作区隔离预览")
+                SectionHeader(title: "命令行与工作区隔离预览".L())
                 MaintenancePreviewText(
-                    label: "命令行与工作区隔离预览",
+                    label: "命令行与工作区隔离预览".L(),
                     summary: store.cliRuntimeIsolationAuditText(),
                     detail: store.cliRuntimeIsolationAuditDetailText(),
                     summaryIdentifier: .cliRuntimeIsolationPreview,
@@ -1310,7 +1310,7 @@ struct LocalMaintenanceCenter: View {
                     detailIdentifier: .cliRuntimeIsolationDetailPreview
                 )
 
-                SectionHeader(title: "本地文件索引根白名单")
+                SectionHeader(title: "本地文件索引根白名单".L())
                 Text(store.linkedLocalFileRootAllowlistText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1319,10 +1319,10 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.linkedLocalFileRootAllowlistPreview.rawValue)
-                    .accessibilityLabel("本地文件索引根白名单")
+                    .accessibilityLabel("本地文件索引根白名单".L())
                     .accessibilityValue(store.linkedLocalFileRootAllowlistText())
 
-                SectionHeader(title: "自动摘要去重预览")
+                SectionHeader(title: "自动摘要去重预览".L())
                 Text(store.autoCapturedSummaryDuplicatePreviewText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1331,10 +1331,10 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.autoCapturedSummaryDuplicatePreview.rawValue)
-                    .accessibilityLabel("自动摘要去重预览")
+                    .accessibilityLabel("自动摘要去重预览".L())
                     .accessibilityValue(store.autoCapturedSummaryDuplicatePreviewText())
 
-                SectionHeader(title: "旧任务归属迁移预览")
+                SectionHeader(title: "旧任务归属迁移预览".L())
                 Text(store.legacyTaskProductMigrationText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1343,12 +1343,12 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.legacyTaskProductMigrationPreview.rawValue)
-                    .accessibilityLabel("旧任务归属迁移预览")
+                    .accessibilityLabel("旧任务归属迁移预览".L())
                     .accessibilityValue(store.legacyTaskProductMigrationText())
 
-                SectionHeader(title: "真实终端工作区预览")
+                SectionHeader(title: "真实终端工作区预览".L())
                 MaintenancePreviewText(
-                    label: "真实终端工作区预览",
+                    label: "真实终端工作区预览".L(),
                     summary: store.terminalWorkspacePlanText(),
                     detail: store.terminalWorkspacePlanDetailText(),
                     summaryIdentifier: .terminalWorkspacePlanPreview,
@@ -1356,7 +1356,7 @@ struct LocalMaintenanceCenter: View {
                     detailIdentifier: .terminalWorkspacePlanDetailPreview
                 )
 
-                SectionHeader(title: "安全检查点")
+                SectionHeader(title: "安全检查点".L())
                 Text(store.safetyCheckpointListText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1365,10 +1365,10 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.safetyCheckpointPreview.rawValue)
-                    .accessibilityLabel("安全检查点")
+                    .accessibilityLabel("安全检查点".L())
                     .accessibilityValue(store.safetyCheckpointListText())
 
-                SectionHeader(title: "本机诊断与日志策略")
+                SectionHeader(title: "本机诊断与日志策略".L())
                 Text(store.localDiagnosticsPolicyText())
                     .font(.system(size: 10.5, weight: .regular, design: .monospaced))
                     .foregroundStyle(CompanyTheme.terminalInk)
@@ -1377,21 +1377,21 @@ struct LocalMaintenanceCenter: View {
                     .padding(10)
                     .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityIdentifier(OPCUIAutomationIdentifier.localDiagnosticsPolicyPreview.rawValue)
-                    .accessibilityLabel("本机诊断与日志策略")
+                    .accessibilityLabel("本机诊断与日志策略".L())
                     .accessibilityValue(store.localDiagnosticsPolicyText())
 
-                SectionHeader(title: "运行证据归档（技术负责人专用）")
-                Text("以下两个区块仅技术负责人/维护视图可见：聚合巡检、恢复、就绪审计等运维证据；老板总控台、产品详情交付区与交付验收中心都不展示。")
+                SectionHeader(title: "运行证据归档（技术负责人专用）".L())
+                Text("以下两个区块仅技术负责人/维护视图可见：聚合巡检、恢复、就绪审计等运维证据；老板总控台、产品详情交付区与交付验收中心都不展示。".L())
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
 
-                SectionHeader(title: "技术维护审计中心")
-                Text("聚合运行巡检、恢复、就绪审计等记录，按时间倒序显示最近重点，后续记录会继续浮现。")
+                SectionHeader(title: "技术维护审计中心".L())
+                Text("聚合运行巡检、恢复、就绪审计等记录，按时间倒序显示最近重点，后续记录会继续浮现。".L())
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                 Group {
                     if store.selectedProductMaintenanceVerifications.isEmpty {
-                        EmptyCommandLine(text: "暂无维护审计记录。运行任一巡检/恢复后会出现。")
+                        EmptyCommandLine(text: "暂无维护审计记录。运行任一巡检/恢复后会出现。".L())
                     } else {
                         ForEach(store.localMaintenanceVisibleVerifications) { verification in
                             VerificationRecordCard(record: verification)
@@ -1405,15 +1405,15 @@ struct LocalMaintenanceCenter: View {
                 }
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.maintenanceAuditCenter.rawValue)
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("技术维护审计中心")
+                .accessibilityLabel("技术维护审计中心".L())
 
-                SectionHeader(title: "维护产物档案")
-                Text("聚合安全检查点、命令行作业档案、闭环审计报告、本地文件索引等产物，按时间倒序显示最近重点，后续产物会继续浮现。")
+                SectionHeader(title: "维护产物档案".L())
+                Text("聚合安全检查点、命令行作业档案、闭环审计报告、本地文件索引等产物，按时间倒序显示最近重点，后续产物会继续浮现。".L())
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                 Group {
                     if store.selectedProductMaintenanceArtifacts.isEmpty {
-                        EmptyCommandLine(text: "暂无维护产物档案。生成安全检查点 / 运行真实命令行任务 / 生成闭环审计报告后会出现。")
+                        EmptyCommandLine(text: "暂无维护产物档案。生成安全检查点 / 运行真实命令行任务 / 生成闭环审计报告后会出现。".L())
                     } else {
                         ForEach(store.localMaintenanceVisibleArtifacts) { artifact in
                             ArtifactRecordCard(artifact: artifact)
@@ -1427,13 +1427,13 @@ struct LocalMaintenanceCenter: View {
                 }
                 .accessibilityIdentifier(OPCUIAutomationIdentifier.maintenanceArtifactCenter.rawValue)
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("维护产物档案")
+                .accessibilityLabel("维护产物档案".L())
             }
             .commandPanel()
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.localMaintenanceCenterRoot.rawValue)
-        .accessibilityLabel("本地稳定性维护中心")
+        .accessibilityLabel("本地稳定性维护中心".L())
     }
 
     @ViewBuilder
@@ -1479,16 +1479,16 @@ private struct MaintenancePreviewText: View {
                     reportText(detail)
                 }
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(label)完整明细")
+                    .accessibilityLabel("\(label)" + "完整明细")
                     .accessibilityValue(detail)
                     .accessibilityIdentifier(detailIdentifier.rawValue)
             } label: {
-                Label("查看完整运维明细", systemImage: "wrench.and.screwdriver.fill")
+                Label("查看完整运维明细".L(), systemImage: "wrench.and.screwdriver.fill")
                     .font(.system(size: 11, weight: .heavy))
                     .foregroundStyle(CompanyTheme.muted)
                     .accessibilityIdentifier(detailToggleIdentifier.rawValue)
-                    .accessibilityLabel("\(label)完整明细开关")
-                    .accessibilityHint("展开或收起完整运维明细")
+                    .accessibilityLabel("\(label)" + "完整明细开关")
+                    .accessibilityHint("展开或收起完整运维明细".L())
             }
         }
     }
@@ -1513,21 +1513,21 @@ struct MultiAgentClosureTraceSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("多员工闭环详情")
+                    Text("多员工闭环详情".L())
                         .font(.system(size: 22, weight: .heavy, design: .rounded))
                         .foregroundStyle(CompanyTheme.ink)
-                    Text("\(store.selectedProduct?.name ?? "当前产品")：按每次技术负责人目标追踪任务、消息、审批、门禁、产物和验收证据。")
+                    Text("\(store.selectedProduct?.name ?? "当前产品")" + "：按每次技术负责人目标追踪任务、消息、审批、门禁、产物和验收证据。")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(CompanyTheme.muted)
                 }
                 Spacer()
-                Button("关闭") {
+                Button("关闭".L()) {
                     dismiss()
                 }
             }
 
             if store.selectedProductClosureTraces.isEmpty {
-                ContentUnavailableView("暂无闭环记录", systemImage: "point.3.connected.trianglepath.dotted", description: Text("在终端大厅运行闭环演练或启动技术负责人协作目标后，这里会显示可审核链路。"))
+                ContentUnavailableView("暂无闭环记录".L(), systemImage: "point.3.connected.trianglepath.dotted", description: Text("在终端大厅运行闭环演练或启动技术负责人协作目标后，这里会显示可审核链路。".L()))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
@@ -1563,7 +1563,7 @@ struct MultiAgentClosureTraceCard: View {
                             .foregroundStyle(CompanyTheme.ink)
                         StatusPill(text: trace.status.title, color: statusColor(trace.status))
                     }
-                    Text("更新：\(trace.updatedAt.opcDateTimeText)")
+                    Text("更新：" + "\(trace.updatedAt.opcDateTimeText)")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(CompanyTheme.muted)
                 }
@@ -1575,7 +1575,7 @@ struct MultiAgentClosureTraceCard: View {
                     Button {
                         _ = store.generateClosureTraceAuditReport(for: trace)
                     } label: {
-                        Label(hasAuditReport ? "审计报告已生成" : "生成审计报告", systemImage: hasAuditReport ? "doc.text.magnifyingglass" : "doc.badge.plus")
+                        Label(hasAuditReport ? "审计报告已生成".L() : "生成审计报告".L(), systemImage: hasAuditReport ? "doc.text.magnifyingglass" : "doc.badge.plus")
                     }
                     .buttonStyle(.bordered)
                     .disabled(hasAuditReport)
@@ -1583,12 +1583,12 @@ struct MultiAgentClosureTraceCard: View {
             }
 
             HStack(spacing: 8) {
-                traceMetric("任务", trace.taskIDs.count)
-                traceMetric("消息", trace.messageIDs.count)
-                traceMetric("审批", trace.approvalIDs.count)
-                traceMetric("门禁", trace.reviewGateIDs.count)
-                traceMetric("产物", trace.artifactIDs.count)
-                traceMetric("验收", trace.verificationIDs.count)
+                traceMetric("任务".L(), trace.taskIDs.count)
+                traceMetric("消息".L(), trace.messageIDs.count)
+                traceMetric("审批".L(), trace.approvalIDs.count)
+                traceMetric("门禁".L(), trace.reviewGateIDs.count)
+                traceMetric("产物".L(), trace.artifactIDs.count)
+                traceMetric("验收".L(), trace.verificationIDs.count)
             }
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 245), spacing: 10)], alignment: .leading, spacing: 10) {
@@ -1598,7 +1598,7 @@ struct MultiAgentClosureTraceCard: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                TraceDetailSection(title: "任务图边", systemImage: "point.3.connected.trianglepath.dotted", count: store.closureTraceTaskGraph(trace).edges.count) {
+                TraceDetailSection(title: "任务图边".L(), systemImage: "point.3.connected.trianglepath.dotted", count: store.closureTraceTaskGraph(trace).edges.count) {
                     ForEach(store.closureTraceTaskGraph(trace).edges) { edge in
                         TraceRecordRow(
                             title: "\(taskTitle(edge.fromTaskID)) → \(taskTitle(edge.toTaskID))",
@@ -1609,18 +1609,18 @@ struct MultiAgentClosureTraceCard: View {
                     }
                 }
 
-                TraceDetailSection(title: "任务记录", systemImage: "checklist", count: trace.taskIDs.count) {
+                TraceDetailSection(title: "任务记录".L(), systemImage: "checklist", count: trace.taskIDs.count) {
                     ForEach(store.closureTraceTasks(trace)) { task in
                         TraceRecordRow(
                             title: task.title,
-                            subtitle: "负责人：\(agentName(task.ownerID)) · 状态：\(task.status.title)",
+                            subtitle: "负责人：".L() + "\(agentName(task.ownerID))" + " · 状态：".L() + "\(task.status.title)",
                             detail: task.successCriteria,
                             color: taskColor(task.status)
                         )
                     }
                 }
 
-                TraceDetailSection(title: "消息记录", systemImage: "bubble.left.and.bubble.right.fill", count: trace.messageIDs.count) {
+                TraceDetailSection(title: "消息记录".L(), systemImage: "bubble.left.and.bubble.right.fill", count: trace.messageIDs.count) {
                     ForEach(store.closureTraceMessages(trace)) { message in
                         TraceRecordRow(
                             title: message.subject,
@@ -1631,29 +1631,29 @@ struct MultiAgentClosureTraceCard: View {
                     }
                 }
 
-                TraceDetailSection(title: "审批记录", systemImage: "signature", count: trace.approvalIDs.count) {
+                TraceDetailSection(title: "审批记录".L(), systemImage: "signature", count: trace.approvalIDs.count) {
                     ForEach(store.closureTraceApprovals(trace)) { approval in
                         TraceRecordRow(
                             title: approval.title,
-                            subtitle: "申请人：\(agentName(approval.requesterID)) · 状态：\(approval.status.title)",
+                            subtitle: "申请人：".L() + "\(agentName(approval.requesterID))" + " · 状态：".L() + "\(approval.status.title)",
                             detail: approval.reason,
                             color: approval.status == .approved ? CompanyTheme.green : approval.status == .rejected ? CompanyTheme.red : CompanyTheme.warning
                         )
                     }
                 }
 
-                TraceDetailSection(title: "验收门禁", systemImage: "shield.lefthalf.filled", count: trace.reviewGateIDs.count) {
+                TraceDetailSection(title: "验收门禁".L(), systemImage: "shield.lefthalf.filled", count: trace.reviewGateIDs.count) {
                     ForEach(store.closureTraceReviewGates(trace)) { gate in
                         TraceRecordRow(
                             title: taskTitle(gate.taskID),
-                            subtitle: "状态：\(gate.status.title) · 更新：\(gate.updatedAt.opcDateTimeText)",
+                            subtitle: "状态：".L() + "\(gate.status.title)" + " · 更新：" + "\(gate.updatedAt.opcDateTimeText)",
                             detail: gate.summary,
                             color: reviewGateColor(gate.status)
                         )
                     }
                 }
 
-                TraceDetailSection(title: "产物记录", systemImage: "doc.text.magnifyingglass", count: trace.artifactIDs.count) {
+                TraceDetailSection(title: "产物记录".L(), systemImage: "doc.text.magnifyingglass", count: trace.artifactIDs.count) {
                     ForEach(store.closureTraceArtifacts(trace)) { artifact in
                         TraceRecordRow(
                             title: artifact.title,
@@ -1664,11 +1664,11 @@ struct MultiAgentClosureTraceCard: View {
                     }
                 }
 
-                TraceDetailSection(title: "验收记录", systemImage: "checkmark.seal.fill", count: trace.verificationIDs.count) {
+                TraceDetailSection(title: "验收记录".L(), systemImage: "checkmark.seal.fill", count: trace.verificationIDs.count) {
                     ForEach(store.closureTraceVerifications(trace)) { verification in
                         TraceRecordRow(
                             title: verification.title,
-                            subtitle: "状态：\(verification.status.title) · \(verification.createdAt.opcDateTimeText)",
+                            subtitle: "状态：".L() + "\(verification.status.title)" + " · " + "\(verification.createdAt.opcDateTimeText)",
                             detail: verification.detail,
                             color: verificationColor(verification.status)
                         )
@@ -1708,12 +1708,12 @@ struct MultiAgentClosureTraceCard: View {
     }
 
     private func agentName(_ id: UUID?) -> String {
-        guard let id else { return "未分配" }
-        return store.agents.first { $0.id == id }?.displayName ?? "未知员工"
+        guard let id else { return "未分配".L() }
+        return store.agents.first { $0.id == id }?.displayName ?? "未知员工".L()
     }
 
     private func taskTitle(_ id: UUID) -> String {
-        store.tasks.first { $0.id == id }?.title ?? "未知任务"
+        store.tasks.first { $0.id == id }?.title ?? "未知任务".L()
     }
 
     private func taskColor(_ status: TaskStatus) -> Color {
@@ -1806,7 +1806,7 @@ struct TraceDetailSection<Content: View>: View {
         DisclosureGroup(isExpanded: $isExpanded) {
             VStack(alignment: .leading, spacing: 7) {
                 if count == 0 {
-                    EmptyCommandLine(text: "暂无记录。")
+                    EmptyCommandLine(text: "暂无记录。".L())
                 } else {
                     content()
                 }
@@ -1886,16 +1886,16 @@ struct WorkQueueCard: View {
     let item: AgentWorkItem
 
     private var taskTitle: String {
-        store.tasks.first { $0.id == item.taskID }?.title ?? "未知任务"
+        store.tasks.first { $0.id == item.taskID }?.title ?? "未知任务".L()
     }
 
     private var agentName: String {
-        store.agents.first { $0.id == item.agentID }?.displayName ?? "未知员工"
+        store.agents.first { $0.id == item.agentID }?.displayName ?? "未知员工".L()
     }
 
     private var reworkReason: String? {
         guard item.status != .completed else { return nil }
-        guard let range = item.promptPreview.range(of: "打回原因：") else { return nil }
+        guard let range = item.promptPreview.range(of: "打回原因：".L()) else { return nil }
         let tail = item.promptPreview[range.upperBound...]
         let reason = tail
             .split(whereSeparator: \.isNewline)
@@ -1916,14 +1916,14 @@ struct WorkQueueCard: View {
             }
             if let reworkReason {
                 HStack(alignment: .top, spacing: 6) {
-                    StatusPill(text: "返工", color: CompanyTheme.warning)
-                    Text("原因：\(reworkReason)")
+                    StatusPill(text: "返工".L(), color: CompanyTheme.warning)
+                    Text("原因：" + "\(reworkReason)")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(CompanyTheme.warning)
                         .lineLimit(2)
                 }
             }
-            Text("员工：\(agentName)")
+            Text("员工：".L() + "\(agentName)")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(CompanyTheme.blue)
             Text(item.promptPreview)
@@ -1931,12 +1931,12 @@ struct WorkQueueCard: View {
                 .foregroundStyle(CompanyTheme.muted)
                 .lineLimit(2)
             HStack {
-                Button("运行") {
+                Button("运行".L()) {
                     store.runTaskOwner(item.taskID)
                     store.mainWorkspace = .terminalHall
                 }
                 .buttonStyle(.bordered)
-                Button("完成") {
+                Button("完成".L()) {
                     store.completeWorkItem(for: item.taskID, agentID: item.agentID)
                 }
                 .buttonStyle(.borderedProminent)
@@ -2008,15 +2008,15 @@ struct BossReportCenter: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "生成老板报告")
-                Text("报告会汇总当前产品、任务、风险、员工状态和下一步建议，并同步给老板与技术负责人。")
+                SectionHeader(title: "生成老板报告".L())
+                Text("报告会汇总当前产品、任务、风险、员工状态和下一步建议，并同步给老板与技术负责人。".L())
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                 Button {
                     store.generateBossReport()
                     store.selectAgent(store.bossID)
                 } label: {
-                    Label("生成老板报告", systemImage: "doc.richtext.fill")
+                    Label("生成老板报告".L(), systemImage: "doc.richtext.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -2026,7 +2026,7 @@ struct BossReportCenter: View {
                     store.createHandoffSnapshot()
                     store.selectAgent(store.ctoID)
                 } label: {
-                    Label("生成项目交接摘要", systemImage: "archivebox.fill")
+                    Label("生成项目交接摘要".L(), systemImage: "archivebox.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -2035,14 +2035,14 @@ struct BossReportCenter: View {
                     store.generateHealthAudit()
                     store.selectAgent(store.bossID)
                 } label: {
-                    Label("生成健康体检", systemImage: "waveform.path.ecg")
+                    Label("生成健康体检".L(), systemImage: "waveform.path.ecg")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
 
-                SectionHeader(title: "报告事件")
+                SectionHeader(title: "报告事件".L())
                 if reportEvents.isEmpty {
-                    EmptyCommandLine(text: "还没有报告或产物事件。")
+                    EmptyCommandLine(text: "还没有报告或产物事件。".L())
                 } else {
                     ForEach(store.bossReportCenterReportEvents) { event in
                         EventSignalRow(event: event)
@@ -2055,9 +2055,9 @@ struct BossReportCenter: View {
             .commandPanel()
 
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "最近老板报告")
+                SectionHeader(title: "最近老板报告".L())
                 if bossMessages.isEmpty {
-                    EmptyCommandLine(text: "点击左侧生成老板报告后，这里会显示报告摘要。")
+                    EmptyCommandLine(text: "点击左侧生成老板报告后，这里会显示报告摘要。".L())
                 } else {
                     ForEach(store.bossReportCenterBossMessages) { message in
                         ScrollView {
@@ -2129,16 +2129,16 @@ struct AcceptanceTaskCard: View {
                 .foregroundStyle(CompanyTheme.muted)
                 .lineLimit(2)
             HStack {
-                Button("送审") {
+                Button("送审".L()) {
                     store.updateTaskStatus(task.id, status: .needsReview)
                     store.requestCTOReview(for: task.id)
                 }
                 .buttonStyle(.bordered)
-                Button("需要老板批准") {
+                Button("需要老板批准".L()) {
                     store.updateTaskStatus(task.id, status: .needsApproval)
                 }
                 .buttonStyle(.bordered)
-                Button("验收通过") {
+                Button("验收通过".L()) {
                     store.acceptTask(task.id)
                 }
                 .buttonStyle(.borderedProminent)
@@ -2207,7 +2207,7 @@ struct CommunicationChannelCard: View {
                         .foregroundStyle(CompanyTheme.blue)
                 }
                 Spacer()
-                StatusPill(text: channel.isEnabled ? "启用" : "未启用", color: channel.isEnabled ? CompanyTheme.green : CompanyTheme.muted)
+                StatusPill(text: channel.isEnabled ? "启用".L() : "未启用".L(), color: channel.isEnabled ? CompanyTheme.green : CompanyTheme.muted)
             }
 
             Text(channel.kind.capabilitySummary)
@@ -2216,15 +2216,15 @@ struct CommunicationChannelCard: View {
                 .lineLimit(3)
 
             HStack(spacing: 10) {
-                Toggle("启用", isOn: Binding(
+                Toggle("启用".L(), isOn: Binding(
                     get: { channel.isEnabled },
                     set: { store.updateCommunicationChannel(channel.id, isEnabled: $0) }
                 ))
-                Toggle("汇报", isOn: Binding(
+                Toggle("汇报".L(), isOn: Binding(
                     get: { channel.reportsEnabled },
                     set: { store.updateCommunicationChannel(channel.id, reportsEnabled: $0) }
                 ))
-                Toggle("指令", isOn: Binding(
+                Toggle("指令".L(), isOn: Binding(
                     get: { channel.commandsEnabled },
                     set: { store.updateCommunicationChannel(channel.id, commandsEnabled: $0) }
                 ))
@@ -2232,28 +2232,28 @@ struct CommunicationChannelCard: View {
             }
             .font(.system(size: 11, weight: .bold))
 
-            TextField("消息回调或机器人接口地址", text: Binding(
+            TextField("消息回调或机器人接口地址".L(), text: Binding(
                 get: { channel.endpoint },
                 set: { store.updateCommunicationChannel(channel.id, endpoint: $0) }
             ))
             .commandTextField()
 
             if channel.kind == .telegramBot {
-                TextField("聊天标识", text: Binding(
+                TextField("聊天标识".L(), text: Binding(
                     get: { channel.chatID },
                     set: { store.updateCommunicationChannel(channel.id, chatID: $0) }
                 ))
                 .commandTextField()
             }
 
-            if let preview = CommunicationGatewayRequestBuilder.preview(for: channel, text: "OPC 测试消息") {
+            if let preview = CommunicationGatewayRequestBuilder.preview(for: channel, text: "OPC 测试消息".L()) {
                 Text("\(preview.method) \(preview.endpoint)")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundStyle(CompanyTheme.muted)
                     .lineLimit(1)
                     .truncationMode(.middle)
             } else if channel.isEnabled {
-                Text("缺少必要配置，暂不能外发。")
+                Text("缺少必要配置，暂不能外发。".L())
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(CompanyTheme.warning)
             }
@@ -2268,8 +2268,8 @@ struct CommunicationLogCard: View {
     let entry: CommunicationLogEntry
 
     private var agentName: String {
-        guard let agentID = entry.agentID else { return "OPC 网关" }
-        return store.agents.first { $0.id == agentID }?.displayName ?? "未知员工"
+        guard let agentID = entry.agentID else { return "OPC 网关".L() }
+        return store.agents.first { $0.id == agentID }?.displayName ?? "未知员工".L()
     }
 
     var body: some View {

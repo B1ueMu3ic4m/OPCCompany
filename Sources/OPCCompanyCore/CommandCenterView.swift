@@ -130,7 +130,7 @@ struct CommandCenterView: View {
     private var bossReportSnapshotPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
-                SectionHeader(title: "老板汇报中心")
+                SectionHeader(title: "老板汇报中心".L())
                 Spacer()
                 Text("\(store.selectedProductBossReportMessages.count)")
                     .font(.system(size: 11, weight: .heavy))
@@ -148,13 +148,13 @@ struct CommandCenterView: View {
                     .padding(12)
                     .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
             } else {
-                EmptyCommandLine(text: "还没有当前产品汇报。打开汇报中心可生成老板报告、交接摘要和健康体检。")
+                EmptyCommandLine(text: "还没有当前产品汇报。打开汇报中心可生成老板报告、交接摘要和健康体检。".L())
             }
 
             Button {
                 showReportCenter = true
             } label: {
-                Label("打开老板汇报中心", systemImage: "doc.richtext.fill")
+                Label("打开老板汇报中心".L(), systemImage: "doc.richtext.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -170,10 +170,10 @@ struct CommandCenterView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("老板总览")
+                Text("老板总览".L())
                     .font(.system(size: 28, weight: .heavy, design: .serif))
                     .foregroundStyle(CompanyTheme.ink)
-                Text(product?.name ?? "当前产品")
+                Text(product?.name ?? "当前产品".L())
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(CompanyTheme.blue)
                     .lineLimit(1)
@@ -190,10 +190,10 @@ struct CommandCenterView: View {
 
             VStack(alignment: .trailing, spacing: 8) {
                 HStack(spacing: 8) {
-                    ProductChip(text: product?.stage.title ?? "未选择", color: CompanyTheme.blue)
-                    ProductChip(text: product?.status.title ?? "待命", color: CompanyTheme.accent)
+                    ProductChip(text: product?.stage.title ?? "未选择".L(), color: CompanyTheme.blue)
+                    ProductChip(text: product?.status.title ?? "待命".L(), color: CompanyTheme.accent)
                 }
-                Text("老板看目标、结果、风险和需要确认的审批；执行细节由技术负责人与员工推进。")
+                Text("老板看目标、结果、风险和需要确认的审批；执行细节由技术负责人与员工推进。".L())
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                     .multilineTextAlignment(.trailing)
@@ -213,16 +213,16 @@ struct CommandCenterView: View {
 
     private var metrics: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 156), spacing: 12)], spacing: 12) {
-            CommandMetricTile(title: "产品状态", value: bossStatusTitle, systemImage: "gauge.with.dots.needle.67percent", color: bossStatusColor)
-            CommandMetricTile(title: "完成进度", value: "\(completionPercent)%", systemImage: "chart.line.uptrend.xyaxis", color: CompanyTheme.accent)
-            CommandMetricTile(title: "待老板决策", value: "\(bossDecisionCount)", systemImage: "hand.raised.fill", color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
-            CommandMetricTile(title: "团队运行", value: "\(runningAgents.count)/\(store.selectedProductAgents.count)", systemImage: "person.3.fill", color: runningAgents.isEmpty ? CompanyTheme.muted : CompanyTheme.blue)
+            CommandMetricTile(title: "产品状态".L(), value: bossStatusTitle, systemImage: "gauge.with.dots.needle.67percent", color: bossStatusColor)
+            CommandMetricTile(title: "完成进度".L(), value: "\(completionPercent)%", systemImage: "chart.line.uptrend.xyaxis", color: CompanyTheme.accent)
+            CommandMetricTile(title: "待老板决策".L(), value: "\(bossDecisionCount)", systemImage: "hand.raised.fill", color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
+            CommandMetricTile(title: "团队运行".L(), value: "\(runningAgents.count)/\(store.selectedProductAgents.count)", systemImage: "person.3.fill", color: runningAgents.isEmpty ? CompanyTheme.muted : CompanyTheme.blue)
         }
     }
 
     private var ctoBriefingPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "技术负责人今日汇报")
+            SectionHeader(title: "技术负责人今日汇报".L())
             Text(latestCTOBriefing)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(CompanyTheme.ink)
@@ -232,9 +232,9 @@ struct CommandCenterView: View {
                 .background(CompanyTheme.surfaceRaised.opacity(0.42), in: RoundedRectangle(cornerRadius: 8))
 
             HStack(spacing: 10) {
-                BossSummaryPill(title: "阶段", value: product?.stage.title ?? "未知", color: CompanyTheme.blue)
-                BossSummaryPill(title: "未完成", value: "\(openTasks.count)", color: CompanyTheme.accent)
-                BossSummaryPill(title: "风险", value: "\(riskEvents.count)", color: riskEvents.isEmpty ? CompanyTheme.green : CompanyTheme.red)
+                BossSummaryPill(title: "阶段".L(), value: product?.stage.title ?? "未知".L(), color: CompanyTheme.blue)
+                BossSummaryPill(title: "未完成".L(), value: "\(openTasks.count)", color: CompanyTheme.accent)
+                BossSummaryPill(title: "风险".L(), value: "\(riskEvents.count)", color: riskEvents.isEmpty ? CompanyTheme.green : CompanyTheme.red)
             }
         }
         .padding(14)
@@ -249,7 +249,7 @@ struct CommandCenterView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 10) {
-                    SectionHeader(title: "今日结论")
+                    SectionHeader(title: "今日结论".L())
                     Text(latestCTOBriefing)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(CompanyTheme.ink)
@@ -262,7 +262,7 @@ struct CommandCenterView: View {
                     Text("\(completionPercent)%")
                         .font(.system(size: 36, weight: .heavy, design: .rounded))
                         .foregroundStyle(CompanyTheme.warning)
-                    Text(product?.stage.title ?? "未选择阶段")
+                    Text(product?.stage.title ?? "未选择阶段".L())
                         .font(.system(size: 12, weight: .heavy))
                         .foregroundStyle(CompanyTheme.ink)
                     ProgressView(value: Double(completedTaskCount), total: Double(max(store.selectedProductTasks.count, 1)))
@@ -276,9 +276,9 @@ struct CommandCenterView: View {
             }
 
             HStack(spacing: 10) {
-                BossSummaryPill(title: "未完成", value: "\(openTasks.count)", color: CompanyTheme.accent)
-                BossSummaryPill(title: "待决策", value: "\(bossDecisionCount)", color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
-                BossSummaryPill(title: "风险", value: "\(riskEvents.count)", color: riskEvents.isEmpty ? CompanyTheme.green : CompanyTheme.red)
+                BossSummaryPill(title: "未完成".L(), value: "\(openTasks.count)", color: CompanyTheme.accent)
+                BossSummaryPill(title: "待决策".L(), value: "\(bossDecisionCount)", color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
+                BossSummaryPill(title: "风险".L(), value: "\(riskEvents.count)", color: riskEvents.isEmpty ? CompanyTheme.green : CompanyTheme.red)
             }
         }
         .padding(16)
@@ -291,11 +291,11 @@ struct CommandCenterView: View {
 
     private var bossActionPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "老板只需要做的事")
-            BossActionRow(systemImage: "message.fill", title: "给技术负责人下达目标", detail: "直接用右侧输入框发一句话，技术负责人会拆任务和调员工。")
-            BossActionRow(systemImage: "hand.raised.fill", title: "批准或驳回风险", detail: "只有涉及风险、权限、交付方向时才需要你处理。")
-            BossActionRow(systemImage: "doc.text.magnifyingglass", title: "看汇报和交付物", detail: "确认进度、结果、问题和下一步，不需要手动点后台能力。")
-            BossActionRow(systemImage: "building.2.fill", title: "看公司现场", detail: "用公司场景观察团队状态，不需要进入技术负责人后台操作。")
+            SectionHeader(title: "老板只需要做的事".L())
+            BossActionRow(systemImage: "message.fill", title: "给技术负责人下达目标".L(), detail: "直接用右侧输入框发一句话，技术负责人会拆任务和调员工。".L())
+            BossActionRow(systemImage: "hand.raised.fill", title: "批准或驳回风险".L(), detail: "只有涉及风险、权限、交付方向时才需要你处理。".L())
+            BossActionRow(systemImage: "doc.text.magnifyingglass", title: "看汇报和交付物".L(), detail: "确认进度、结果、问题和下一步，不需要手动点后台能力。".L())
+            BossActionRow(systemImage: "building.2.fill", title: "看公司现场".L(), detail: "用公司场景观察团队状态，不需要进入技术负责人后台操作。".L())
         }
         .padding(14)
         .background(CompanyTheme.panel.opacity(0.96), in: RoundedRectangle(cornerRadius: 10))
@@ -309,26 +309,26 @@ struct CommandCenterView: View {
         HStack(spacing: 10) {
             OwnerNextStepItem(
                 systemImage: "message.fill",
-                title: "下目标",
-                detail: "右侧输入一句话给技术负责人。",
+                title: "下目标".L(),
+                detail: "右侧输入一句话给技术负责人。".L(),
                 color: CompanyTheme.warning
             )
             OwnerNextStepItem(
                 systemImage: "hand.raised.fill",
-                title: "批风险",
-                detail: bossDecisionCount == 0 ? "当前无需处理。" : "\(bossDecisionCount) 项待你确认。",
+                title: "批风险".L(),
+                detail: bossDecisionCount == 0 ? "当前无需处理。".L() : "\(bossDecisionCount)" + " 项待你确认。",
                 color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning
             )
             OwnerNextStepItem(
                 systemImage: "doc.text.magnifyingglass",
-                title: "看交付",
-                detail: "交付物和验收放在汇报页。",
+                title: "看交付".L(),
+                detail: "交付物和验收放在汇报页。".L(),
                 color: CompanyTheme.blue
             )
             OwnerNextStepItem(
                 systemImage: "building.2.fill",
-                title: "看现场",
-                detail: "公司场景只看员工状态。",
+                title: "看现场".L(),
+                detail: "公司场景只看员工状态。".L(),
                 color: CompanyTheme.accent
             )
         }
@@ -336,13 +336,13 @@ struct CommandCenterView: View {
 
     private var productProgressPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "产品进度")
+            SectionHeader(title: "产品进度".L())
             HStack(alignment: .firstTextBaseline) {
                 Text("\(completionPercent)%")
                     .font(.system(size: 34, weight: .heavy, design: .rounded))
                     .foregroundStyle(CompanyTheme.warning)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(product?.stage.title ?? "未选择阶段")
+                    Text(product?.stage.title ?? "未选择阶段".L())
                         .font(.system(size: 13, weight: .heavy))
                         .foregroundStyle(CompanyTheme.ink)
                     Text(productProgressSummary)
@@ -357,9 +357,9 @@ struct CommandCenterView: View {
                 .tint(CompanyTheme.warning)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 112), spacing: 8)], spacing: 8) {
-                BossSummaryPill(title: "已完成", value: "\(completedTaskCount)", color: CompanyTheme.green)
-                BossSummaryPill(title: "推进中", value: "\(activeTaskCount)", color: CompanyTheme.blue)
-                BossSummaryPill(title: "待处理", value: "\(bossDecisionCount)", color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
+                BossSummaryPill(title: "已完成".L(), value: "\(completedTaskCount)", color: CompanyTheme.green)
+                BossSummaryPill(title: "推进中".L(), value: "\(activeTaskCount)", color: CompanyTheme.blue)
+                BossSummaryPill(title: "待处理".L(), value: "\(bossDecisionCount)", color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
             }
         }
         .padding(14)
@@ -372,47 +372,47 @@ struct CommandCenterView: View {
 
     private var companyProcessPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "公司流程状态")
-            Text("按真实公司分工展示：老板决策、技术负责人调度、员工执行、系统保障。这里只看结果，不把后台能力当成老板按钮。")
+            SectionHeader(title: "公司流程状态".L())
+            Text("按真实公司分工展示：老板决策、技术负责人调度、员工执行、系统保障。这里只看结果，不把后台能力当成老板按钮。".L())
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), spacing: 10)], spacing: 10) {
                 BackgroundCapabilityRow(
-                    title: "老板决策",
-                    status: bossDecisionCount == 0 ? "无需处理" : "\(bossDecisionCount) 项待批",
-                    detail: "只处理方向、风险、权限和最终交付确认。",
+                    title: "老板决策".L(),
+                    status: bossDecisionCount == 0 ? "无需处理".L() : "\(bossDecisionCount)" + " 项待批",
+                    detail: "只处理方向、风险、权限和最终交付确认。".L(),
                     color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning
                 )
                 BackgroundCapabilityRow(
-                    title: "技术负责人调度",
-                    status: openTasks.isEmpty ? "无待派任务" : "\(openTasks.count) 项跟进中",
-                    detail: "目标拆解、任务分配、多分支汇总由技术负责人负责。",
+                    title: "技术负责人调度".L(),
+                    status: openTasks.isEmpty ? "无待派任务".L() : "\(openTasks.count)" + " 项跟进中",
+                    detail: "目标拆解、任务分配、多分支汇总由技术负责人负责。".L(),
                     color: openTasks.isEmpty ? CompanyTheme.green : CompanyTheme.accent
                 )
                 BackgroundCapabilityRow(
-                    title: "员工执行",
-                    status: "\(activeTaskCount) 项在推进",
-                    detail: "工程、设计、审查、资料任务进入员工队列并回传结果。",
+                    title: "员工执行".L(),
+                    status: "\(activeTaskCount)" + " 项在推进".L(),
+                    detail: "工程、设计、审查、资料任务进入员工队列并回传结果。".L(),
                     color: activeTaskCount == 0 ? CompanyTheme.muted : CompanyTheme.blue
                 )
                 BackgroundCapabilityRow(
-                    title: "交付验收",
-                    status: store.selectedProductDeliveryVerifications.isEmpty ? "暂无验收" : "\(store.selectedProductDeliveryVerifications.count) 条验收",
-                    detail: "测试、审查、交付物会汇总成老板可读结论。",
+                    title: "交付验收".L(),
+                    status: store.selectedProductDeliveryVerifications.isEmpty ? "暂无验收".L() : "\(store.selectedProductDeliveryVerifications.count)" + " 条验收",
+                    detail: "测试、审查、交付物会汇总成老板可读结论。".L(),
                     color: riskEvents.isEmpty ? CompanyTheme.green : CompanyTheme.red
                 )
                 BackgroundCapabilityRow(
-                    title: "通信汇报",
-                    status: store.selectedProductCommunicationChannels.isEmpty ? "未接外部通道" : "\(store.selectedProductCommunicationChannels.count) 个通道",
-                    detail: "这是汇报和远程指令链路，不属于技术负责人业务后台。",
+                    title: "通信汇报".L(),
+                    status: store.selectedProductCommunicationChannels.isEmpty ? "未接外部通道".L() : "\(store.selectedProductCommunicationChannels.count)" + " 个通道",
+                    detail: "这是汇报和远程指令链路，不属于技术负责人业务后台。".L(),
                     color: store.selectedProductCommunicationChannels.isEmpty ? CompanyTheme.muted : CompanyTheme.blue
                 )
                 BackgroundCapabilityRow(
-                    title: "系统保障",
+                    title: "系统保障".L(),
                     status: systemGuardStatus,
-                    detail: "本地安全和命令行链路只能做检查、记录和提示，不能替老板授权。",
-                    color: systemGuardStatus == "正常" ? CompanyTheme.green : CompanyTheme.warning
+                    detail: "本地安全和命令行链路只能做检查、记录和提示，不能替老板授权。".L(),
+                    color: systemGuardStatus == "正常".L() ? CompanyTheme.green : CompanyTheme.warning
                 )
             }
         }
@@ -427,9 +427,9 @@ struct CommandCenterView: View {
     private var decisionSnapshotPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
-                SectionHeader(title: "待我处理")
+                SectionHeader(title: "待我处理".L())
                 Spacer()
-                Text("待决策 \(bossDecisionCount)")
+                Text("待决策 " + "\(bossDecisionCount)")
                     .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
                     .padding(.horizontal, 8)
@@ -438,7 +438,7 @@ struct CommandCenterView: View {
             }
 
             if store.selectedProductPendingApprovals.isEmpty && store.selectedProductRiskTasks.isEmpty {
-                EmptyCommandLine(text: "当前没有需要老板处理的事项。技术负责人可以继续后台推进。")
+                EmptyCommandLine(text: "当前没有需要老板处理的事项。技术负责人可以继续后台推进。".L())
             } else {
                 ForEach(store.commandCenterPendingApprovals) { approval in
                     BossApprovalRequestRow(approval: approval)
@@ -474,7 +474,7 @@ struct CommandCenterView: View {
     private var deliverySnapshotPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
-                SectionHeader(title: "最近交付与验收")
+                SectionHeader(title: "最近交付与验收".L())
                 Spacer()
                 Text("\(store.selectedProductDeliveryArtifacts.count + store.selectedProductDeliveryVerifications.count)")
                     .font(.system(size: 11, weight: .heavy))
@@ -484,7 +484,7 @@ struct CommandCenterView: View {
                     .background(CompanyTheme.blue.opacity(0.14), in: Capsule())
             }
             if store.selectedProductDeliveryArtifacts.isEmpty && store.selectedProductDeliveryVerifications.isEmpty {
-                EmptyCommandLine(text: "还没有新的交付物。员工完成任务后，这里会显示产物、测试和验收结论。")
+                EmptyCommandLine(text: "还没有新的交付物。员工完成任务后，这里会显示产物、测试和验收结论。".L())
             } else {
                 ForEach(store.commandCenterRecentDeliveryVerifications) { verification in
                     BossDecisionRow(title: verification.title, detail: verification.detail, color: verification.status == .passed ? CompanyTheme.green : CompanyTheme.warning)
@@ -518,7 +518,7 @@ struct CommandCenterView: View {
 
     private var employeeProgressPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "员工工作进度")
+            SectionHeader(title: "员工工作进度".L())
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 10)], spacing: 10) {
                 ForEach(store.selectedProductAgents) { agent in
                     AgentProgressCard(
@@ -540,9 +540,9 @@ struct CommandCenterView: View {
 
     private var taskPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "任务推进")
+            SectionHeader(title: "任务推进".L())
             if openTasks.isEmpty {
-                EmptyCommandLine(text: "当前没有未完成任务。")
+                EmptyCommandLine(text: "当前没有未完成任务。".L())
             } else {
                 ForEach(store.commandCenterOpenTasks) { task in
                     TaskSignalRow(task: task, ownerName: agentName(task.ownerID))
@@ -562,7 +562,7 @@ struct CommandCenterView: View {
 
     private var agentPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "员工信号")
+            SectionHeader(title: "员工信号".L())
             ForEach(store.selectedProductAgents) { agent in
                 AgentSignalCard(agent: agent, isRunning: store.runningAgentIDs.contains(agent.id))
             }
@@ -578,9 +578,9 @@ struct CommandCenterView: View {
     private var riskAndAcceptancePanel: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "风险与批准")
+                SectionHeader(title: "风险与批准".L())
                 if store.selectedProductRiskTasks.isEmpty && riskEvents.isEmpty {
-                    EmptyCommandLine(text: "当前没有需要老板批准的风险。")
+                    EmptyCommandLine(text: "当前没有需要老板批准的风险。".L())
                 } else {
                     ForEach(store.commandCenterRiskPanelTasks) { task in
                         BossTaskApprovalRow(task: task, ownerName: agentName(task.ownerID))
@@ -599,7 +599,7 @@ struct CommandCenterView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
 
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "验收标准")
+                SectionHeader(title: "验收标准".L())
                 ForEach(store.commandCenterAcceptanceCriteriaTasks) { task in
                     VStack(alignment: .leading, spacing: 5) {
                         Text(task.title)
@@ -647,16 +647,16 @@ struct CommandCenterView: View {
 
     private var productProgressSummary: String {
         let total = store.selectedProductTasks.count
-        if total == 0 { return "当前产品还没有任务，先让技术负责人拆解目标。" }
-        return "\(completedTaskCount)/\(total) 个任务完成，\(openTasks.count) 个任务仍需推进。"
+        if total == 0 { return "当前产品还没有任务，先让技术负责人拆解目标。".L() }
+        return "\(completedTaskCount)" + "/" + "\(total)" + " 个任务完成，".L() + "\(openTasks.count)" + " 个任务仍需推进。".L()
     }
 
     private var systemGuardStatus: String {
-        let safetyOK = store.safetyCheckpointListText(limit: 1).contains("最近安全检查点")
-        let cliOK = store.cliToolchainPreflightText().contains("通过")
-        if safetyOK && cliOK { return "正常" }
-        if safetyOK || cliOK { return "部分就绪" }
-        return "需检查"
+        let safetyOK = store.safetyCheckpointListText(limit: 1).contains("最近安全检查点".L())
+        let cliOK = store.cliToolchainPreflightText().contains("通过".L())
+        if safetyOK && cliOK { return "正常".L() }
+        if safetyOK || cliOK { return "部分就绪".L() }
+        return "需检查".L()
     }
 
     private var bossDecisionCount: Int {
@@ -664,19 +664,19 @@ struct CommandCenterView: View {
     }
 
     private var bossStatusTitle: String {
-        if bossDecisionCount > 0 { return "待决策" }
-        if !riskEvents.isEmpty { return "有风险" }
-        if !runningAgents.isEmpty { return "推进中" }
-        if openTasks.isEmpty { return "可验收" }
-        return "正常"
+        if bossDecisionCount > 0 { return "待决策".L() }
+        if !riskEvents.isEmpty { return "有风险".L() }
+        if !runningAgents.isEmpty { return "推进中".L() }
+        if openTasks.isEmpty { return "可验收".L() }
+        return "正常".L()
     }
 
     private var bossStatusColor: Color {
         switch bossStatusTitle {
-        case "待决策": CompanyTheme.warning
-        case "有风险": CompanyTheme.red
-        case "可验收": CompanyTheme.green
-        case "推进中": CompanyTheme.blue
+        case "待决策".L(): CompanyTheme.warning
+        case "有风险".L(): CompanyTheme.red
+        case "可验收".L(): CompanyTheme.green
+        case "推进中".L(): CompanyTheme.blue
         default: CompanyTheme.accent
         }
     }
@@ -686,12 +686,12 @@ struct CommandCenterView: View {
         if let message = ctoMessages.last(where: { $0.author == .system || $0.author == .agent }) {
             return String(message.text.prefix(460))
         }
-        return "技术负责人已接管当前产品。老板只需要提出目标、查看结果，并处理真正需要你确认的风险。"
+        return "技术负责人已接管当前产品。老板只需要提出目标、查看结果，并处理真正需要你确认的风险。".L()
     }
 
     private func agentName(_ id: UUID?) -> String {
-        guard let id else { return "未分配" }
-        return store.agents.first { $0.id == id }?.displayName ?? "未知员工"
+        guard let id else { return "未分配".L() }
+        return store.agents.first { $0.id == id }?.displayName ?? "未知员工".L()
     }
 
     private func tasks(for agent: CompanyAgent) -> [CompanyTask] {
@@ -835,16 +835,16 @@ struct BossReportCenterSheet: View {
     private var headerRow: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("老板汇报中心")
+                Text("老板汇报中心".L())
                     .font(.system(size: 18, weight: .heavy, design: .serif))
                     .foregroundStyle(CompanyTheme.ink)
-                Text("\(store.selectedProduct?.name ?? "当前产品")：生成当前产品汇报、交接摘要和健康体检，最近记录只按当前产品显示。")
+                Text("\(store.selectedProduct?.name ?? "当前产品")" + "：生成当前产品汇报、交接摘要和健康体检，最近记录只按当前产品显示。")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                     .lineLimit(2)
             }
             Spacer()
-            Button("关闭") { dismiss() }
+            Button("关闭".L()) { dismiss() }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.accent)
         }
@@ -886,7 +886,7 @@ struct BossDecisionCenterSheet: View {
                     .lineLimit(2)
             }
             Spacer()
-            Button("关闭") { dismiss() }
+            Button("关闭".L()) { dismiss() }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.accent)
         }
@@ -1008,8 +1008,8 @@ struct BossDecisionCenterSheet: View {
     }
 
     private func agentName(_ id: UUID?) -> String {
-        guard let id else { return "未分配" }
-        return store.agents.first { $0.id == id }?.displayName ?? "未知员工"
+        guard let id else { return "未分配".L() }
+        return store.agents.first { $0.id == id }?.displayName ?? "未知员工".L()
     }
 }
 
@@ -1036,7 +1036,7 @@ struct BossApprovalDecidedRow: View {
                 .lineLimit(3)
 
             if let decidedAt = approval.decidedAt {
-                Text("已处理：\(decidedAt.opcDateTimeText)")
+                Text("已处理：" + "\(decidedAt.opcDateTimeText)")
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundStyle(CompanyTheme.muted)
             }
@@ -1081,7 +1081,7 @@ struct BossApprovalRequestRow: View {
                 Button {
                     store.decideApproval(approval.id, approved: true)
                 } label: {
-                    Label("批准", systemImage: "checkmark.circle.fill")
+                    Label("批准".L(), systemImage: "checkmark.circle.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.green)
@@ -1089,7 +1089,7 @@ struct BossApprovalRequestRow: View {
                 Button {
                     store.decideApproval(approval.id, approved: false)
                 } label: {
-                    Label("驳回", systemImage: "xmark.circle.fill")
+                    Label("驳回".L(), systemImage: "xmark.circle.fill")
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.red)
@@ -1123,7 +1123,7 @@ struct BossTaskApprovalRow: View {
                 StatusPill(text: task.status.title, color: statusColor)
             }
 
-            Text("负责人：\(ownerName)")
+            Text("负责人：".L() + "\(ownerName)")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(CompanyTheme.muted)
 
@@ -1136,7 +1136,7 @@ struct BossTaskApprovalRow: View {
                 Button {
                     store.approveTaskRisk(task.id)
                 } label: {
-                    Label("批准继续", systemImage: "checkmark.circle.fill")
+                    Label("批准继续".L(), systemImage: "checkmark.circle.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.green)
@@ -1144,7 +1144,7 @@ struct BossTaskApprovalRow: View {
                 Button {
                     store.rejectTaskRisk(task.id)
                 } label: {
-                    Label("驳回重做", systemImage: "arrow.counterclockwise.circle.fill")
+                    Label("驳回重做".L(), systemImage: "arrow.counterclockwise.circle.fill")
                 }
                 .buttonStyle(.bordered)
                 .tint(CompanyTheme.red)
@@ -1152,7 +1152,7 @@ struct BossTaskApprovalRow: View {
                 Button {
                     store.requestCTOReview(for: task.id)
                 } label: {
-                    Label("问技术负责人", systemImage: "person.text.rectangle.fill")
+                    Label("问技术负责人".L(), systemImage: "person.text.rectangle.fill")
                 }
                 .buttonStyle(.bordered)
             }
@@ -1246,17 +1246,17 @@ struct AgentProgressCard: View {
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                StatusPill(text: isRunning ? "运行中" : agent.status.title, color: signalColor)
+                StatusPill(text: isRunning ? "运行中".L() : agent.status.title, color: signalColor)
             }
 
             ProgressView(value: progress)
                 .tint(signalColor)
 
             HStack(spacing: 8) {
-                MiniProgressPill(title: "完成", value: "\(doneCount)", color: CompanyTheme.green)
-                MiniProgressPill(title: "推进", value: "\(activeCount)", color: CompanyTheme.blue)
-                MiniProgressPill(title: "异常", value: "\(blockedCount)", color: blockedCount == 0 ? CompanyTheme.muted : CompanyTheme.red)
-                MiniProgressPill(title: "队列", value: "\(queueItems.count)", color: queueItems.isEmpty ? CompanyTheme.muted : CompanyTheme.warning)
+                MiniProgressPill(title: "完成".L(), value: "\(doneCount)", color: CompanyTheme.green)
+                MiniProgressPill(title: "推进".L(), value: "\(activeCount)", color: CompanyTheme.blue)
+                MiniProgressPill(title: "异常".L(), value: "\(blockedCount)", color: blockedCount == 0 ? CompanyTheme.muted : CompanyTheme.red)
+                MiniProgressPill(title: "队列".L(), value: "\(queueItems.count)", color: queueItems.isEmpty ? CompanyTheme.muted : CompanyTheme.warning)
             }
         }
         .padding(10)
@@ -1302,7 +1302,7 @@ struct WorkflowMapView: View {
     @State private var showProductMessageCenter = false
 
     private var productName: String {
-        store.selectedProduct?.name ?? "当前产品"
+        store.selectedProduct?.name ?? "当前产品".L()
     }
 
     var body: some View {
@@ -1326,9 +1326,9 @@ struct WorkflowMapView: View {
     private var messageFlow: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
-                SectionHeader(title: "消息流 / 协作链路")
+                SectionHeader(title: "消息流 / 协作链路".L())
                 Spacer()
-                Text("待确认 \(store.selectedProductPendingAgentMessages.count)")
+                Text("待确认 " + "\(store.selectedProductPendingAgentMessages.count)")
                     .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(CompanyTheme.muted)
                     .padding(.horizontal, 8)
@@ -1341,19 +1341,19 @@ struct WorkflowMapView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            Text("老板目标 → 技术负责人拆解 → 员工执行 → 审查验收 → 老板审批")
+            Text("老板目标 → 技术负责人拆解 → 员工执行 → 审查验收 → 老板审批".L())
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(CompanyTheme.muted)
 
             if store.selectedProductAgentMessages.isEmpty {
-                EmptyCommandLine(text: "还没有协作消息，先让技术负责人启动目标或派发任务，员工/审查/审批的消息会按时间排在这里。")
+                EmptyCommandLine(text: "还没有协作消息，先让技术负责人启动目标或派发任务，员工/审查/审批的消息会按时间排在这里。".L())
             } else {
                 VStack(spacing: 6) {
                     ForEach(store.workflowMapRecentAgentMessages) { message in
                         AgentMessageRow(
                             message: message,
                             fromName: agentName(message.fromAgentID),
-                            toName: message.toAgentID.map(agentName) ?? "公开",
+                            toName: message.toAgentID.map(agentName) ?? "公开".L(),
                             taskTitle: taskTitle(for: message.taskID)
                         )
                     }
@@ -1373,7 +1373,7 @@ struct WorkflowMapView: View {
     }
 
     private func agentName(_ id: UUID) -> String {
-        store.agents.first { $0.id == id }?.displayName ?? "未知员工"
+        store.agents.first { $0.id == id }?.displayName ?? "未知员工".L()
     }
 
     private func taskTitle(for id: UUID?) -> String? {
@@ -1384,10 +1384,10 @@ struct WorkflowMapView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 7) {
-                Text("任务流程图")
+                Text("任务流程图".L())
                     .font(.system(size: 28, weight: .heavy, design: .serif))
                     .foregroundStyle(CompanyTheme.ink)
-                Text("\(productName) 的智能公司生产线，从老板目标到验收交付。")
+                Text("\(productName)" + " 的智能公司生产线，从老板目标到验收交付。")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
             }
@@ -1398,39 +1398,39 @@ struct WorkflowMapView: View {
     private var workflow: some View {
         HStack(alignment: .center, spacing: 12) {
             WorkflowNodeView(
-                title: "老板目标",
-                subtitle: "一句话描述产品方向",
+                title: "老板目标".L(),
+                subtitle: "一句话描述产品方向".L(),
                 systemImage: "person.fill",
                 color: CompanyTheme.accent,
-                statusText: "输入"
+                statusText: "输入".L()
             )
             WorkflowConnector(color: CompanyTheme.accent)
             WorkflowNodeView(
-                title: "技术负责人拆解",
-                subtitle: "拆任务、定标准、派员工",
+                title: "技术负责人拆解".L(),
+                subtitle: "拆任务、定标准、派员工".L(),
                 systemImage: "brain.head.profile",
                 color: CompanyTheme.blue,
-                statusText: store.ctoAgent?.status.title ?? "待命"
+                statusText: store.ctoAgent?.status.title ?? "待命".L()
             )
             WorkflowConnector(color: CompanyTheme.blue)
             VStack(spacing: 12) {
                 WorkflowNodeView(
-                    title: "产品与设计",
-                    subtitle: "规格、界面、交互、动效",
+                    title: "产品与设计".L(),
+                    subtitle: "规格、界面、交互、动效".L(),
                     systemImage: "square.grid.2x2.fill",
                     color: CompanyTheme.blue,
                     statusText: statusText(for: .uiDesigner)
                 )
                 WorkflowNodeView(
-                    title: "工程实现",
-                    subtitle: "代码修改、命令执行、日志",
+                    title: "工程实现".L(),
+                    subtitle: "代码修改、命令执行、日志".L(),
                     systemImage: "chevron.left.forwardslash.chevron.right",
                     color: CompanyTheme.accent,
                     statusText: statusText(for: .codeEngineer)
                 )
                 WorkflowNodeView(
-                    title: "测试验证",
-                    subtitle: "可复现检查与失败回放",
+                    title: "测试验证".L(),
+                    subtitle: "可复现检查与失败回放".L(),
                     systemImage: "checkmark.seal.fill",
                     color: CompanyTheme.warning,
                     statusText: statusText(for: .tester)
@@ -1438,19 +1438,19 @@ struct WorkflowMapView: View {
             }
             WorkflowConnector(color: CompanyTheme.warning)
             WorkflowNodeView(
-                title: "审查员验收",
-                subtitle: "风险、缺陷、是否可交付",
+                title: "审查员验收".L(),
+                subtitle: "风险、缺陷、是否可交付".L(),
                 systemImage: "shield.lefthalf.filled",
                 color: CompanyTheme.purple,
                 statusText: statusText(for: .reviewer)
             )
             WorkflowConnector(color: CompanyTheme.purple)
             WorkflowNodeView(
-                title: "老板批准",
-                subtitle: "看结果、批风险、定下一步",
+                title: "老板批准".L(),
+                subtitle: "看结果、批风险、定下一步".L(),
                 systemImage: "signature",
                 color: CompanyTheme.warning,
-                statusText: "最终决定"
+                statusText: "最终决定".L()
             )
         }
         .padding(18)
@@ -1479,7 +1479,7 @@ struct WorkflowMapView: View {
                     }
                     let tasks = store.workflowMapTasks(for: status)
                     if tasks.isEmpty {
-                        Text("暂无")
+                        Text("暂无".L())
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(CompanyTheme.muted)
                             .padding(.vertical, 10)
@@ -1511,7 +1511,7 @@ struct WorkflowMapView: View {
 
     private func statusText(for role: AgentRole) -> String {
         let statuses = store.selectedProductAgents.filter { $0.role == role }.map { $0.status.title }
-        return statuses.first ?? "待配置"
+        return statuses.first ?? "待配置".L()
     }
 
     private func statusColor(_ status: TaskStatus) -> Color {
@@ -1531,7 +1531,7 @@ struct ImportHandoffPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                SectionHeader(title: "现有项目接手")
+                SectionHeader(title: "现有项目接手".L())
                 Spacer()
                 Text(report.importedAt, style: .date)
                     .font(.system(size: 11, weight: .semibold))
@@ -1544,9 +1544,9 @@ struct ImportHandoffPanel: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(alignment: .top, spacing: 12) {
-                HandoffColumn(title: "规则/记忆", items: report.ruleFiles, empty: "未发现")
-                HandoffColumn(title: "智能工具", items: report.detectedTools, empty: "未发现")
-                HandoffColumn(title: "项目线索", items: report.projectFiles, empty: "未发现")
+                HandoffColumn(title: "规则/记忆".L(), items: report.ruleFiles, empty: "未发现".L())
+                HandoffColumn(title: "智能工具".L(), items: report.detectedTools, empty: "未发现".L())
+                HandoffColumn(title: "项目线索".L(), items: report.projectFiles, empty: "未发现".L())
             }
         }
         .padding(14)
@@ -1561,8 +1561,8 @@ struct ImportHandoffPanel: View {
 struct HandoffEmptyPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
-            SectionHeader(title: "现有项目接手")
-            Text("还没有导入正在开发的产品项目。导入后这里会显示 Codex、Claude Code、Gemini 等规则/记忆文件和项目线索，技术负责人会按原上下文接手。")
+            SectionHeader(title: "现有项目接手".L())
+            Text("还没有导入正在开发的产品项目。导入后这里会显示 Codex、Claude Code、Gemini 等规则/记忆文件和项目线索，技术负责人会按原上下文接手。".L())
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1648,7 +1648,7 @@ struct AgentSignalCard: View {
                     .lineLimit(1)
             }
             Spacer()
-            Text(isRunning ? "运行" : agent.status.title)
+            Text(isRunning ? "运行".L() : agent.status.title)
                 .font(.system(size: 10, weight: .heavy))
                 .foregroundStyle(isRunning ? CompanyTheme.accent : statusColor)
                 .padding(.horizontal, 8)
@@ -1690,7 +1690,7 @@ struct TaskSignalRow: View {
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(statusColor)
                 }
-                Text("负责人：\(ownerName)")
+                Text("负责人：".L() + "\(ownerName)")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CompanyTheme.muted)
                 Text(task.successCriteria)

@@ -8,10 +8,10 @@ struct AddEmployeeSheet: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("新增智能员工")
+                    Text("新增智能员工".L())
                         .font(.system(size: 24, weight: .heavy, design: .serif))
                         .foregroundStyle(CompanyTheme.ink)
-                    Text("创建一个由订阅制命令行、接口模型或本地占位来源驱动的新角色。")
+                    Text("创建一个由订阅制命令行、接口模型或本地占位来源驱动的新角色。".L())
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(CompanyTheme.muted)
                 }
@@ -23,8 +23,8 @@ struct AddEmployeeSheet: View {
                         .font(.system(size: 13, weight: .bold))
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel("关闭添加员工面板")
-                .accessibilityHint("关闭弹窗，放弃当前未保存的员工配置。")
+                .accessibilityLabel("关闭添加员工面板".L())
+                .accessibilityHint("关闭弹窗，放弃当前未保存的员工配置。".L())
             }
             .padding(20)
             .background(CompanyTheme.panel)
@@ -32,18 +32,18 @@ struct AddEmployeeSheet: View {
             Divider().overlay(CompanyTheme.line)
 
             Form {
-                Section("身份") {
-                    TextField("显示名称", text: $store.draftEmployee.displayName)
-                    TextField("职位名称", text: $store.draftEmployee.title)
-                    Picker("角色", selection: $store.draftEmployee.role) {
+                Section("身份".L()) {
+                    TextField("显示名称".L(), text: $store.draftEmployee.displayName)
+                    TextField("职位名称".L(), text: $store.draftEmployee.title)
+                    Picker("角色".L(), selection: $store.draftEmployee.role) {
                         ForEach(AgentRole.allCases.filter { $0 != .boss }) { role in
                             Text(role.title).tag(role)
                         }
                     }
                 }
 
-                Section("模型来源") {
-                    Picker("来源", selection: $store.draftEmployee.backendType) {
+                Section("模型来源".L()) {
+                    Picker("来源".L(), selection: $store.draftEmployee.backendType) {
                         ForEach(BackendType.allCases) { backend in
                             Text(backend.title).tag(backend)
                         }
@@ -53,31 +53,31 @@ struct AddEmployeeSheet: View {
                     }
 
                     if store.draftEmployee.backendType == .api {
-                        TextField("接口地址，例如 https://api.openai.com/v1", text: $store.draftEmployee.endpoint)
-                        SecureField("接口密钥", text: $store.draftEmployee.apiKey)
-                        TextField("模型，例如 gpt-5.5、deepseek-chat", text: $store.draftEmployee.model)
-                        Picker("推理强度", selection: $store.draftEmployee.reasoningEffort) {
+                        TextField("接口地址，例如 https://api.openai.com/v1".L(), text: $store.draftEmployee.endpoint)
+                        SecureField("接口密钥".L(), text: $store.draftEmployee.apiKey)
+                        TextField("模型，例如 gpt-5.5、deepseek-chat".L(), text: $store.draftEmployee.model)
+                        Picker("推理强度".L(), selection: $store.draftEmployee.reasoningEffort) {
                             ForEach(ReasoningEffort.allCases) { effort in
                                 Text(effort.title).tag(effort)
                             }
                         }
-                        Text("接口密钥会作为运行环境变量传给接口运行器，不会显示在终端运行摘要里。")
+                        Text("接口密钥会作为运行环境变量传给接口运行器，不会显示在终端运行摘要里。".L())
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(CompanyTheme.muted)
                     } else if store.draftEmployee.backendType == .subscriptionCLI {
-                        TextField("命令", text: $store.draftEmployee.command)
-                        TextField("模型", text: $store.draftEmployee.model)
-                        Picker("推理强度", selection: $store.draftEmployee.reasoningEffort) {
+                        TextField("命令".L(), text: $store.draftEmployee.command)
+                        TextField("模型".L(), text: $store.draftEmployee.model)
+                        Picker("推理强度".L(), selection: $store.draftEmployee.reasoningEffort) {
                             ForEach(ReasoningEffort.allCases) { effort in
                                 Text(effort.title).tag(effort)
                             }
                         }
-                        Text("订阅制命令行员工可以创建，但要真正运行，本机必须已经安装对应命令行工具，并且你已经在终端完成登录授权。")
+                        Text("订阅制命令行员工可以创建，但要真正运行，本机必须已经安装对应命令行工具，并且你已经在终端完成登录授权。".L())
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(CompanyTheme.muted)
                     } else {
-                        TextField("占位标识", text: $store.draftEmployee.model)
-                        Text("本地占位适合老板、人类角色或暂不执行终端任务的角色。")
+                        TextField("占位标识".L(), text: $store.draftEmployee.model)
+                        Text("本地占位适合老板、人类角色或暂不执行终端任务的角色。".L())
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(CompanyTheme.muted)
                     }
@@ -89,25 +89,25 @@ struct AddEmployeeSheet: View {
                     }
                 }
 
-                Section("外观") {
-                    Picker("人种/外观", selection: $store.draftEmployee.ethnicity) {
+                Section("外观".L()) {
+                    Picker("人种/外观".L(), selection: $store.draftEmployee.ethnicity) {
                         ForEach(EthnicityPresentation.allCases) { item in
                             Text(item.title).tag(item)
                         }
                     }
-                    Picker("性别", selection: $store.draftEmployee.gender) {
+                    Picker("性别".L(), selection: $store.draftEmployee.gender) {
                         ForEach(GenderPresentation.allCases) { item in
                             Text(item.title).tag(item)
                         }
                     }
-                    Picker("服装", selection: $store.draftEmployee.clothing) {
+                    Picker("服装".L(), selection: $store.draftEmployee.clothing) {
                         ForEach(ClothingStyle.allCases) { item in
                             Text(item.title).tag(item)
                         }
                     }
                 }
 
-                Section("权限") {
+                Section("权限".L()) {
                     ForEach(AgentPermission.allCases) { permission in
                         Toggle(permission.title, isOn: Binding(
                             get: { store.draftEmployee.permissions.contains(permission) },
@@ -129,7 +129,7 @@ struct AddEmployeeSheet: View {
             Divider().overlay(CompanyTheme.line)
 
             HStack {
-                Button("取消") {
+                Button("取消".L()) {
                     dismiss()
                 }
                 Spacer()
@@ -137,7 +137,7 @@ struct AddEmployeeSheet: View {
                     store.addEmployee(from: store.draftEmployee)
                     dismiss()
                 } label: {
-                    Label("新增员工", systemImage: "person.crop.circle.badge.plus")
+                    Label("新增员工".L(), systemImage: "person.crop.circle.badge.plus")
                 }
                 .disabled(validationMessage != nil)
                 .buttonStyle(.borderedProminent)
@@ -154,17 +154,17 @@ struct AddEmployeeSheet: View {
         switch draft.backendType {
         case .api:
             if draft.endpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return "接口模式必须填写接口地址。"
+                return "接口模式必须填写接口地址。".L()
             }
             if draft.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return "接口模式必须填写接口密钥。"
+                return "接口模式必须填写接口密钥。".L()
             }
             if draft.model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return "接口模式必须填写模型名称。"
+                return "接口模式必须填写模型名称。".L()
             }
         case .subscriptionCLI:
             if draft.command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return "订阅制命令行模式必须填写命令，例如 codex、claude、gemini。"
+                return "订阅制命令行模式必须填写命令，例如 codex、claude、gemini。".L()
             }
         case .local:
             break

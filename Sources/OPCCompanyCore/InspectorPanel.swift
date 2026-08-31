@@ -68,10 +68,10 @@ struct InspectorPanel: View {
                             .font(.system(size: 11, weight: .heavy, design: .monospaced))
                             .foregroundStyle(CompanyTheme.selected.opacity(0.82))
                             .textCase(.uppercase)
-                        Text("未选择对象")
+                        Text("未选择对象".L())
                             .font(.system(size: 18, weight: .heavy, design: .rounded))
                             .foregroundStyle(CompanyTheme.ink)
-                        Text("从办公室沙盘或左侧名单选择员工")
+                        Text("从办公室沙盘或左侧名单选择员工".L())
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(CompanyTheme.secondaryInk)
                     }
@@ -85,10 +85,10 @@ struct InspectorPanel: View {
             }
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
-                InspectorTelemetryCell(label: "对象", value: telemetryObject)
-                InspectorTelemetryCell(label: "状态", value: telemetryStatus)
-                InspectorTelemetryCell(label: "产品", value: telemetryProduct)
-                InspectorTelemetryCell(label: "来源", value: telemetryBackend)
+                InspectorTelemetryCell(label: "对象".L(), value: telemetryObject)
+                InspectorTelemetryCell(label: "状态".L(), value: telemetryStatus)
+                InspectorTelemetryCell(label: "产品".L(), value: telemetryProduct)
+                InspectorTelemetryCell(label: "来源".L(), value: telemetryBackend)
             }
         }
         .padding(.horizontal, 18)
@@ -116,7 +116,7 @@ struct InspectorPanel: View {
                     LazyVStack(alignment: .leading, spacing: 10) {
                         let messages = selectedAgentChatMessages
                         if messages.isEmpty {
-                            EmptyCommandLine(text: "当前产品下还没有和该员工的对话。发送指令后，只会记录到当前产品。")
+                            EmptyCommandLine(text: "当前产品下还没有和该员工的对话。发送指令后，只会记录到当前产品。".L())
                         } else {
                             ForEach(messages) { message in
                                 let agentRole = roleForMessage(message)
@@ -149,7 +149,7 @@ struct InspectorPanel: View {
                     Rectangle()
                         .fill(CompanyTheme.border.opacity(0.45))
                         .frame(height: 0.5)
-                    Text(store.selectedAgent?.displayName ?? "未选择")
+                    Text(store.selectedAgent?.displayName ?? "未选择".L())
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(CompanyTheme.muted)
                         .lineLimit(1)
@@ -158,7 +158,7 @@ struct InspectorPanel: View {
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                 HStack(spacing: 10) {
-                    TextField("输入指令，例如：汇报当前阻塞并给出下一步。", text: $messageText, axis: .vertical)
+                    TextField("输入指令，例如：汇报当前阻塞并给出下一步。".L(), text: $messageText, axis: .vertical)
                         .textFieldStyle(.plain)
                         .font(.system(size: 11))
                         .foregroundStyle(CompanyTheme.ink)
@@ -182,8 +182,8 @@ struct InspectorPanel: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(!canSend)
-                    .accessibilityLabel("发送指令")
-                    .accessibilityHint("把当前指令通道里的指令文本发送给选中员工；员工不可发送或文本为空时禁用。")
+                    .accessibilityLabel("发送指令".L())
+                    .accessibilityHint("把当前指令通道里的指令文本发送给选中员工；员工不可发送或文本为空时禁用。".L())
                 }
             }
             .padding(14)
@@ -212,23 +212,23 @@ struct InspectorPanel: View {
     }
 
     private var telemetryObject: String {
-        store.selectedAgent?.displayName ?? "未选择"
+        store.selectedAgent?.displayName ?? "未选择".L()
     }
 
     private var telemetryStatus: String {
-        store.selectedAgent?.status.title ?? "待机"
+        store.selectedAgent?.status.title ?? "待机".L()
     }
 
     private var telemetryProduct: String {
-        store.selectedProduct?.name ?? "当前产品"
+        store.selectedProduct?.name ?? "当前产品".L()
     }
 
     private var telemetryBackend: String {
-        guard let agent = store.selectedAgent else { return "命令行未绑定" }
+        guard let agent = store.selectedAgent else { return "命令行未绑定".L() }
         if store.mainWorkspace == .terminalHall {
             return opcBackendCompactDisplay(type: agent.backend.type, command: agent.backend.command, model: agent.backend.model)
         }
-        return agent.role == .boss ? "老板" : "\(agent.role.title)席位"
+        return agent.role == .boss ? "老板".L() : "\(agent.role.title)" + "席位"
     }
 
     private var canSend: Bool {
@@ -406,7 +406,7 @@ struct BossControlPanel: View {
             }
 
             VStack(alignment: .leading, spacing: 5) {
-                Text("老板总控台")
+                Text("老板总控台".L())
                     .font(.system(size: 20, weight: .heavy, design: .rounded))
                     .foregroundStyle(CompanyTheme.ink)
             Text("\(store.selectedProduct?.name ?? "当前产品") · \(store.selectedProduct?.stage.title ?? "进行中")")
@@ -416,7 +416,7 @@ struct BossControlPanel: View {
             }
 
             Spacer()
-            Text("老板")
+            Text("老板".L())
                 .font(.system(size: 9, weight: .black, design: .rounded))
                 .foregroundStyle(CompanyTheme.warning)
                 .padding(.horizontal, 8)
@@ -434,25 +434,25 @@ struct BossControlPanel: View {
 
     private var statsGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10)], spacing: 10) {
-            BossStatCard(title: "员工", value: "\(employeeCount)", systemImage: "person.3.fill", color: CompanyTheme.blue)
-            BossStatCard(title: "运行中", value: "\(store.runningAgentIDs.count)", systemImage: "terminal.fill", color: CompanyTheme.accent)
-            BossStatCard(title: "未完成任务", value: "\(openTaskCount)", systemImage: "checklist", color: CompanyTheme.warning)
+            BossStatCard(title: "员工".L(), value: "\(employeeCount)", systemImage: "person.3.fill", color: CompanyTheme.blue)
+            BossStatCard(title: "运行中".L(), value: "\(store.runningAgentIDs.count)", systemImage: "terminal.fill", color: CompanyTheme.accent)
+            BossStatCard(title: "未完成任务".L(), value: "\(openTaskCount)", systemImage: "checklist", color: CompanyTheme.warning)
             BossStatCard(title: BossDecisionCenterCopy.statTitle, value: "\(bossDecisionCount)", systemImage: "hand.raised.fill", color: bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
         }
     }
 
     private var productProgress: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "产品进度")
+            SectionHeader(title: "产品进度".L())
             HStack(alignment: .firstTextBaseline) {
                 Text("\(completionPercent)%")
                     .font(.system(size: 28, weight: .heavy, design: .rounded))
                     .foregroundStyle(CompanyTheme.warning)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(store.selectedProduct?.stage.title ?? "未选择阶段")
+                    Text(store.selectedProduct?.stage.title ?? "未选择阶段".L())
                         .font(.system(size: 12, weight: .heavy))
                         .foregroundStyle(CompanyTheme.ink)
-                    Text("\(completedTaskCount)/\(store.selectedProductTasks.count) 个任务完成，\(openTaskCount) 个未完成。")
+                    Text("\(completedTaskCount)/\(store.selectedProductTasks.count)" + " 个任务完成，".L() + "\(openTaskCount)" + " 个未完成。")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(CompanyTheme.muted)
                         .lineLimit(2)
@@ -509,8 +509,8 @@ struct BossControlPanel: View {
 
     private var ctoQuickMessage: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "给技术负责人下达目标")
-                TextField("输入老板目标，例如：让团队检查 Gemini 终端报错并给我解决方案。", text: $ctoMessage, axis: .vertical)
+            SectionHeader(title: "给技术负责人下达目标".L())
+                TextField("输入老板目标，例如：让团队检查 Gemini 终端报错并给我解决方案。".L(), text: $ctoMessage, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
                 .foregroundStyle(CompanyTheme.ink)
@@ -527,7 +527,7 @@ struct BossControlPanel: View {
                 selectedTab = .chat
                 store.sendMessage(to: store.ctoID, text: text)
             } label: {
-                Label("发送给技术负责人", systemImage: "paperplane.fill")
+                Label("发送给技术负责人".L(), systemImage: "paperplane.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -544,10 +544,10 @@ struct BossControlPanel: View {
 
     private var teamProgressPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "员工执行进度")
+            SectionHeader(title: "员工执行进度".L())
             let employees = store.bossInspectorTeamProgressAgents
             if employees.isEmpty {
-                Text("当前没有员工在运行命令行任务。")
+                Text("当前没有员工在运行命令行任务。".L())
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -575,7 +575,7 @@ struct BossControlPanel: View {
 
     private var recentTasks: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "近期任务结果")
+            SectionHeader(title: "近期任务结果".L())
             ForEach(store.bossInspectorRecentTasks) { task in
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: task.status == .done ? "checkmark.circle.fill" : "circle.dotted")
@@ -605,7 +605,7 @@ struct BossControlPanel: View {
 
     private var recentEvents: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "近期汇报")
+            SectionHeader(title: "近期汇报".L())
             ForEach(store.bossInspectorRecentEvents) { event in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(event.title)
@@ -632,7 +632,7 @@ struct BossControlPanel: View {
 
     private var compactRecentReports: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "近期汇报")
+            SectionHeader(title: "近期汇报".L())
             ForEach(store.bossInspectorCompactRecentReports) { event in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(event.title)
@@ -654,8 +654,8 @@ struct BossControlPanel: View {
     }
 
     private func agentName(_ id: UUID?) -> String {
-        guard let id else { return "未分配" }
-        return store.agents.first { $0.id == id }?.displayName ?? "未知员工"
+        guard let id else { return "未分配".L() }
+        return store.agents.first { $0.id == id }?.displayName ?? "未知员工".L()
     }
 }
 
@@ -756,13 +756,13 @@ struct BossEmployeeProgressRow: View {
                         .foregroundStyle(CompanyTheme.muted)
                 }
                 Spacer(minLength: 0)
-                StatusPill(text: isRunning ? "运行中" : agent.status.title, color: signalColor)
+                StatusPill(text: isRunning ? "运行中".L() : agent.status.title, color: signalColor)
             }
 
             ProgressView(value: progress)
                 .tint(signalColor)
 
-            Text("完成 \(doneCount) · 推进 \(activeCount) · 异常 \(blockedCount) · 队列 \(queueCount)")
+            Text("完成 " + "\(doneCount)" + " · 推进 " + "\(activeCount)" + " · 异常 " + "\(blockedCount)" + " · 队列 " + "\(queueCount)")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(CompanyTheme.muted)
                 .lineLimit(1)
@@ -794,11 +794,11 @@ enum InspectorTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .chat: "沟通"
-        case .tasks: "任务"
-        case .events: "事件"
-        case .profile: "档案"
-        case .terminal: "终端"
+        case .chat: "沟通".L()
+        case .tasks: "任务".L()
+        case .events: "事件".L()
+        case .profile: "档案".L()
+        case .terminal: "终端".L()
         }
     }
 
@@ -901,15 +901,15 @@ struct MessageBubble: View {
 
     static func authorLabel(for author: MessageAuthor, agentRole: AgentRole?) -> String {
         switch author {
-        case .user: "老板"
+        case .user: "老板".L()
         case .agent:
             switch agentRole {
-            case .cto: "技术负责人"
-            case .boss: "老板"
-            case .none: "员工"
-            default: "员工"
+            case .cto: "技术负责人".L()
+            case .boss: "老板".L()
+            case .none: "员工".L()
+            default: "员工".L()
             }
-        case .system: "系统"
+        case .system: "系统".L()
         }
     }
 
@@ -950,7 +950,7 @@ struct TaskBoardView: View {
             LazyVStack(alignment: .leading, spacing: 10) {
                 let tasks = selectedAgentTasks
                 if tasks.isEmpty {
-                    EmptyCommandLine(text: "当前产品下没有分配给该员工的任务。")
+                    EmptyCommandLine(text: "当前产品下没有分配给该员工的任务。".L())
                 } else {
                     ForEach(tasks) { task in
                     VStack(alignment: .leading, spacing: 8) {
@@ -970,7 +970,7 @@ struct TaskBoardView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(CompanyTheme.muted)
                         if let owner = task.ownerID.flatMap({ id in store.agents.first { $0.id == id } }) {
-                            Text("负责人：\(owner.displayName)")
+                            Text("负责人：".L() + "\(owner.displayName)")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(CompanyTheme.accent)
                         }
@@ -1012,7 +1012,7 @@ struct EventLogView: View {
             LazyVStack(alignment: .leading, spacing: 10) {
                 let events = selectedAgentEvents
                 if events.isEmpty {
-                    EmptyCommandLine(text: "当前产品下还没有该员工相关事件。")
+                    EmptyCommandLine(text: "当前产品下还没有该员工相关事件。".L())
                 } else {
                     ForEach(events) { event in
                     VStack(alignment: .leading, spacing: 5) {
@@ -1069,13 +1069,13 @@ struct AgentProfileView: View {
             if let agent = store.selectedAgent {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("身份与汇报")
+                        Text("身份与汇报".L())
                             .font(.system(size: 11, weight: .heavy))
                             .foregroundStyle(CompanyTheme.muted)
                             .textCase(.uppercase)
 
-                        LabeledContent("显示名称") {
-                            TextField("员工名称", text: Binding(
+                        LabeledContent("显示名称".L()) {
+                            TextField("员工名称".L(), text: Binding(
                                 get: { displayNameDraft.isEmpty ? agent.displayName : displayNameDraft },
                                 set: { displayNameDraft = $0 }
                             ))
@@ -1087,8 +1087,8 @@ struct AgentProfileView: View {
                             .inspectorInputChrome()
                         }
 
-                        LabeledContent("职位名称") {
-                            TextField("员工职位", text: Binding(
+                        LabeledContent("职位名称".L()) {
+                            TextField("员工职位".L(), text: Binding(
                                 get: { titleDraft.isEmpty ? agent.title : titleDraft },
                                 set: { titleDraft = $0 }
                             ))
@@ -1100,7 +1100,7 @@ struct AgentProfileView: View {
                             .inspectorInputChrome()
                         }
 
-                        Picker("角色", selection: Binding(
+                        Picker("角色".L(), selection: Binding(
                             get: { agent.role },
                             set: { store.updateSelectedAgentIdentity(role: $0) }
                         )) {
@@ -1110,13 +1110,13 @@ struct AgentProfileView: View {
                         }
                         .disabled(agent.id == store.ctoID || agent.id == store.bossID)
 
-                        Toggle("向技术负责人汇报", isOn: Binding(
+                        Toggle("向技术负责人汇报".L(), isOn: Binding(
                             get: { agent.reportsToCTO },
                             set: { store.updateSelectedAgentIdentity(reportsToCTO: $0) }
                         ))
                         .disabled(agent.role == .boss || agent.role == .cto)
 
-                        Button("保存身份配置") {
+                        Button("保存身份配置".L()) {
                             store.updateSelectedAgentIdentity(
                                 displayName: displayNameDraft.isEmpty ? agent.displayName : displayNameDraft,
                                 title: titleDraft.isEmpty ? agent.title : titleDraft
@@ -1135,12 +1135,12 @@ struct AgentProfileView: View {
                     )
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("模型配置")
+                        Text("模型配置".L())
                             .font(.system(size: 11, weight: .heavy))
                             .foregroundStyle(CompanyTheme.muted)
                             .textCase(.uppercase)
 
-                        Picker("来源", selection: Binding(
+                        Picker("来源".L(), selection: Binding(
                             get: { agent.backend.type },
                             set: { store.updateSelectedAgentBackend(type: $0) }
                         )) {
@@ -1150,7 +1150,7 @@ struct AgentProfileView: View {
                         }
 
                         if agent.backend.type == .api {
-                            LabeledContent("接口地址") {
+                            LabeledContent("接口地址".L()) {
                                 TextField("https://api.example.com/v1", text: Binding(
                                     get: { endpointDraft.isEmpty ? agent.backend.endpoint : endpointDraft },
                                     set: { endpointDraft = $0 }
@@ -1166,8 +1166,8 @@ struct AgentProfileView: View {
                                 }
                             }
 
-                            LabeledContent("接口密钥") {
-                                SecureField(agent.backend.apiKey.isEmpty ? "未配置" : "已配置，输入新密钥可替换", text: $apiKeyDraft)
+                            LabeledContent("接口密钥".L()) {
+                                SecureField(agent.backend.apiKey.isEmpty ? "未配置".L() : "已配置，输入新密钥可替换".L(), text: $apiKeyDraft)
                                     .textFieldStyle(.plain)
                                     .font(.system(size: 11))
                                     .foregroundStyle(CompanyTheme.ink)
@@ -1176,8 +1176,8 @@ struct AgentProfileView: View {
                                     .inspectorInputChrome()
                             }
                         } else if agent.backend.type == .subscriptionCLI {
-                            LabeledContent("命令") {
-                                TextField("例如 codex、claude、gemini", text: Binding(
+                            LabeledContent("命令".L()) {
+                                TextField("例如 codex、claude、gemini".L(), text: Binding(
                                     get: { commandDraft.isEmpty ? agent.backend.command : commandDraft },
                                     set: { commandDraft = $0 }
                                 ))
@@ -1193,8 +1193,8 @@ struct AgentProfileView: View {
                             }
                         }
 
-                        LabeledContent(agent.backend.type == .local ? "占位标识" : "模型") {
-                            TextField(agent.backend.type == .local ? "例如 local、owner" : "例如 gpt-5.5、sonnet，留空使用默认模型", text: Binding(
+                        LabeledContent(agent.backend.type == .local ? "占位标识".L() : "模型".L()) {
+                            TextField(agent.backend.type == .local ? "例如 local、owner".L() : "例如 gpt-5.5、sonnet，留空使用默认模型".L(), text: Binding(
                                 get: { modelDraft.isEmpty ? agent.backend.model : modelDraft },
                                 set: { modelDraft = $0 }
                             ))
@@ -1210,7 +1210,7 @@ struct AgentProfileView: View {
                         }
 
                         if agent.backend.type != .local {
-                            Picker("推理强度", selection: Binding(
+                            Picker("推理强度".L(), selection: Binding(
                                 get: { agent.backend.reasoningEffort },
                                 set: { store.updateSelectedAgentBackend(reasoningEffort: $0) }
                             )) {
@@ -1221,7 +1221,7 @@ struct AgentProfileView: View {
                             .pickerStyle(.segmented)
                         }
 
-                        Button(agent.backend.type == .api ? "保存接口配置" : (agent.backend.type == .local ? "保存占位标识" : "保存命令和模型")) {
+                        Button(agent.backend.type == .api ? "保存接口配置".L() : (agent.backend.type == .local ? "保存占位标识".L() : "保存命令和模型".L())) {
                             store.updateSelectedAgentBackend(
                                 command: commandDraft.isEmpty ? agent.backend.command : commandDraft,
                                 model: modelDraft.isEmpty ? agent.backend.model : modelDraft,
@@ -1244,12 +1244,12 @@ struct AgentProfileView: View {
                     )
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("人物与外观")
+                        Text("人物与外观".L())
                             .font(.system(size: 11, weight: .heavy))
                             .foregroundStyle(CompanyTheme.muted)
                             .textCase(.uppercase)
 
-                        Picker("人种/外观", selection: Binding(
+                        Picker("人种/外观".L(), selection: Binding(
                             get: { agent.ethnicity },
                             set: { store.updateSelectedAgentAppearance(ethnicity: $0) }
                         )) {
@@ -1259,7 +1259,7 @@ struct AgentProfileView: View {
                         }
                         .pickerStyle(.menu)
 
-                        Picker("性别", selection: Binding(
+                        Picker("性别".L(), selection: Binding(
                             get: { agent.gender },
                             set: { store.updateSelectedAgentAppearance(gender: $0) }
                         )) {
@@ -1269,7 +1269,7 @@ struct AgentProfileView: View {
                         }
                         .pickerStyle(.segmented)
 
-                        Picker("着装", selection: Binding(
+                        Picker("着装".L(), selection: Binding(
                             get: { agent.clothing },
                             set: { store.updateSelectedAgentAppearance(clothing: $0) }
                         )) {
@@ -1287,15 +1287,15 @@ struct AgentProfileView: View {
                     )
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("员工操作档案")
+                        Text("员工操作档案".L())
                             .font(.system(size: 11, weight: .heavy))
                             .foregroundStyle(CompanyTheme.muted)
                             .textCase(.uppercase)
 
                         let profile = store.operatingProfile(for: agent.id)
 
-                        LabeledContent("使命") {
-                            TextField("这个员工存在的目的", text: Binding(
+                        LabeledContent("使命".L()) {
+                            TextField("这个员工存在的目的".L(), text: Binding(
                                 get: { missionDraft.isEmpty ? profile.mission : missionDraft },
                                 set: { missionDraft = $0 }
                             ))
@@ -1307,32 +1307,32 @@ struct AgentProfileView: View {
                             .inspectorInputChrome()
                         }
 
-                        ProfileEditorBlock(title: "职责", text: Binding(
+                        ProfileEditorBlock(title: "职责".L(), text: Binding(
                             get: { responsibilitiesDraft.isEmpty ? profile.responsibilities.joined(separator: "\n") : responsibilitiesDraft },
                             set: { responsibilitiesDraft = $0 }
                         ))
 
-                        ProfileEditorBlock(title: "边界", text: Binding(
+                        ProfileEditorBlock(title: "边界".L(), text: Binding(
                             get: { boundariesDraft.isEmpty ? profile.boundaries.joined(separator: "\n") : boundariesDraft },
                             set: { boundariesDraft = $0 }
                         ))
 
-                        ProfileEditorBlock(title: "回复规则", text: Binding(
+                        ProfileEditorBlock(title: "回复规则".L(), text: Binding(
                             get: { responseRulesDraft.isEmpty ? profile.responseRules.joined(separator: "\n") : responseRulesDraft },
                             set: { responseRulesDraft = $0 }
                         ))
 
-                        ProfileEditorBlock(title: "长期记忆", text: Binding(
+                        ProfileEditorBlock(title: "长期记忆".L(), text: Binding(
                             get: { memoryDraft.isEmpty ? profile.memory.joined(separator: "\n") : memoryDraft },
                             set: { memoryDraft = $0 }
                         ))
 
-                        ProfileEditorBlock(title: "可用技能", text: Binding(
+                        ProfileEditorBlock(title: "可用技能".L(), text: Binding(
                             get: { skillsDraft.isEmpty ? profile.skills.joined(separator: "\n") : skillsDraft },
                             set: { skillsDraft = $0 }
                         ))
 
-                        Button("保存员工档案") {
+                        Button("保存员工档案".L()) {
                             store.updateSelectedAgentProfile(
                                 mission: missionDraft.isEmpty ? profile.mission : missionDraft,
                                 responsibilitiesText: responsibilitiesDraft.isEmpty ? profile.responsibilities.joined(separator: "\n") : responsibilitiesDraft,
@@ -1355,19 +1355,19 @@ struct AgentProfileView: View {
                             Button {
                                 store.syncSelectedAgentWorkspace()
                             } label: {
-                                Label("同步本地工作区", systemImage: "folder.badge.gearshape")
+                                Label("同步本地工作区".L(), systemImage: "folder.badge.gearshape")
                             }
                             .buttonStyle(.bordered)
 
                             Button {
                                 store.compactSelectedAgentMemory()
                             } label: {
-                                Label("压缩近期记忆", systemImage: "brain.head.profile")
+                                Label("压缩近期记忆".L(), systemImage: "brain.head.profile")
                             }
                             .buttonStyle(.bordered)
                         }
 
-                        Text("员工工作区已就绪")
+                        Text("员工工作区已就绪".L())
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(CompanyTheme.muted)
                     }
@@ -1378,27 +1378,27 @@ struct AgentProfileView: View {
                             .stroke(CompanyTheme.border.opacity(0.72), lineWidth: 0.7)
                     )
 
-                    ProfileRow(label: "来源", value: agent.backend.type.title)
+                    ProfileRow(label: "来源".L(), value: agent.backend.type.title)
                     if agent.backend.type == .local {
-                        ProfileRow(label: "占位标识", value: agent.backend.model.isEmpty ? "local" : agent.backend.model)
+                        ProfileRow(label: "占位标识".L(), value: agent.backend.model.isEmpty ? "local" : agent.backend.model)
                     } else {
                         if agent.backend.type == .subscriptionCLI {
-                            ProfileRow(label: "命令行工具", value: opcBackendCommandDisplayName(agent.backend.command))
+                            ProfileRow(label: "命令行工具".L(), value: opcBackendCommandDisplayName(agent.backend.command))
                         }
-                        ProfileRow(label: "模型", value: agent.backend.model.isEmpty ? "默认模型" : agent.backend.model)
+                        ProfileRow(label: "模型".L(), value: agent.backend.model.isEmpty ? "默认模型".L() : agent.backend.model)
                     }
                     if agent.backend.type == .api {
-                        ProfileRow(label: "接口地址", value: agent.backend.endpoint.isEmpty ? "未配置" : agent.backend.endpoint)
-                        ProfileRow(label: "接口密钥", value: agent.backend.apiKey.isEmpty ? "未配置" : "已配置")
+                        ProfileRow(label: "接口地址".L(), value: agent.backend.endpoint.isEmpty ? "未配置".L() : agent.backend.endpoint)
+                        ProfileRow(label: "接口密钥".L(), value: agent.backend.apiKey.isEmpty ? "未配置".L() : "已配置".L())
                     }
                     if agent.backend.type != .local {
-                        ProfileRow(label: "推理强度", value: agent.backend.reasoningEffort.title)
+                        ProfileRow(label: "推理强度".L(), value: agent.backend.reasoningEffort.title)
                     }
-                    ProfileRow(label: "人种/外观", value: agent.ethnicity.title)
-                    ProfileRow(label: "性别", value: agent.gender.title)
-                    ProfileRow(label: "服装", value: agent.clothing.title)
+                    ProfileRow(label: "人种/外观".L(), value: agent.ethnicity.title)
+                    ProfileRow(label: "性别".L(), value: agent.gender.title)
+                    ProfileRow(label: "服装".L(), value: agent.clothing.title)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("权限")
+                        Text("权限".L())
                             .font(.system(size: 11, weight: .heavy))
                             .foregroundStyle(CompanyTheme.muted)
                             .textCase(.uppercase)
@@ -1469,11 +1469,11 @@ struct TerminalPanel: View {
     @ViewBuilder
     private var controlArea: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("运行选中的员工")
+            Text("运行选中的员工".L())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(CompanyTheme.muted)
                 .textCase(.uppercase)
-            TextField("提示词", text: $prompt, axis: .vertical)
+            TextField("提示词".L(), text: $prompt, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
                 .foregroundStyle(CompanyTheme.ink)
@@ -1482,7 +1482,7 @@ struct TerminalPanel: View {
                 .inspectorInputChrome()
                 .lineLimit(1...2)
             HStack {
-                Button("预检") {
+                Button("预检".L()) {
                     store.recordCLIPreflight(agentID: store.selectedAgentID, prompt: prompt)
                 }
                 .buttonStyle(.bordered)
@@ -1491,13 +1491,13 @@ struct TerminalPanel: View {
                 Button {
                     store.runSelectedAgent(prompt: prompt)
                 } label: {
-                    Label(isSelectedAgentRunning ? "运行中" : "运行命令行任务", systemImage: "terminal")
+                    Label(isSelectedAgentRunning ? "运行中".L() : "运行命令行任务".L(), systemImage: "terminal")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CompanyTheme.accent)
                 .disabled(isSelectedAgentRunning || !canRunSelectedAgentForProduct)
 
-                Button("简报给技术负责人") {
+                Button("简报给技术负责人".L()) {
                     store.sendSystemBriefToCTO(sourceAgentID: store.selectedAgentID)
                 }
                 .buttonStyle(.bordered)
@@ -1512,7 +1512,7 @@ struct TerminalPanel: View {
                     .padding(9)
                     .background(CompanyTheme.terminalBackground.opacity(0.90), in: RoundedRectangle(cornerRadius: 8))
             } label: {
-                Label("运行前预检", systemImage: "checkmark.shield.fill")
+                Label("运行前预检".L(), systemImage: "checkmark.shield.fill")
                     .font(.system(size: 11, weight: .heavy))
                     .foregroundStyle(CompanyTheme.warning)
             }

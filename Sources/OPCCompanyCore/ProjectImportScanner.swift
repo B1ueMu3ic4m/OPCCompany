@@ -3,8 +3,8 @@ import Foundation
 public enum ProjectImportScanner {
     public static func scan(rootURL: URL) -> ProjectImportReport {
         let root = rootURL.standardizedFileURL
-        let projectName = root.lastPathComponent.isEmpty ? "导入项目" : root.lastPathComponent
-        let shortName = String(projectName.prefix(3)).isEmpty ? "项目" : String(projectName.prefix(3))
+        let projectName = root.lastPathComponent.isEmpty ? "导入项目".L() : root.lastPathComponent
+        let shortName = String(projectName.prefix(3)).isEmpty ? "项目".L() : String(projectName.prefix(3))
 
         let ruleFiles = existingPaths(in: root, candidates: [
             "AGENTS.md",
@@ -84,7 +84,7 @@ public enum ProjectImportScanner {
             tools.append("Claude Code")
         }
         if ruleFiles.contains(where: { $0 == "GEMINI.md" || $0.hasPrefix(".gemini") }) {
-            tools.append("Gemini 命令行")
+            tools.append("Gemini 命令行".L())
         }
         return tools
     }

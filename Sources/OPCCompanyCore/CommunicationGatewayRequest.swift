@@ -36,7 +36,7 @@ public enum CommunicationGatewayRequestBuilder {
             guard !chatID.isEmpty else { return nil }
             return jsonPreview(endpoint: endpoint, body: #"{"chat_id":"\#(escaped(chatID))","text":"\#(escaped(text))"}"#)
         case .emailDigest:
-            return jsonPreview(endpoint: endpoint, body: #"{"subject":"OPC 团队负责人汇报","text":"\#(escaped(text))"}"#)
+            return jsonPreview(endpoint: endpoint, body: #"{"subject":"\#("OPC 团队负责人汇报".L())","text":"\#(escaped(text))"}"#)
         }
     }
 
