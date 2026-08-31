@@ -1,0 +1,37 @@
+# ===== macOS =====
+.DS_Store
+*.swp
+*~
+._*
+
+# ===== Swift / Xcode build artifacts =====
+.build/
+dist/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcodeproj
+
+# ===== Local agent state — NEVER publish =====
+.claude/
+.ccb/
+.claude/**
+.ccb/**
+
+# ===== Internal handoff docs (local only) =====
+docs/CLAUDE_CODE_HANDOFF.md
+
+# ===== Local app support data =====
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.log
+*.trace
+
+# ===== Secrets & env =====
+.env
+.env.*
+*.local
+
+# ===== Scan tooling output =====
+gitleaks-report.*
