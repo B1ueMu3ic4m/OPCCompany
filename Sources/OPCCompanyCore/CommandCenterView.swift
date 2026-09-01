@@ -178,7 +178,7 @@ struct CommandCenterView: View {
                     .foregroundStyle(CompanyTheme.blue)
                     .lineLimit(1)
                 if let root = product?.rootDirectory {
-                    Text(root)
+                    Text((root as NSString).abbreviatingWithTildeInPath)
                         .font(.system(size: 11, weight: .medium, design: .monospaced))
                         .foregroundStyle(CompanyTheme.muted)
                         .lineLimit(1)

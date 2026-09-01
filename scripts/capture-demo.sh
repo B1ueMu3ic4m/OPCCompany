@@ -1,5 +1,5 @@
 #!/bin/bash
-# Capture demo screenshots & GIF source for OPCCompany README.
+# Capture demo screenshots for OPCCompany README — WINDOW-ONLY capture (privacy-safe).
 # PREREQUISITE: grant Screen Recording permission to your terminal app
 # (System Settings → Privacy & Security → Screen & System Audio Recording).
 # Usage: bash scripts/capture-demo.sh   (outputs to docs/assets/)
@@ -8,27 +8,37 @@ cd "$(dirname "$0")/.."
 OUT=docs/assets
 mkdir -p "$OUT"
 
-shot() { screencapture -x "$1"; echo "saved $1"; }
+# Resolve the OPC Company window id (window-only capture; never full screen)
+WID=$(/usr/bin/swift - <<'SWIFT'
+import CoreGraphics
+import Foundation
+let opts = CGWindowListOption(arrayLiteral: .optionOnScreenOnly)
+if let list = CGWindowListCopyWindowInfo(opts, kCGNullWindowID) as? [[String: Any]] {
+    for w in list {
+        let owner = w["kCGWindowOwnerName"] as? String ?? ""
+        if owner.contains("OPC"), let num = w["kCGWindowNumber"] as? Int {
+            print(num); exit(0)
+        }
+    }
+}
+print("NONE")
+SWIFT
+)
+if [ "$WID" = "NONE" ]; then echo "OPC Company window not found — launch the app first"; exit 1; fi
+echo "Capturing OPC Company window #$WID (window-only)"
 
-echo "[1/4] Launch app (English mode)…"
-OPC_FORCE_LANGUAGE=en dist/OPCCompany.app/Contents/MacOS/OPCCompany &
-APP=$!
-sleep 6
+shot() { screencapture -x -o -l "$WID" "$1"; echo "saved $1"; }
 
-echo "[2/4] Screenshots"
-shot "$OUT/shot-command-center.png"    # Command Center + company floor
-echo "   → open the Add Employee sheet (⌘⇧N), press Enter to continue…"
+echo "[1/4] Command Center / Company Floor"
+shot "$OUT/shot-command-center.png"
+echo "[2/4] Open the Add Employee sheet (⌘⇧N), then press Enter…"
 read -r
 shot "$OUT/shot-add-employee.png"
-echo "   → go to Terminal Hall, run one employee, press Enter…"
+echo "[3/4] Go to Terminal Hall, run one employee, then press Enter…"
 read -r
 shot "$OUT/shot-terminal-hall.png"
+echo "[4/4] Product Detail (optional, press Enter to capture)…"
+read -r
+shot "$OUT/shot-product-detail.png"
 
-echo "[3/4] GIF: company floor (8s)"
-ffmpeg -y -f avfoundation -framerate 30 -capture_cursor 1 -i "1:0" -t 8 \
-  -vf "fps=15,scale=1024:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  "$OUT/demo-floor.gif" || echo "ffmpeg avfoundation failed — record with QuickTime and convert manually"
-
-echo "[4/4] Done. Review files, then delete placeholders:"
-ls -la "$OUT"
-kill $APP 2>/dev/null || true
+echo "Done. Files in docs/assets/ (window-only, no desktop content)."
