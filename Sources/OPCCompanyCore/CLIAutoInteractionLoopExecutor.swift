@@ -51,11 +51,11 @@ public struct CLIAutoInteractionLoopExecutionReport: Codable, Hashable, Sendable
 
     public var summaryText: String {
         """
-        自动交互循环执行器：\(finalState.phase.title)
-        已尝试轮次：\(attemptedTurnCount)
-        已发送轮次：\(sentTurnCount)/\(finalState.maxTurns)
-        停止原因：\(finalState.stopReason.title)
-        操作建议：\(finalState.stopReason.operatorHint)
+        \("自动交互循环执行器：".L())\(finalState.phase.title)
+        \("已尝试轮次：".L())\(attemptedTurnCount)
+        \("已发送轮次：".L())\(sentTurnCount)/\(finalState.maxTurns)
+        \("停止原因：".L())\(finalState.stopReason.title)
+        \("操作建议：".L())\(finalState.stopReason.operatorHint)
         """
     }
 }

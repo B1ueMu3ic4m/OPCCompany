@@ -3,8 +3,8 @@ import Foundation
 public enum ProjectImportScanner {
     public static func scan(rootURL: URL) -> ProjectImportReport {
         let root = rootURL.standardizedFileURL
-        let projectName = root.lastPathComponent.isEmpty ? "导入项目".L() : root.lastPathComponent
-        let shortName = String(projectName.prefix(3)).isEmpty ? "项目".L() : String(projectName.prefix(3))
+        let projectName = root.lastPathComponent.isEmpty ? "导入项目".L().L() : root.lastPathComponent
+        let shortName = String(projectName.prefix(3)).isEmpty ? "项目".L().L() : String(projectName.prefix(3))
 
         let ruleFiles = existingPaths(in: root, candidates: [
             "AGENTS.md",
@@ -40,7 +40,7 @@ public enum ProjectImportScanner {
 
         let detectedTools = detectedTools(ruleFiles: ruleFiles)
         let summary = """
-        \(projectName) 已导入。检测到 \(detectedTools.count) 类智能工具线索、\(ruleFiles.count) 个规则/记忆位置、\(projectFiles.count) 个项目结构文件。
+        \(projectName)\(" 已导入。检测到 ".L())\(detectedTools.count)\(" 类智能工具线索、".L())\(ruleFiles.count)\(" 个规则/记忆位置、".L())\(projectFiles.count)\(" 个项目结构文件。".L())
         """
 
         return ProjectImportReport(
@@ -84,7 +84,7 @@ public enum ProjectImportScanner {
             tools.append("Claude Code")
         }
         if ruleFiles.contains(where: { $0 == "GEMINI.md" || $0.hasPrefix(".gemini") }) {
-            tools.append("Gemini 命令行".L())
+            tools.append("Gemini 命令行".L().L())
         }
         return tools
     }

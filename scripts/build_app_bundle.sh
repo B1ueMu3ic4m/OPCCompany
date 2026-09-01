@@ -70,7 +70,6 @@ PLIST
     printf 'bundle_identifier: %s\n' "local.opc.company"
     printf 'build_version: %s\n' "$BUILD_VERSION"
     printf 'built_at_utc: %s\n' "$BUILT_AT_UTC"
-    printf 'source_root: %s\n' "$ROOT_DIR"
 } > "$RESOURCES_DIR/BuildInfo.txt"
 
 if [[ "${OPC_SKIP_ADHOC_SIGN:-0}" != "1" ]]; then

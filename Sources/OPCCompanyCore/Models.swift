@@ -16,16 +16,16 @@ public enum AgentStatus: String, Codable, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .idle: "待命".L()
-        case .thinking: "思考中".L()
-        case .talking: "沟通中".L()
-        case .typing: "输入中".L()
-        case .coding: "编码中".L()
-        case .reviewing: "审查中".L()
-        case .blocked: "阻塞".L()
-        case .waitingApproval: "待批准".L()
-        case .done: "完成".L()
-        case .failed: "失败".L()
+        case .idle: "待命".L().L()
+        case .thinking: "思考中".L().L()
+        case .talking: "沟通中".L().L()
+        case .typing: "输入中".L().L()
+        case .coding: "编码中".L().L()
+        case .reviewing: "审查中".L().L()
+        case .blocked: "阻塞".L().L()
+        case .waitingApproval: "待批准".L().L()
+        case .done: "完成".L().L()
+        case .failed: "失败".L().L()
         }
     }
 }
@@ -46,12 +46,12 @@ public enum MainWorkspace: String, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .commandCenter: "总控台".L()
-        case .productDetail: "产品详情".L()
-        case .agentDesk: "员工工作台".L()
-        case .office: "公司场景".L()
-        case .workflow: "流程图".L()
-        case .terminalHall: "终端大厅".L()
+        case .commandCenter: "总控台".L().L()
+        case .productDetail: "产品详情".L().L()
+        case .agentDesk: "员工工作台".L().L()
+        case .office: "公司场景".L().L()
+        case .workflow: "流程图".L().L()
+        case .terminalHall: "终端大厅".L().L()
         }
     }
 }
@@ -68,12 +68,12 @@ public enum ProductStage: String, Codable, CaseIterable, Identifiable, Sendable 
 
     public var title: String {
         switch self {
-        case .discovery: "调研".L()
-        case .design: "设计".L()
-        case .implementation: "实现".L()
-        case .testing: "测试".L()
-        case .release: "发布".L()
-        case .maintenance: "维护".L()
+        case .discovery: "调研".L().L()
+        case .design: "设计".L().L()
+        case .implementation: "实现".L().L()
+        case .testing: "测试".L().L()
+        case .release: "发布".L().L()
+        case .maintenance: "维护".L().L()
         }
     }
 }
@@ -87,9 +87,9 @@ public enum ProductStatus: String, Codable, CaseIterable, Identifiable, Sendable
 
     public var title: String {
         switch self {
-        case .active: "进行中".L()
-        case .paused: "暂停".L()
-        case .archived: "归档".L()
+        case .active: "进行中".L().L()
+        case .paused: "暂停".L().L()
+        case .archived: "归档".L().L()
         }
     }
 }
@@ -174,15 +174,15 @@ public enum AgentRole: String, Codable, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .boss: "老板".L()
-        case .cto: "技术负责人".L()
-        case .productArchitect: "产品架构师".L()
-        case .uiDesigner: "界面设计师".L()
-        case .codeEngineer: "代码工程师".L()
-        case .reviewer: "审查员".L()
-        case .tester: "测试工程师".L()
-        case .researcher: "研究员".L()
-        case .custom: "自定义角色".L()
+        case .boss: "老板".L().L()
+        case .cto: "技术负责人".L().L()
+        case .productArchitect: "产品架构师".L().L()
+        case .uiDesigner: "界面设计师".L().L()
+        case .codeEngineer: "代码工程师".L().L()
+        case .reviewer: "审查员".L().L()
+        case .tester: "测试工程师".L().L()
+        case .researcher: "研究员".L().L()
+        case .custom: "自定义角色".L().L()
         }
     }
 }
@@ -196,9 +196,9 @@ public enum BackendType: String, Codable, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .subscriptionCLI: "订阅制命令行".L()
-        case .api: "接口模型".L()
-        case .local: "本地占位".L()
+        case .subscriptionCLI: "订阅制命令行".L().L()
+        case .api: "接口模型".L().L()
+        case .local: "本地占位".L().L()
         }
     }
 }
@@ -213,10 +213,10 @@ public enum ReasoningEffort: String, Codable, CaseIterable, Identifiable, Sendab
 
     public var title: String {
         switch self {
-        case .low: "低".L()
-        case .medium: "中".L()
-        case .high: "高".L()
-        case .xhigh: "超高".L()
+        case .low: "低".L().L()
+        case .medium: "中".L().L()
+        case .high: "高".L().L()
+        case .xhigh: "超高".L().L()
         }
     }
 }
@@ -234,13 +234,13 @@ public enum EthnicityPresentation: String, Codable, CaseIterable, Identifiable, 
 
     public var title: String {
         switch self {
-        case .chinese: "中国人".L()
-        case .white: "白人".L()
-        case .black: "黑人".L()
-        case .southAsian: "南亚人".L()
-        case .middleEastern: "中东人".L()
-        case .latino: "拉丁裔".L()
-        case .custom: "自定义".L()
+        case .chinese: "中国人".L().L()
+        case .white: "白人".L().L()
+        case .black: "黑人".L().L()
+        case .southAsian: "南亚人".L().L()
+        case .middleEastern: "中东人".L().L()
+        case .latino: "拉丁裔".L().L()
+        case .custom: "自定义".L().L()
         }
     }
 }
@@ -255,10 +255,10 @@ public enum GenderPresentation: String, Codable, CaseIterable, Identifiable, Sen
 
     public var title: String {
         switch self {
-        case .man: "男性".L()
-        case .woman: "女性".L()
-        case .nonbinary: "非二元".L()
-        case .custom: "自定义".L()
+        case .man: "男性".L().L()
+        case .woman: "女性".L().L()
+        case .nonbinary: "非二元".L().L()
+        case .custom: "自定义".L().L()
         }
     }
 }
@@ -275,12 +275,12 @@ public enum ClothingStyle: String, Codable, CaseIterable, Identifiable, Sendable
 
     public var title: String {
         switch self {
-        case .businessSuit: "商务西装".L()
-        case .smartCasual: "商务休闲".L()
-        case .hoodie: "连帽卫衣".L()
-        case .designerBlack: "设计师黑装".L()
-        case .labCoat: "实验白袍".L()
-        case .custom: "自定义".L()
+        case .businessSuit: "商务西装".L().L()
+        case .smartCasual: "商务休闲".L().L()
+        case .hoodie: "连帽卫衣".L().L()
+        case .designerBlack: "设计师黑装".L().L()
+        case .labCoat: "实验白袍".L().L()
+        case .custom: "自定义".L().L()
         }
     }
 }
@@ -297,12 +297,12 @@ public enum AgentPermission: String, Codable, CaseIterable, Identifiable, Sendab
 
     public var title: String {
         switch self {
-        case .readFiles: "读取文件".L()
-        case .editFiles: "编辑文件".L()
-        case .runTests: "运行测试".L()
-        case .runCommands: "执行命令".L()
-        case .useNetwork: "使用网络".L()
-        case .approveRisk: "批准风险操作".L()
+        case .readFiles: "读取文件".L().L()
+        case .editFiles: "编辑文件".L().L()
+        case .runTests: "运行测试".L().L()
+        case .runCommands: "执行命令".L().L()
+        case .useNetwork: "使用网络".L().L()
+        case .approveRisk: "批准风险操作".L().L()
         }
     }
 }
@@ -409,25 +409,25 @@ public enum CommunicationChannelKind: String, Codable, CaseIterable, Identifiabl
 
     public var title: String {
         switch self {
-        case .feishuWebhook: "飞书群机器人".L()
-        case .wecomWebhook: "企业微信群机器人".L()
-        case .dingtalkWebhook: "钉钉群机器人".L()
-        case .telegramBot: "Telegram 机器人".L()
-        case .emailDigest: "邮件日报".L()
-        case .localOnly: "本地指挥台".L()
+        case .feishuWebhook: "飞书群机器人".L().L()
+        case .wecomWebhook: "企业微信群机器人".L().L()
+        case .dingtalkWebhook: "钉钉群机器人".L().L()
+        case .telegramBot: "Telegram 机器人".L().L()
+        case .emailDigest: "邮件日报".L().L()
+        case .localOnly: "本地指挥台".L().L()
         }
     }
 
     public var capabilitySummary: String {
         switch self {
         case .feishuWebhook, .wecomWebhook, .dingtalkWebhook:
-            "适合把团队负责人日报、风险、完成情况推送到手机群；双向下达需要企业应用回调。".L()
+            "适合把团队负责人日报、风险、完成情况推送到手机群；双向下达需要企业应用回调。".L().L()
         case .telegramBot:
-            "适合个人远程双向命令，可通过机器人接口收发消息。".L()
+            "适合个人远程双向命令，可通过机器人接口收发消息。".L().L()
         case .emailDigest:
-            "适合低频日报、周报、交付摘要，不适合实时调度。".L()
+            "适合低频日报、周报、交付摘要，不适合实时调度。".L().L()
         case .localOnly:
-            "只在本机 OPC 内部记录，用于没有外部通道时验证工作流。".L()
+            "只在本机 OPC 内部记录，用于没有外部通道时验证工作流。".L().L()
         }
     }
 
@@ -449,8 +449,8 @@ public enum CommunicationLogDirection: String, Codable, Sendable {
 
     public var title: String {
         switch self {
-        case .outbound: "外发汇报".L()
-        case .inbound: "手机指令".L()
+        case .outbound: "外发汇报".L().L()
+        case .inbound: "手机指令".L().L()
         }
     }
 }
@@ -464,11 +464,11 @@ public enum CommunicationLogStatus: String, Codable, Sendable {
 
     public var title: String {
         switch self {
-        case .planned: "已规划".L()
-        case .queued: "已入队".L()
-        case .sent: "已发送".L()
-        case .received: "已接收".L()
-        case .failed: "失败".L()
+        case .planned: "已规划".L().L()
+        case .queued: "已入队".L().L()
+        case .sent: "已发送".L().L()
+        case .received: "已接收".L().L()
+        case .failed: "失败".L().L()
         }
     }
 }
@@ -480,9 +480,9 @@ public enum InboundCommandSource: String, Sendable {
 
     public var title: String {
         switch self {
-        case .localCommandConsole: "本地指挥台".L()
-        case .externalSignedChannel: "外部签名通道".L()
-        case .testFixture: "测试夹具".L()
+        case .localCommandConsole: "本地指挥台".L().L()
+        case .externalSignedChannel: "外部签名通道".L().L()
+        case .testFixture: "测试夹具".L().L()
         }
     }
 }
@@ -573,17 +573,17 @@ public enum ProductTeamTemplate: String, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .software: "软件开发团队".L()
-        case .presales: "售前方案团队".L()
-        case .research: "研究监控团队".L()
+        case .software: "软件开发团队".L().L()
+        case .presales: "售前方案团队".L().L()
+        case .research: "研究监控团队".L().L()
         }
     }
 
     public var summary: String {
         switch self {
-        case .software: "技术负责人 + 产品架构 + 界面 + 工程 + 测试/审查，适合开发应用和工具。".L()
-        case .presales: "技术负责人 + 资料研究 + 方案架构 + 界面/排版 + 审查，适合售前方案。".L()
-        case .research: "技术负责人 + 资料研究 + 审查，适合资料收集、竞品和趋势跟踪。".L()
+        case .software: "技术负责人 + 产品架构 + 界面 + 工程 + 测试/审查，适合开发应用和工具。".L().L()
+        case .presales: "技术负责人 + 资料研究 + 方案架构 + 界面/排版 + 审查，适合售前方案。".L().L()
+        case .research: "技术负责人 + 资料研究 + 审查，适合资料收集、竞品和趋势跟踪。".L().L()
         }
     }
 
@@ -619,84 +619,84 @@ public struct AgentOperatingProfile: Codable, Hashable, Sendable {
 
     public static func defaultProfile(for agent: CompanyAgent) -> AgentOperatingProfile {
         let commonRules = [
-            "使用第一人称回复，不冒充老板或其他员工。".L(),
-            "不承诺已经完成未执行的工作。".L(),
-            "遇到权限、信息或工具不足时直接说明阻塞点。".L(),
-            "重要进展需要同步技术负责人。".L()
+            "使用第一人称回复，不冒充老板或其他员工。".L().L(),
+            "不承诺已经完成未执行的工作。".L().L(),
+            "遇到权限、信息或工具不足时直接说明阻塞点。".L().L(),
+            "重要进展需要同步技术负责人。".L().L()
         ]
 
         switch agent.role {
         case .boss:
             return AgentOperatingProfile(
-                mission: "代表老板本人，只保存老板偏好、目标和决策，不执行员工任务。".L(),
-                responsibilities: ["记录老板目标".L(), "保存决策偏好".L(), "触发技术负责人协调".L()],
-                boundaries: ["不替员工承诺交付".L(), "不直接执行终端命令".L()],
-                responseRules: ["只确认老板档案、目标或决策已记录。".L()] + commonRules,
-                memory: ["老板希望 OPC 像本地智能公司一样运转。".L()],
+                mission: "代表老板本人，只保存老板偏好、目标和决策，不执行员工任务。".L().L(),
+                responsibilities: ["记录老板目标".L().L(), "保存决策偏好".L().L(), "触发技术负责人协调".L().L()],
+                boundaries: ["不替员工承诺交付".L().L(), "不直接执行终端命令".L().L()],
+                responseRules: ["只确认老板档案、目标或决策已记录。".L().L()] + commonRules,
+                memory: ["老板希望 OPC 像本地智能公司一样运转。".L().L()],
                 skills: ["planning"]
             )
         case .cto:
             return AgentOperatingProfile(
-                mission: "作为总技术负责人，负责理解老板目标、拆解任务、分配员工、跟踪进度、汇总风险和交付结论。".L(),
-                responsibilities: ["拆解目标".L(), "分配员工".L(), "检查结果".L(), "向老板汇报".L()],
-                boundaries: ["不把自己称为第三方技术负责人".L(), "不跳过老板确认做高风险操作".L()],
-                responseRules: commonRules + ["先复述目标，再给下一步调度动作。".L()],
-                memory: ["OPC 的默认工作流是老板 -> 技术负责人 -> 员工 -> 技术负责人验收 -> 老板确认。".L()],
+                mission: "作为总技术负责人，负责理解老板目标、拆解任务、分配员工、跟踪进度、汇总风险和交付结论。".L().L(),
+                responsibilities: ["拆解目标".L().L(), "分配员工".L().L(), "检查结果".L().L(), "向老板汇报".L().L()],
+                boundaries: ["不把自己称为第三方技术负责人".L().L(), "不跳过老板确认做高风险操作".L().L()],
+                responseRules: commonRules + ["先复述目标，再给下一步调度动作。".L().L()],
+                memory: ["OPC 的默认工作流是老板 -> 技术负责人 -> 员工 -> 技术负责人验收 -> 老板确认。".L().L()],
                 skills: AgentSkillCatalog.ids(for: .cto)
             )
         case .uiDesigner:
             return AgentOperatingProfile(
-                mission: "负责把产品目标转成可实现的界面、交互、视觉和动效方案。".L(),
-                responsibilities: ["界面结构".L(), "视觉风格".L(), "动效状态".L(), "可用性检查".L()],
-                boundaries: ["不直接承诺工程完成".L(), "没有技术负责人工单时只给设计判断".L()],
-                responseRules: commonRules + ["说明设计输出会等待或同步技术负责人。".L()],
+                mission: "负责把产品目标转成可实现的界面、交互、视觉和动效方案。".L().L(),
+                responsibilities: ["界面结构".L().L(), "视觉风格".L().L(), "动效状态".L().L(), "可用性检查".L().L()],
+                boundaries: ["不直接承诺工程完成".L().L(), "没有技术负责人工单时只给设计判断".L().L()],
+                responseRules: commonRules + ["说明设计输出会等待或同步技术负责人。".L().L()],
                 skills: AgentSkillCatalog.ids(for: .uiDesigner)
             )
         case .codeEngineer:
             return AgentOperatingProfile(
-                mission: "负责在明确范围内实现代码、修复问题、运行验证并汇报修改内容。".L(),
-                responsibilities: ["代码实现".L(), "调试修复".L(), "测试验证".L(), "文件变更汇报".L()],
-                boundaries: ["不越权改无关文件".L(), "不声称已运行未运行的验证".L()],
-                responseRules: commonRules + ["说明需要明确范围或技术负责人工单。".L()],
+                mission: "负责在明确范围内实现代码、修复问题、运行验证并汇报修改内容。".L().L(),
+                responsibilities: ["代码实现".L().L(), "调试修复".L().L(), "测试验证".L().L(), "文件变更汇报".L().L()],
+                boundaries: ["不越权改无关文件".L().L(), "不声称已运行未运行的验证".L().L()],
+                responseRules: commonRules + ["说明需要明确范围或技术负责人工单。".L().L()],
                 skills: AgentSkillCatalog.ids(for: .codeEngineer)
             )
         case .reviewer:
             return AgentOperatingProfile(
-                mission: "负责按成功标准审查产物，优先指出问题、风险和是否可以交付。".L(),
-                responsibilities: ["验收审查".L(), "风险识别".L(), "测试缺口".L(), "交付结论".L()],
-                boundaries: ["不替工程师实现功能".L(), "没有标准时先要求补充验收标准".L()],
-                responseRules: commonRules + ["优先讲风险和结论。".L()],
+                mission: "负责按成功标准审查产物，优先指出问题、风险和是否可以交付。".L().L(),
+                responsibilities: ["验收审查".L().L(), "风险识别".L().L(), "测试缺口".L().L(), "交付结论".L().L()],
+                boundaries: ["不替工程师实现功能".L().L(), "没有标准时先要求补充验收标准".L().L()],
+                responseRules: commonRules + ["优先讲风险和结论。".L().L()],
                 skills: AgentSkillCatalog.ids(for: .reviewer)
             )
         case .tester:
             return AgentOperatingProfile(
-                mission: "负责把任务转成可重复验证步骤，发现失败场景并记录结果。".L(),
-                responsibilities: ["测试计划".L(), "失败复现".L(), "回归验证".L()],
-                boundaries: ["不代替审查员给最终交付结论".L()],
-                responseRules: commonRules + ["说明验证方式和失败条件。".L()],
+                mission: "负责把任务转成可重复验证步骤，发现失败场景并记录结果。".L().L(),
+                responsibilities: ["测试计划".L().L(), "失败复现".L().L(), "回归验证".L().L()],
+                boundaries: ["不代替审查员给最终交付结论".L().L()],
+                responseRules: commonRules + ["说明验证方式和失败条件。".L().L()],
                 skills: AgentSkillCatalog.ids(for: .tester)
             )
         case .productArchitect:
             return AgentOperatingProfile(
-                mission: "负责需求结构、模块边界、产品约束和成功标准。".L(),
-                responsibilities: ["需求拆解".L(), "模块划分".L(), "PRD", "成功标准".L()],
-                boundaries: ["不替技术负责人做最终调度".L()],
-                responseRules: commonRules + ["输出结构化产品判断。".L()],
+                mission: "负责需求结构、模块边界、产品约束和成功标准。".L().L(),
+                responsibilities: ["需求拆解".L().L(), "模块划分".L().L(), "PRD", "成功标准".L().L()],
+                boundaries: ["不替技术负责人做最终调度".L().L()],
+                responseRules: commonRules + ["输出结构化产品判断。".L().L()],
                 skills: AgentSkillCatalog.ids(for: .productArchitect)
             )
         case .researcher:
             return AgentOperatingProfile(
-                mission: "负责资料、竞品、行业信息和上下文收集，并提炼可复用结论。".L(),
-                responsibilities: ["资料收集".L(), "竞品分析".L(), "行业摘要".L()],
-                boundaries: ["不编造来源".L(), "不把未经验证的信息当事实".L()],
-                responseRules: commonRules + ["说明信息来源和不确定性。".L()],
+                mission: "负责资料、竞品、行业信息和上下文收集，并提炼可复用结论。".L().L(),
+                responsibilities: ["资料收集".L().L(), "竞品分析".L().L(), "行业摘要".L().L()],
+                boundaries: ["不编造来源".L().L(), "不把未经验证的信息当事实".L().L()],
+                responseRules: commonRules + ["说明信息来源和不确定性。".L().L()],
                 skills: AgentSkillCatalog.ids(for: .researcher)
             )
         case .custom:
             return AgentOperatingProfile(
-                mission: "按老板配置的自定义角色执行任务。".L(),
-                responsibilities: ["执行自定义职责".L(), "同步进展".L(), "报告阻塞".L()],
-                boundaries: ["不超出配置权限".L()],
+                mission: "按老板配置的自定义角色执行任务。".L().L(),
+                responsibilities: ["执行自定义职责".L().L(), "同步进展".L().L(), "报告阻塞".L().L()],
+                boundaries: ["不超出配置权限".L().L()],
                 responseRules: commonRules,
                 skills: []
             )
@@ -705,28 +705,28 @@ public struct AgentOperatingProfile: Codable, Hashable, Sendable {
 
     public func promptBlock(agent: CompanyAgent, ctoName: String) -> String {
         """
-        员工操作档案
-        姓名：\(agent.displayName)
-        职位：\(agent.title)
-        角色：\(agent.role.title)
-        汇报对象：\(agent.reportsToCTO ? ctoName : "老板")
+        \("员工操作档案".L())
+        \("姓名：".L())\(agent.displayName)
+        \("职位：".L())\(agent.title)
+        \("角色：".L())\(agent.role.title)
+        \("汇报对象：".L())\(agent.reportsToCTO ? ctoName : "老板")
 
-        使命：
+        \("使命：".L())
         \(mission)
 
-        职责：
+        \("职责：".L())
         \(bulletList(responsibilities))
 
-        边界：
+        \("边界：".L())
         \(bulletList(boundaries))
 
-        回复规则：
+        \("回复规则：".L())
         \(bulletList(responseRules))
 
-        长期记忆：
+        \("长期记忆：".L())
         \(memory.isEmpty ? "- 暂无" : bulletList(memory))
 
-        可用技能：
+        \("可用技能：".L())
         \(skills.isEmpty ? "- 暂无" : bulletList(skillDescriptions))
         """
     }
@@ -763,14 +763,14 @@ public struct AgentSkillDefinition: Identifiable, Codable, Hashable, Sendable {
 
 public enum AgentSkillCatalog {
     public static let all: [AgentSkillDefinition] = [
-        AgentSkillDefinition(id: "planning", title: "任务拆解".L(), summary: "把老板目标拆成阶段、任务、负责人、风险和验收标准。".L(), triggerKeywords: ["拆解".L(), "计划".L(), "目标".L(), "路线".L()], defaultRoles: [.cto, .productArchitect]),
-        AgentSkillDefinition(id: "product-architecture", title: "产品架构".L(), summary: "定义需求结构、模块边界、PRD 和成功标准。".L(), triggerKeywords: ["产品".L(), "需求".L(), "架构".L(), "PRD", "模块".L()], defaultRoles: [.productArchitect, .cto]),
-        AgentSkillDefinition(id: "ui-design", title: "界面设计".L(), summary: "输出界面结构、视觉风格、交互路径和动效状态。".L(), triggerKeywords: ["UI", "界面".L(), "视觉".L(), "交互".L(), "动效".L()], defaultRoles: [.uiDesigner]),
-        AgentSkillDefinition(id: "implementation", title: "工程实现".L(), summary: "修改代码、调试问题、汇报文件和验证命令。".L(), triggerKeywords: ["实现".L(), "代码".L(), "修复".L(), "开发".L(), "编程".L()], defaultRoles: [.codeEngineer]),
-        AgentSkillDefinition(id: "testing", title: "测试验证".L(), summary: "设计可重复测试、运行验证、记录失败场景。".L(), triggerKeywords: ["测试".L(), "验证".L(), "回归".L(), "失败".L()], defaultRoles: [.tester, .reviewer]),
-        AgentSkillDefinition(id: "review", title: "验收审查".L(), summary: "按成功标准检查交付质量、风险和缺口。".L(), triggerKeywords: ["审查".L(), "验收".L(), "风险".L(), "交付".L()], defaultRoles: [.reviewer, .cto]),
-        AgentSkillDefinition(id: "research", title: "资料研究".L(), summary: "收集资料、竞品、行业信息和上下文证据。".L(), triggerKeywords: ["资料".L(), "研究".L(), "竞品".L(), "行业".L(), "搜索".L()], defaultRoles: [.researcher]),
-        AgentSkillDefinition(id: "proposal-writing", title: "方案撰写".L(), summary: "组织售前方案、价值表达、实施路径和交付文本。".L(), triggerKeywords: ["方案".L(), "售前".L(), "客户".L(), "文档".L(), "汇报".L()], defaultRoles: [.productArchitect, .cto])
+        AgentSkillDefinition(id: "planning", title: "任务拆解".L().L(), summary: "把老板目标拆成阶段、任务、负责人、风险和验收标准。".L().L(), triggerKeywords: ["拆解".L().L(), "计划".L().L(), "目标".L().L(), "路线".L().L()], defaultRoles: [.cto, .productArchitect]),
+        AgentSkillDefinition(id: "product-architecture", title: "产品架构".L().L(), summary: "定义需求结构、模块边界、PRD 和成功标准。".L().L(), triggerKeywords: ["产品".L().L(), "需求".L().L(), "架构".L().L(), "PRD", "模块".L().L()], defaultRoles: [.productArchitect, .cto]),
+        AgentSkillDefinition(id: "ui-design", title: "界面设计".L().L(), summary: "输出界面结构、视觉风格、交互路径和动效状态。".L().L(), triggerKeywords: ["UI", "界面".L().L(), "视觉".L().L(), "交互".L().L(), "动效".L().L()], defaultRoles: [.uiDesigner]),
+        AgentSkillDefinition(id: "implementation", title: "工程实现".L().L(), summary: "修改代码、调试问题、汇报文件和验证命令。".L().L(), triggerKeywords: ["实现".L().L(), "代码".L().L(), "修复".L().L(), "开发".L().L(), "编程".L().L()], defaultRoles: [.codeEngineer]),
+        AgentSkillDefinition(id: "testing", title: "测试验证".L().L(), summary: "设计可重复测试、运行验证、记录失败场景。".L().L(), triggerKeywords: ["测试".L().L(), "验证".L().L(), "回归".L().L(), "失败".L().L()], defaultRoles: [.tester, .reviewer]),
+        AgentSkillDefinition(id: "review", title: "验收审查".L().L(), summary: "按成功标准检查交付质量、风险和缺口。".L().L(), triggerKeywords: ["审查".L().L(), "验收".L().L(), "风险".L().L(), "交付".L().L()], defaultRoles: [.reviewer, .cto]),
+        AgentSkillDefinition(id: "research", title: "资料研究".L().L(), summary: "收集资料、竞品、行业信息和上下文证据。".L().L(), triggerKeywords: ["资料".L().L(), "研究".L().L(), "竞品".L().L(), "行业".L().L(), "搜索".L().L()], defaultRoles: [.researcher]),
+        AgentSkillDefinition(id: "proposal-writing", title: "方案撰写".L().L(), summary: "组织售前方案、价值表达、实施路径和交付文本。".L().L(), triggerKeywords: ["方案".L().L(), "售前".L().L(), "客户".L().L(), "文档".L().L(), "汇报".L().L()], defaultRoles: [.productArchitect, .cto])
     ]
 
     public static func skill(id: String) -> AgentSkillDefinition? {
@@ -864,84 +864,84 @@ public enum AgentRolePackCatalog {
     public static let all: [AgentRolePack] = [
         AgentRolePack(
             id: "cto-orchestrator",
-            title: "技术负责人总控编排包".L(),
+            title: "技术负责人总控编排包".L().L(),
             role: .cto,
-            summary: "负责老板目标理解、拆分、分派、汇总、验收和风险升级。".L(),
-            mission: "作为 OPC 总技术负责人，把老板目标拆成可并行执行的任务，并保证所有员工结果最终可验收。".L(),
-            responsibilities: ["目标澄清".L(), "多分支拆解".L(), "员工分派".L(), "结果汇总".L(), "风险升级".L(), "老板汇报".L()],
-            boundaries: ["不绕过老板做高风险决策".L(), "不把未验证结果当成完成".L(), "不让员工互相覆盖工作".L()],
-            responseRules: ["先给调度结论，再给分支安排".L(), "任何阻塞必须说明负责人和下一步".L(), "最终汇报必须包含完成项、风险和待老板决策".L()],
-            memorySeeds: ["OPC 的核心工作流是老板 -> 技术负责人 -> 专业员工并行 -> 技术负责人聚合 -> 审查 -> 老板确认。".L()],
+            summary: "负责老板目标理解、拆分、分派、汇总、验收和风险升级。".L().L(),
+            mission: "作为 OPC 总技术负责人，把老板目标拆成可并行执行的任务，并保证所有员工结果最终可验收。".L().L(),
+            responsibilities: ["目标澄清".L().L(), "多分支拆解".L().L(), "员工分派".L().L(), "结果汇总".L().L(), "风险升级".L().L(), "老板汇报".L().L()],
+            boundaries: ["不绕过老板做高风险决策".L().L(), "不把未验证结果当成完成".L().L(), "不让员工互相覆盖工作".L().L()],
+            responseRules: ["先给调度结论，再给分支安排".L().L(), "任何阻塞必须说明负责人和下一步".L().L(), "最终汇报必须包含完成项、风险和待老板决策".L().L()],
+            memorySeeds: ["OPC 的核心工作流是老板 -> 技术负责人 -> 专业员工并行 -> 技术负责人聚合 -> 审查 -> 老板确认。".L().L()],
             skillIDs: ["planning", "product-architecture", "review"],
             recommendedBackend: AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .high),
             recommendedPermissions: [.readFiles, .runCommands]
         ),
         AgentRolePack(
             id: "product-architect",
-            title: "产品架构师包".L(),
+            title: "产品架构师包".L().L(),
             role: .productArchitect,
-            summary: "把想法转成 PRD、模块边界、成功标准和任务输入。".L(),
-            mission: "负责把模糊产品目标变成可实现、可验收、可分派的产品结构。".L(),
-            responsibilities: ["需求结构".L(), "PRD", "模块边界".L(), "成功标准".L(), "交付范围控制".L()],
-            boundaries: ["不替工程师承诺代码完成".L(), "不扩大老板未确认的范围".L()],
-            responseRules: ["输出结构化条目".L(), "明确做什么和不做什么".L(), "每个模块必须有验收标准".L()],
-            memorySeeds: ["产品架构输出必须能直接转成工程任务和审查标准。".L()],
+            summary: "把想法转成 PRD、模块边界、成功标准和任务输入。".L().L(),
+            mission: "负责把模糊产品目标变成可实现、可验收、可分派的产品结构。".L().L(),
+            responsibilities: ["需求结构".L().L(), "PRD", "模块边界".L().L(), "成功标准".L().L(), "交付范围控制".L().L()],
+            boundaries: ["不替工程师承诺代码完成".L().L(), "不扩大老板未确认的范围".L().L()],
+            responseRules: ["输出结构化条目".L().L(), "明确做什么和不做什么".L().L(), "每个模块必须有验收标准".L().L()],
+            memorySeeds: ["产品架构输出必须能直接转成工程任务和审查标准。".L().L()],
             skillIDs: ["planning", "product-architecture", "proposal-writing"],
             recommendedBackend: AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .high),
             recommendedPermissions: [.readFiles, .runCommands]
         ),
         AgentRolePack(
             id: "ui-visual-designer",
-            title: "界面视觉设计包".L(),
+            title: "界面视觉设计包".L().L(),
             role: .uiDesigner,
-            summary: "负责界面风格、交互状态、动效和视觉验收要求。".L(),
-            mission: "负责把产品目标转成高审美、可实现、可验证的界面和动效方案。".L(),
-            responsibilities: ["视觉方向".L(), "交互流程".L(), "组件状态".L(), "动效规范".L(), "截图问题分析".L()],
-            boundaries: ["不直接改工程实现范围".L(), "不只给抽象审美词，必须落到界面元素".L()],
-            responseRules: ["先指出当前界面问题".L(), "再给可执行设计指令".L(), "每次输出都要覆盖颜色、层级、布局和状态".L()],
-            memorySeeds: ["老板偏好深色、炫酷、有审美但不要廉价荧光和杂乱网格。".L()],
+            summary: "负责界面风格、交互状态、动效和视觉验收要求。".L().L(),
+            mission: "负责把产品目标转成高审美、可实现、可验证的界面和动效方案。".L().L(),
+            responsibilities: ["视觉方向".L().L(), "交互流程".L().L(), "组件状态".L().L(), "动效规范".L().L(), "截图问题分析".L().L()],
+            boundaries: ["不直接改工程实现范围".L().L(), "不只给抽象审美词，必须落到界面元素".L().L()],
+            responseRules: ["先指出当前界面问题".L().L(), "再给可执行设计指令".L().L(), "每次输出都要覆盖颜色、层级、布局和状态".L().L()],
+            memorySeeds: ["老板偏好深色、炫酷、有审美但不要廉价荧光和杂乱网格。".L().L()],
             skillIDs: ["ui-design", "review"],
             recommendedBackend: AgentBackend(type: .subscriptionCLI, command: "gemini", model: "", reasoningEffort: .high),
             recommendedPermissions: [.readFiles]
         ),
         AgentRolePack(
             id: "code-implementation",
-            title: "工程实现包".L(),
+            title: "工程实现包".L().L(),
             role: .codeEngineer,
-            summary: "负责按明确任务修改代码、运行验证并汇报文件变更。".L(),
-            mission: "负责在技术负责人明确范围内实现代码、修复缺陷、运行验证并给出可审查结果。".L(),
-            responsibilities: ["代码实现".L(), "调试修复".L(), "测试运行".L(), "变更汇报".L(), "阻塞说明".L()],
-            boundaries: ["不改无关文件".L(), "不删除用户内容".L(), "不声称运行了未运行的验证".L()],
-            responseRules: ["汇报必须包含修改文件".L(), "汇报必须包含验证命令和结果".L(), "失败时给出最小复现和下一步".L()],
-            memorySeeds: ["工程实现优先保持现有架构和本地模式，不做无关重构。".L()],
+            summary: "负责按明确任务修改代码、运行验证并汇报文件变更。".L().L(),
+            mission: "负责在技术负责人明确范围内实现代码、修复缺陷、运行验证并给出可审查结果。".L().L(),
+            responsibilities: ["代码实现".L().L(), "调试修复".L().L(), "测试运行".L().L(), "变更汇报".L().L(), "阻塞说明".L().L()],
+            boundaries: ["不改无关文件".L().L(), "不删除用户内容".L().L(), "不声称运行了未运行的验证".L().L()],
+            responseRules: ["汇报必须包含修改文件".L().L(), "汇报必须包含验证命令和结果".L().L(), "失败时给出最小复现和下一步".L().L()],
+            memorySeeds: ["工程实现优先保持现有架构和本地模式，不做无关重构。".L().L()],
             skillIDs: ["implementation", "testing"],
             recommendedBackend: AgentBackend(type: .subscriptionCLI, command: "claude", model: "sonnet", reasoningEffort: .high),
             recommendedPermissions: [.readFiles, .editFiles, .runTests, .runCommands]
         ),
         AgentRolePack(
             id: "reviewer-acceptance",
-            title: "审查验收包".L(),
+            title: "审查验收包".L().L(),
             role: .reviewer,
-            summary: "负责按成功标准找问题、风险、遗漏和是否可交付。".L(),
-            mission: "负责站在老板和交付质量角度，审查任务结果是否真的满足目标。".L(),
-            responsibilities: ["质量审查".L(), "风险识别".L(), "验收结论".L(), "测试缺口".L(), "返工建议".L()],
-            boundaries: ["不替工程师实现".L(), "没有验收标准时先要求补齐".L()],
-            responseRules: ["问题优先".L(), "按严重度排序".L(), "明确可交付/不可交付".L()],
-            memorySeeds: ["审查不是总结，要优先发现会影响老板目标的问题。".L()],
+            summary: "负责按成功标准找问题、风险、遗漏和是否可交付。".L().L(),
+            mission: "负责站在老板和交付质量角度，审查任务结果是否真的满足目标。".L().L(),
+            responsibilities: ["质量审查".L().L(), "风险识别".L().L(), "验收结论".L().L(), "测试缺口".L().L(), "返工建议".L().L()],
+            boundaries: ["不替工程师实现".L().L(), "没有验收标准时先要求补齐".L().L()],
+            responseRules: ["问题优先".L().L(), "按严重度排序".L().L(), "明确可交付/不可交付".L().L()],
+            memorySeeds: ["审查不是总结，要优先发现会影响老板目标的问题。".L().L()],
             skillIDs: ["review", "testing"],
             recommendedBackend: AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .high),
             recommendedPermissions: [.readFiles, .runTests]
         ),
         AgentRolePack(
             id: "researcher-presales",
-            title: "资料研究/售前包".L(),
+            title: "资料研究/售前包".L().L(),
             role: .researcher,
-            summary: "负责本地资料、客户背景、竞品、行业信息和售前素材。".L(),
-            mission: "负责收集、整理和提炼可引用资料，为售前方案和产品判断提供依据。".L(),
-            responsibilities: ["资料检索".L(), "本地文件索引".L(), "竞品分析".L(), "行业摘要".L(), "证据归档".L()],
-            boundaries: ["不编造来源".L(), "不把未验证信息当事实".L()],
-            responseRules: ["结论必须区分事实和推断".L(), "输出可复用资料清单".L(), "标出不确定性".L()],
-            memorySeeds: ["售前资料需要能直接支撑方案正文、排版和最终审查。".L()],
+            summary: "负责本地资料、客户背景、竞品、行业信息和售前素材。".L().L(),
+            mission: "负责收集、整理和提炼可引用资料，为售前方案和产品判断提供依据。".L().L(),
+            responsibilities: ["资料检索".L().L(), "本地文件索引".L().L(), "竞品分析".L().L(), "行业摘要".L().L(), "证据归档".L().L()],
+            boundaries: ["不编造来源".L().L(), "不把未验证信息当事实".L().L()],
+            responseRules: ["结论必须区分事实和推断".L().L(), "输出可复用资料清单".L().L(), "标出不确定性".L().L()],
+            memorySeeds: ["售前资料需要能直接支撑方案正文、排版和最终审查。".L().L()],
             skillIDs: ["research", "proposal-writing"],
             recommendedBackend: AgentBackend(type: .subscriptionCLI, command: "gemini", model: "", reasoningEffort: .medium),
             recommendedPermissions: [.readFiles, .useNetwork]
@@ -979,14 +979,14 @@ public enum AgentRuntimeState: String, Codable, CaseIterable, Identifiable, Send
 
     public var title: String {
         switch self {
-        case .cold: "未预热".L()
-        case .prewarming: "预热中".L()
-        case .ready: "已就绪".L()
-        case .busy: "占用中".L()
-        case .restarting: "重开中".L()
-        case .failed: "失败".L()
-        case .timedOut: "超时".L()
-        case .unavailable: "不可用".L()
+        case .cold: "未预热".L().L()
+        case .prewarming: "预热中".L().L()
+        case .ready: "已就绪".L().L()
+        case .busy: "占用中".L().L()
+        case .restarting: "重开中".L().L()
+        case .failed: "失败".L().L()
+        case .timedOut: "超时".L().L()
+        case .unavailable: "不可用".L().L()
         }
     }
 }
@@ -1001,10 +1001,10 @@ public enum AgentRuntimeCapability: String, Codable, CaseIterable, Identifiable,
 
     public var title: String {
         switch self {
-        case .oneShotCLI: "一次性命令行".L()
-        case .persistentProtocol: "可继续接收任务".L()
-        case .apiConnection: "接口连接".L()
-        case .localPlaceholder: "本地占位".L()
+        case .oneShotCLI: "一次性命令行".L().L()
+        case .persistentProtocol: "可继续接收任务".L().L()
+        case .apiConnection: "接口连接".L().L()
+        case .localPlaceholder: "本地占位".L().L()
         }
     }
 }
@@ -1188,14 +1188,14 @@ public enum CompanyEventKind: String, Codable, Sendable {
 
     public var title: String {
         switch self {
-        case .message: "消息".L()
-        case .ctoSummary: "技术负责人摘要".L()
-        case .taskCreated: "创建任务".L()
-        case .taskAssigned: "分配任务".L()
-        case .statusChanged: "状态变化".L()
-        case .artifactCreated: "产物".L()
-        case .commandPlanned: "命令".L()
-        case .risk: "风险".L()
+        case .message: "消息".L().L()
+        case .ctoSummary: "技术负责人摘要".L().L()
+        case .taskCreated: "创建任务".L().L()
+        case .taskAssigned: "分配任务".L().L()
+        case .statusChanged: "状态变化".L().L()
+        case .artifactCreated: "产物".L().L()
+        case .commandPlanned: "命令".L().L()
+        case .risk: "风险".L().L()
         }
     }
 }
@@ -1237,17 +1237,17 @@ public enum TaskStatus: String, Codable, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .draft: "草稿".L()
-        case .planned: "已计划".L()
-        case .assigned: "已分配".L()
-        case .running: "运行中".L()
-        case .waiting: "等待中".L()
-        case .blocked: "阻塞".L()
-        case .needsReview: "待审查".L()
-        case .needsApproval: "待批准".L()
-        case .done: "完成".L()
-        case .failed: "失败".L()
-        case .canceled: "已取消".L()
+        case .draft: "草稿".L().L()
+        case .planned: "已计划".L().L()
+        case .assigned: "已分配".L().L()
+        case .running: "运行中".L().L()
+        case .waiting: "等待中".L().L()
+        case .blocked: "阻塞".L().L()
+        case .needsReview: "待审查".L().L()
+        case .needsApproval: "待批准".L().L()
+        case .done: "完成".L().L()
+        case .failed: "失败".L().L()
+        case .canceled: "已取消".L().L()
         }
     }
 }
@@ -1284,12 +1284,12 @@ public enum WorkItemStatus: String, Codable, CaseIterable, Identifiable, Sendabl
 
     public var title: String {
         switch self {
-        case .queued: "排队中".L()
-        case .running: "运行中".L()
-        case .waitingReview: "待审查".L()
-        case .waitingApproval: "待批准".L()
-        case .completed: "已完成".L()
-        case .failed: "失败".L()
+        case .queued: "排队中".L().L()
+        case .running: "运行中".L().L()
+        case .waitingReview: "待审查".L().L()
+        case .waitingApproval: "待批准".L().L()
+        case .completed: "已完成".L().L()
+        case .failed: "失败".L().L()
         }
     }
 }
@@ -1347,32 +1347,32 @@ public enum AgentMessageReviewOutcome: String, Codable, CaseIterable, Identifiab
 
     public var title: String {
         switch self {
-        case .passed: "审查通过".L()
-        case .rejected: "审查打回".L()
+        case .passed: "审查通过".L().L()
+        case .rejected: "审查打回".L().L()
         }
     }
 }
 
 public enum BossDecisionCenterCopy {
-    public static let sheetTitle = "老板决策中心".L()
-    public static let sheetSubtitle = "把所有需要老板确认的审批、风险任务和已处理记录集中在一处。".L()
-    public static let openTitle = "打开决策中心".L()
+    public static let sheetTitle = "老板决策中心".L().L()
+    public static let sheetSubtitle = "把所有需要老板确认的审批、风险任务和已处理记录集中在一处。".L().L()
+    public static let openTitle = "打开决策中心".L().L()
     public static let pendingApprovalsSection = "待审批请求".L()
     public static let riskTasksSection = "风险/阻塞任务".L()
     public static let riskEventsSection = "风险事件".L()
     public static let resolvedApprovalsSection = "已处理审批".L()
-    public static let emptyPendingApprovals = "当前没有待审批请求。".L()
-    public static let emptyRiskTasks = "当前没有风险或阻塞任务。".L()
-    public static let emptyRiskEvents = "近期没有需要老板关注的风险事件。".L()
-    public static let emptyResolvedApprovals = "还没有已处理的审批记录。".L()
-    public static let statTitle = "待我决策".L()
-    public static let summaryTitle = "待我决策".L()
-    public static let summaryEmpty = "当前没有需要你批准或驳回的事项。".L()
+    public static let emptyPendingApprovals = "当前没有待审批请求。".L().L()
+    public static let emptyRiskTasks = "当前没有风险或阻塞任务。".L().L()
+    public static let emptyRiskEvents = "近期没有需要老板关注的风险事件。".L().L()
+    public static let emptyResolvedApprovals = "还没有已处理的审批记录。".L().L()
+    public static let statTitle = "待我决策".L().L()
+    public static let summaryTitle = "待我决策".L().L()
+    public static let summaryEmpty = "当前没有需要你批准或驳回的事项。".L().L()
 
     public static func summaryDetail(count: Int) -> String {
         count == 0
-            ? "暂无审批或风险待处理，技术负责人可以继续后台推进。".L()
-            : "有 ".L() + "\(count)" + " 项待你确认（审批请求 + 风险/阻塞任务）。".L()
+            ? "暂无审批或风险待处理，技术负责人可以继续后台推进。".L().L()
+            : "有 ".L().L() + "\(count)" + " 项待你确认（审批请求 + 风险/阻塞任务）。".L().L()
     }
 }
 
@@ -1386,10 +1386,10 @@ public enum AgentMessageFilter: String, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .all: "全部".L()
-        case .pending: "待确认".L()
-        case .acknowledged: "已读".L()
-        case .failed: "失败".L()
+        case .all: "全部".L().L()
+        case .pending: "待确认".L().L()
+        case .acknowledged: "已读".L().L()
+        case .failed: "失败".L().L()
         }
     }
 
@@ -1463,11 +1463,11 @@ public enum BranchPlanStatus: String, Codable, CaseIterable, Identifiable, Senda
 
     public var title: String {
         switch self {
-        case .planned: "已计划".L()
-        case .running: "并行中".L()
-        case .aggregating: "汇总中".L()
-        case .needsReview: "待审查".L()
-        case .done: "完成".L()
+        case .planned: "已计划".L().L()
+        case .running: "并行中".L().L()
+        case .aggregating: "汇总中".L().L()
+        case .needsReview: "待审查".L().L()
+        case .done: "完成".L().L()
         }
     }
 }
@@ -1524,12 +1524,12 @@ public enum ReviewGateStatus: String, Codable, CaseIterable, Identifiable, Senda
 
     public var title: String {
         switch self {
-        case .reviewRequested: "待审查".L()
-        case .verificationPassed: "验收通过".L()
-        case .verificationWarning: "验收警告".L()
-        case .verificationFailed: "验收失败".L()
-        case .accepted: "老板已验收".L()
-        case .rejected: "老板已驳回".L()
+        case .reviewRequested: "待审查".L().L()
+        case .verificationPassed: "验收通过".L().L()
+        case .verificationWarning: "验收警告".L().L()
+        case .verificationFailed: "验收失败".L().L()
+        case .accepted: "老板已验收".L().L()
+        case .rejected: "老板已驳回".L().L()
         }
     }
 }
@@ -1583,9 +1583,9 @@ public enum ArchitectureCheckStatus: String, Codable, CaseIterable, Identifiable
 
     public var title: String {
         switch self {
-        case .passed: "已闭合".L()
-        case .warning: "待加强".L()
-        case .failed: "未闭合".L()
+        case .passed: "已闭合".L().L()
+        case .warning: "待加强".L().L()
+        case .failed: "未闭合".L().L()
         }
     }
 }
@@ -1729,9 +1729,9 @@ public enum ApprovalStatus: String, Codable, CaseIterable, Identifiable, Sendabl
 
     public var title: String {
         switch self {
-        case .pending: "待审批".L()
-        case .approved: "已批准".L()
-        case .rejected: "已驳回".L()
+        case .pending: "待审批".L().L()
+        case .approved: "已批准".L().L()
+        case .rejected: "已驳回".L().L()
         }
     }
 }
@@ -1773,13 +1773,13 @@ public enum ArtifactKind: String, Codable, CaseIterable, Identifiable, Sendable 
 
     public var title: String {
         switch self {
-        case .source: "源码".L()
-        case .rule: "规则/记忆".L()
-        case .package: "项目配置".L()
-        case .test: "测试".L()
-        case .log: "日志".L()
-        case .report: "报告".L()
-        case .other: "其他".L()
+        case .source: "源码".L().L()
+        case .rule: "规则/记忆".L().L()
+        case .package: "项目配置".L().L()
+        case .test: "测试".L().L()
+        case .log: "日志".L().L()
+        case .report: "报告".L().L()
+        case .other: "其他".L().L()
         }
     }
 }
@@ -1815,9 +1815,9 @@ public enum VerificationStatus: String, Codable, CaseIterable, Identifiable, Sen
 
     public var title: String {
         switch self {
-        case .passed: "通过".L()
-        case .warning: "有警告".L()
-        case .failed: "失败".L()
+        case .passed: "通过".L().L()
+        case .warning: "有警告".L().L()
+        case .failed: "失败".L().L()
         }
     }
 }
@@ -1851,11 +1851,11 @@ public enum ProductMemoryKind: String, Codable, CaseIterable, Identifiable, Send
 
     public var title: String {
         switch self {
-        case .decision: "决策".L()
-        case .lesson: "经验".L()
-        case .risk: "风险".L()
-        case .handoff: "交接".L()
-        case .summary: "摘要".L()
+        case .decision: "决策".L().L()
+        case .lesson: "经验".L().L()
+        case .risk: "风险".L().L()
+        case .handoff: "交接".L().L()
+        case .summary: "摘要".L().L()
         }
     }
 }

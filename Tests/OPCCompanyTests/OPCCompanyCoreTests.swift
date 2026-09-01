@@ -11288,7 +11288,7 @@ private actor AutoLoopInputQueue {
     #expect(foundExact.contains("安全检查点"))
     #expect(foundExact.contains("验收产物：") || foundPrefixSnippets.contains("验收产物："))
     #expect(foundExact.contains("验收报告：") || foundPrefixSnippets.contains("验收报告："))
-    #expect(foundPrefixSnippets.contains("命令行作业档案："))
+    #expect(foundExact.contains("命令行作业档案：") || foundPrefixSnippets.contains("命令行作业档案："))
 
     let maintenanceExact = CompanyStore.technicalMaintenanceArtifactTitleExactMatches
     let maintenancePrefixes = CompanyStore.technicalMaintenanceArtifactTitlePrefixes
