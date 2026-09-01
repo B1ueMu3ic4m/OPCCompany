@@ -196,12 +196,12 @@ static func legacyDesktopGeneratedProductIndex(from url: URL) -> Int? {
         let rawRoot = URL(fileURLWithPath: NSString(string: product.rootDirectory).expandingTildeInPath).standardizedFileURL
         let resolvedRoot = rawRoot.resolvingSymlinksInPath()
         if Self.isSystemReservedPath(rawRoot) || Self.isSystemReservedPath(resolvedRoot) {
-            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后落在系统保留路径 (\(resolvedRoot.path))，已拒绝索引以避免污染产物列表。请把根目录指向用户可写目录。".L(), eventTitle: "本地文件索引拒绝系统路径".L(), eventDetail: "rootDirectory=\(product.rootDirectory) 解析为 \(resolvedRoot.path)，落在系统保留路径黑名单。".L())
+            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后落在系统保留路径 (\(resolvedRoot.path))，已拒绝索引以避免污染产物列表。请把根目录指向用户可写目录。".L(), eventTitle: "本地文件索引拒绝系统路径".L(), eventDetail: "rootDirectory=".L() + "\(product.rootDirectory)" + " 解析为 ".L() + "\(resolvedRoot.path)" + "，落在系统保留路径黑名单。".L())
             return
         }
         let allowedRootPaths = Self.linkedLocalFileAllowedRootPaths(from: products)
         if !Self.isAllowedLinkedLocalFileRoot(rawRoot: rawRoot, resolvedRoot: resolvedRoot, allowedRootPaths: allowedRootPaths) {
-            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后不在已登记工作区根白名单内 (\(resolvedRoot.path))，已拒绝索引。请通过产品导入或项目设置登记该根目录。".L(), eventTitle: "本地文件索引拒绝未登记根目录".L(), eventDetail: "rootDirectory=\(product.rootDirectory) 解析为 \(resolvedRoot.path)，不在已登记工作区根白名单。".L())
+            rejectLinkedLocalFileIndexRoot(reason: "产品根目录解析后不在已登记工作区根白名单内 (\(resolvedRoot.path))，已拒绝索引。请通过产品导入或项目设置登记该根目录。".L(), eventTitle: "本地文件索引拒绝未登记根目录".L(), eventDetail: "rootDirectory=".L() + "\(product.rootDirectory)" + " 解析为 ".L() + "\(resolvedRoot.path)" + "，不在已登记工作区根白名单。".L())
             return
         }
         let root = rawRoot

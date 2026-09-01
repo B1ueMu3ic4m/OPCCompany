@@ -569,6 +569,7 @@ enum AppStringsGenerated {
         "\\n长期会话：": "\\nLong-term session: ",
         "]\\n": "]\\n",
         "company-state.json 写入失败：": "company-state.json write failed: ",
+        "rootDirectory=": "rootDirectory=",
         "rootDirectory=\\(product.rootDirectory) 解析为 \\(resolvedRoot.path)，不在已登记工": "rootDirectory=\\(product.rootDirectory) resolved to \\(resolvedRoot.path), not in registered",
         "rootDirectory=\\(product.rootDirectory) 解析为 \\(resolvedRoot.path)，落在系统保留": "rootDirectory=\\(product.rootDirectory) resolved to \\(resolvedRoot.path), falls in system-reserved",
         "· 产物 ": "· artifacts ",

@@ -569,6 +569,7 @@
 "\\n长期会话：" = "\\n长期会话：";
 "]\\n" = "]\\n";
 "company-state.json 写入失败：" = "company-state.json 写入失败：";
+"rootDirectory=" = "rootDirectory=";
 "rootDirectory=%@ 解析为 %@，不在已登记工" = "rootDirectory=%@ 解析为 %@，不在已登记工";
 "rootDirectory=%@ 解析为 %@，落在系统保留" = "rootDirectory=%@ 解析为 %@，落在系统保留";
 "· 产物 " = "· 产物 ";

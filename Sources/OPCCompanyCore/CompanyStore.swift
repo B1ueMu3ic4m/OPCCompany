@@ -2521,7 +2521,7 @@ static func isPath(_ path: String, insideAnyOf roots: Set<String>) -> Bool {
         case .api:
             return "\(agent.backend.type.title)" + " · ".L() + "\(model)" + " · 思考强度 ".L() + "\(agent.backend.reasoningEffort.title)"
         case .local:
-            return "\(agent.backend.type.title)" + " · 本地占位".L()
+            return "\(agent.backend.type.title)" + " · ".L() + "本地占位".L()
         }
     }
 
