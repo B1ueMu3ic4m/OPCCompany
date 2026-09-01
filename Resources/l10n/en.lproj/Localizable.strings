@@ -476,6 +476,7 @@
 "OPC 公司老板" = "OPC Company Boss";
 "OPC 员工终端：" = "OPC Employee Terminal: ";
 "OPC 命令行任务" = "OPC CLI task";
+"OPC 团队负责人汇报" = "OPC Team Lead Report";
 "OPC 手动交互轮次" = "OPC manual interaction turn";
 "OPC 智能公司指挥舱" = "OPC AI Company Command Deck";
 "OPC 未能创建长期终端任务 runner 脚本。" = "OPC failed to create the long-term terminal task runner script.";
@@ -567,6 +568,8 @@
 "\\n长期会话：" = "\\nLong-term session: ";
 "]\\n" = "]\\n";
 "company-state.json 写入失败：" = "company-state.json write failed: ";
+"rootDirectory=%@ 解析为 %@，不在已登记工" = "rootDirectory=\\(product.rootDirectory) resolved to \\(resolvedRoot.path), not in registered";
+"rootDirectory=%@ 解析为 %@，落在系统保留" = "rootDirectory=\\(product.rootDirectory) resolved to \\(resolvedRoot.path), falls in system-reserved";
 "· 产物 " = "· artifacts ";
 "· 推进 " = "· active ";
 "· 队列 " = "· queue ";
@@ -728,7 +731,9 @@
 "产品根目录不可用，实际已回退到 " = "Product root unavailable; actually fell back to ";
 "产品根目录不存在。" = "Product root directory does not exist.";
 "产品根目录解析后不在已登记工作区根白名单内 (" = "Resolved product root is not in the registered workspace-root allowlist (";
+"产品根目录解析后不在已登记工作区根白名单内 (%@)，已拒绝索引。请通过产品导入或项目设置登记该根目录。" = "The resolved product root (\\(resolvedRoot.path)) is not in the registered workspace-root allowlist — indexing denied. Register it via product import or project settings.";
 "产品根目录解析后落在系统保留路径 (" = "Resolved product root falls under a system-reserved path (";
+"产品根目录解析后落在系统保留路径 (%@)，已拒绝索引以避免污染产物列表。请把根目录指向用户可写目录。" = "The resolved product root (\\(resolvedRoot.path)) falls under a system-reserved path — indexing denied to keep the artifact list clean. Point the root at a user-writable directory.";
 "产品概览：" = "Product overview: ";
 "产品漂移：会话属于其他产品" = "Product drift: session belongs to another product";
 "产品状态" = "Product Status";
@@ -1350,6 +1355,7 @@
 "已停止" = "Stopped";
 "已入队" = "Queued";
 "已写入员工协作消息总线，待对方在收件箱确认。" = "Written to the employee collaboration bus, awaiting the recipient's inbox confirmation.";
+"已出现" = "Recorded";
 "已分配" = "Assigned";
 "已创建" = "Created";
 "已创建默认技术负责人、界面、编码和审查员工。" = "Default CTO, UI, engineering and review employees created.";
@@ -1894,6 +1900,7 @@
 "有风险" = "At risk";
 "服务繁忙" = "Service busy";
 "服装" = "Clothing";
+"未出现" = "Not recorded";
 "未分类产物档案：" = "Unclassified artifact archives: ";
 "未分类验证记录：" = "Unclassified verification records: ";
 "未分配" = "Unassigned";

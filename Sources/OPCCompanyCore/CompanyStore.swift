@@ -1744,7 +1744,7 @@ static func byteCountText(_ bytes: Int64) -> String {
         appendEvent(
             kind: .statusChanged,
             title: "自动员工已清理".L(),
-            detail: "已移除旧版本自动生成的专业员工：\(legacyAgents.map(\.displayName).joined(separator: "、"))。以后自动能力不会偷偷创建员工。",
+            detail: "已移除旧版本自动生成的专业员工：\(legacyAgents.map(\.displayName).joined(separator: "、"))。以后自动能力不会偷偷创建员工。".L(),
             agentID: ctoID
         )
         if saveAfterChange {

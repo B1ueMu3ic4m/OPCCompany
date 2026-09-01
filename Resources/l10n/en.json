@@ -2947,6 +2947,13 @@
   "：空闲 ": ": idle ",
   "：终端席位 ": ": terminal seats ",
   "；还有 ": "; plus ",
-  "，消息 ": ", messages "
+  "，消息 ": ", messages ",
+  "OPC 团队负责人汇报": "OPC Team Lead Report",
+  "已出现": "Recorded",
+  "未出现": "Not recorded",
+  "rootDirectory=\\(product.rootDirectory) 解析为 \\(resolvedRoot.path)，不在已登记工": "rootDirectory=\\(product.rootDirectory) resolved to \\(resolvedRoot.path), not in registered",
+  "rootDirectory=\\(product.rootDirectory) 解析为 \\(resolvedRoot.path)，落在系统保留": "rootDirectory=\\(product.rootDirectory) resolved to \\(resolvedRoot.path), falls in system-reserved",
+  "产品根目录解析后不在已登记工作区根白名单内 (\\(resolvedRoot.path))，已拒绝索引。请通过产品导入或项目设置登记该根目录。": "The resolved product root (\\(resolvedRoot.path)) is not in the registered workspace-root allowlist — indexing denied. Register it via product import or project settings.",
+  "产品根目录解析后落在系统保留路径 (\\(resolvedRoot.path))，已拒绝索引以避免污染产物列表。请把根目录指向用户可写目录。": "The resolved product root (\\(resolvedRoot.path)) falls under a system-reserved path — indexing denied to keep the artifact list clean. Point the root at a user-writable directory."
  }
 }

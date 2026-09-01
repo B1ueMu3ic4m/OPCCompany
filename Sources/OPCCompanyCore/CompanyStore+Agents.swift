@@ -358,7 +358,7 @@ extension CompanyStore {
         guard agent.role != .boss else { return }
         guard !isRunning(agentID: agent.id) else { return }
         guard selectedProductAgents.contains(where: { $0.id == agent.id }) else {
-            appendTerminalLog("\n[OPC 已阻止运行] \(agent.displayName) 未加入 \(selectedProduct?.name ?? "当前产品")，不能启动当前产品命令行任务。\n", for: agent.id)
+            appendTerminalLog("\n[OPC 已阻止运行] \(agent.displayName) 未加入 \(selectedProduct?.name ?? "当前产品")，不能启动当前产品命令行任务。\n".L(), for: agent.id)
             appendEvent(kind: .risk, title: "已阻止非团队员工运行".L(), detail: "\(agent.displayName)" + " 未加入当前产品团队。".L(), agentID: agent.id)
             saveSnapshot()
             return
