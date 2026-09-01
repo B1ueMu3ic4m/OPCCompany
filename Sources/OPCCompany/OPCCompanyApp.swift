@@ -11,8 +11,6 @@ struct OPCCompanyApp: App {
 
     init() {
         L10nBundleOverride.install()
-        L10nBundleOverride.select(L10nEnvironment.shared.language)
-        AppStrings.sessionLanguage = L10nEnvironment.shared.language.resolving()
     }
 
     var body: some Scene {
@@ -46,11 +44,9 @@ struct OPCCompanyApp: App {
                     }
                 }
                 .pickerStyle(.inline)
-                .onChange(of: l10n.language) { _, newValue in
-                    let r = newValue.resolving()
-                    L10nBundleOverride.select(newValue)
-                    AppStrings.sessionLanguage = r
-                }
+                // Side effects (bundle switch + sessionLanguage) live in
+                // L10nEnvironment.didSet so they run before the view-tree
+                // rebuild, not after it in an onChange handler.
             }
         }
     }

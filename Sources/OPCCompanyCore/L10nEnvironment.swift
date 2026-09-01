@@ -8,13 +8,30 @@ public final class L10nEnvironment: ObservableObject {
     public static let shared = L10nEnvironment()
 
     @Published public var language: AppLanguage {
-        didSet { Self.persist(language) }
+        didSet {
+            guard language != oldValue else { return }
+            Self.persist(language)
+            Self.applySideEffects(language)
+        }
     }
 
     private static let storageKey = "opc.appLanguage.v1"
 
     public init(initial: AppLanguage? = nil) {
         self.language = initial ?? Self.load()
+        // didSet does not fire during init; apply once explicitly so the
+        // swizzled bundle and store-string language match the starting value.
+        Self.applySideEffects(self.language)
+    }
+
+    /// Switch-side effects must run synchronously at the moment the value is
+    /// written — BEFORE SwiftUI re-renders — so the `.id(resolved)` tree rebuild
+    /// resolves Text() lookups against the newly selected lproj bundle. Running
+    /// them from Picker.onChange instead made the rebuild use the stale bundle
+    /// (UI showed the previous language / mixed Chinese and English).
+    private static func applySideEffects(_ language: AppLanguage) {
+        L10nBundleOverride.select(language)
+        AppStrings.sessionLanguage = language.resolving()
     }
 
     private static func load() -> AppLanguage {

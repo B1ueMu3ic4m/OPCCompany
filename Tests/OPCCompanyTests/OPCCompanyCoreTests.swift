@@ -17281,3 +17281,29 @@ fileprivate func extractTopLevelStructSlice(
     #expect(MessageBubble.authorLabel(for: .agent, agentRole: .codeEngineer) == "员工")
     #expect(MessageBubble.authorLabel(for: .agent, agentRole: nil) == "员工")
 }
+
+// MARK: - Language switch timing regression
+
+/// Regression for the inverted/mixed language switch: side effects (bundle
+/// selection + store-string session language) must apply at value-set time —
+/// synchronously BEFORE SwiftUI re-renders the `.id(resolved)` tree. The bug
+/// ran them in Picker.onChange AFTER the rebuild, so the rebuilt Text() views
+/// resolved through the previous language's bundle and the UI ended up one
+/// selection behind (choose 中文 → English shown and vice versa), with later
+/// re-renders mixing both languages.
+@Test @MainActor
+func languageSwitchAppliesSideEffectsBeforeNextRender() {
+    let env = L10nEnvironment(initial: .simplifiedChinese)
+    env.language = .english
+    // Capture while English is active, then restore immediately — the global
+    // session language must not stay English past this synchronous block.
+    let enSession = AppStrings.sessionLanguage
+    let enSelected = L10nBundleOverride.selected
+    env.language = .simplifiedChinese
+    let zhSession = AppStrings.sessionLanguage
+    let zhSelected = L10nBundleOverride.selected
+    #expect(enSession == .english)
+    #expect(enSelected == .english)
+    #expect(zhSession == .simplifiedChinese)
+    #expect(zhSelected == .simplifiedChinese)
+}
