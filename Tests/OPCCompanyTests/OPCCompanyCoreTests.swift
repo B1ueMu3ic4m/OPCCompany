@@ -12353,7 +12353,7 @@ private actor AutoLoopInputQueue {
     #expect(hallSlice.contains(".confirmationDialog(\"确认运行全部员工终端\""))
     #expect(hallSlice.contains("即将把当前提示词同时发送给"),
             "确认 message 必须以「即将把当前提示词同时发送给」开头说明动作范围")
-    #expect(hallSlice.contains("\\(runnableAgentCount) 名员工终端"),
+    #expect(hallSlice.contains("multiAgentRunAllWarning(runnableAgentCount)") && hallSlice.contains(" 名员工终端"),
             "确认 message 必须把可运行员工数量插值到文案中")
     #expect(hallSlice.contains("外部模型额度"),
             "确认 message 必须显式提到「外部模型额度」，避免成本说明退化")

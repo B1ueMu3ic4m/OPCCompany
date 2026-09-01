@@ -1,5 +1,16 @@
 import SwiftUI
 
+private enum InspectorStatsCopy {
+    static func taskStatsText(doneCount: Int, activeCount: Int, blockedCount: Int, queueCount: Int) -> String {
+        let head = "完成 ".L()
+        let mid1 = " · 推进 ".L()
+        let mid2 = " · 异常 ".L()
+        let tail = " · 队列 ".L()
+        return head + "\(doneCount)" + mid1 + "\(activeCount)" + mid2 + "\(blockedCount)" + tail + "\(queueCount)"
+    }
+}
+
+
 struct InspectorPanel: View {
     @EnvironmentObject private var store: CompanyStore
     @State private var messageText = ""
@@ -762,7 +773,7 @@ struct BossEmployeeProgressRow: View {
             ProgressView(value: progress)
                 .tint(signalColor)
 
-            Text("完成 " + "\(doneCount)" + " · 推进 " + "\(activeCount)" + " · 异常 " + "\(blockedCount)" + " · 队列 " + "\(queueCount)")
+Text(InspectorStatsCopy.taskStatsText(doneCount: doneCount, activeCount: activeCount, blockedCount: blockedCount, queueCount: queueCount))
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(CompanyTheme.muted)
                 .lineLimit(1)

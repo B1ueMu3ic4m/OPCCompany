@@ -429,7 +429,7 @@ struct CommandCenterView: View {
             HStack(alignment: .center) {
                 SectionHeader(title: "待我处理".L())
                 Spacer()
-                Text("待决策 " + "\(bossDecisionCount)")
+                Text("待决策 ".L() + "\(bossDecisionCount)")
                     .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(bossDecisionCount == 0 ? CompanyTheme.green : CompanyTheme.warning)
                     .padding(.horizontal, 8)
@@ -838,7 +838,7 @@ struct BossReportCenterSheet: View {
                 Text("老板汇报中心".L())
                     .font(.system(size: 18, weight: .heavy, design: .serif))
                     .foregroundStyle(CompanyTheme.ink)
-                Text("\(store.selectedProduct?.name ?? "当前产品")" + "：生成当前产品汇报、交接摘要和健康体检，最近记录只按当前产品显示。")
+                Text("\(store.selectedProduct?.name ?? "当前产品")" + "：生成当前产品汇报、交接摘要和健康体检，最近记录只按当前产品显示。".L())
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                     .lineLimit(2)
@@ -1036,7 +1036,7 @@ struct BossApprovalDecidedRow: View {
                 .lineLimit(3)
 
             if let decidedAt = approval.decidedAt {
-                Text("已处理：" + "\(decidedAt.opcDateTimeText)")
+                Text("已处理：".L() + "\(decidedAt.opcDateTimeText)")
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundStyle(CompanyTheme.muted)
             }
@@ -1328,7 +1328,7 @@ struct WorkflowMapView: View {
             HStack(alignment: .center) {
                 SectionHeader(title: "消息流 / 协作链路".L())
                 Spacer()
-                Text("待确认 " + "\(store.selectedProductPendingAgentMessages.count)")
+                Text("待确认 ".L() + "\(store.selectedProductPendingAgentMessages.count)")
                     .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(CompanyTheme.muted)
                     .padding(.horizontal, 8)
@@ -1387,7 +1387,7 @@ struct WorkflowMapView: View {
                 Text("任务流程图".L())
                     .font(.system(size: 28, weight: .heavy, design: .serif))
                     .foregroundStyle(CompanyTheme.ink)
-                Text("\(productName)" + " 的智能公司生产线，从老板目标到验收交付。")
+                Text("\(productName)" + " 的智能公司生产线，从老板目标到验收交付。".L())
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
             }

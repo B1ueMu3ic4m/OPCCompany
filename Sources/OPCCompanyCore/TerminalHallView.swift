@@ -34,6 +34,14 @@ private enum TerminalHallDetail: String, Identifiable {
 internal let terminalHallExternalCallNotice = "「运行全部」与每张员工卡的「运行」会真实调用 Claude Code / Codex / Gemini CLI 等外部命令行后端，按外部模型额度计费；「预检」只生成本地审计，不调用真实模型，不消耗额度。".L()
 
 struct TerminalHallView: View {
+
+    static func multiAgentRunAllWarning(_ count: Int) -> String {
+        let head = "即将把当前提示词同时发送给 ".L()
+        let mid = " 名员工终端，会真实调用员工命令行后端并消耗 ".L()
+        let tail = " 份外部模型额度。".L()
+        return head + "\(count)" + mid + "\(count)" + tail
+    }
+
     @EnvironmentObject private var store: CompanyStore
     @State private var prompt = OPCVisibleInterfaceCopy.defaultAgentReportPromptText
     /// 多员工「运行全部」二次确认门控。
@@ -164,7 +172,7 @@ struct TerminalHallView: View {
             }
             Button("取消".L(), role: .cancel) {}
         } message: {
-            Text("即将把当前提示词同时发送给 " + "\(runnableAgentCount)" + " 名员工终端，会真实调用员工命令行后端并消耗 " + "\(runnableAgentCount)" + " 份外部模型额度。")
+            Text(Self.multiAgentRunAllWarning(runnableAgentCount))
         }
     }
 
@@ -266,7 +274,7 @@ private struct MultiAgentArchitectureSummaryCard: View {
             }
 
             if let trace = store.latestSelectedProductClosureTrace {
-                Text("最近闭环：\(trace.goal)\(" · ".L())\(trace.completionScore)% · 消息 \(trace.messageIDs.count) · 产物 \(trace.artifactIDs.count)")
+                Text(CompanyStore.bossLoopSummaryText(trace))
                     .font(.system(size: 10.5, weight: .medium))
                     .foregroundStyle(CompanyTheme.muted)
                     .lineLimit(2)
@@ -630,7 +638,7 @@ private struct TerminalHallDetailSheet: View {
         .background(CommandSurfaceBackground())
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalHallDetailSheet.rawValue)
-        .accessibilityLabel("\(detail.title)" + "详情面板")
+        .accessibilityLabel("\(detail.title)" + "详情面板".L())
     }
 }
 

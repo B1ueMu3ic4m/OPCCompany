@@ -21,9 +21,12 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 cp "$ROOT_DIR/.build/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 chmod +x "$MACOS_DIR/$APP_NAME"
 cp "$ROOT_DIR/Assets/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
-mkdir -p "$RESOURCES_DIR/en.lproj"
+mkdir -p "$RESOURCES_DIR/en.lproj" "$RESOURCES_DIR/zh-Hans.lproj"
 if [[ -d "$ROOT_DIR/Resources/l10n/en.lproj" ]]; then
     cp "$ROOT_DIR/Resources/l10n/en.lproj/"*.strings "$RESOURCES_DIR/en.lproj/"
+fi
+if [[ -d "$ROOT_DIR/Resources/l10n/zh-Hans.lproj" ]]; then
+    cp "$ROOT_DIR/Resources/l10n/zh-Hans.lproj/"*.strings "$RESOURCES_DIR/zh-Hans.lproj/"
 fi
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST

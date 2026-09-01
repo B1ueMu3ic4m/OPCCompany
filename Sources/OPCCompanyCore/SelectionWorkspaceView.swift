@@ -78,7 +78,7 @@ struct ProductDetailWorkspace: View {
             HStack(alignment: .center) {
                 SectionHeader(title: "员工协作链路".L())
                 Spacer()
-                Text("待确认 " + "\(store.selectedProductPendingAgentMessages.count)")
+                Text("待确认 ".L() + "\(store.selectedProductPendingAgentMessages.count)")
                     .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(CompanyTheme.muted)
                     .padding(.horizontal, 8)
@@ -147,7 +147,7 @@ struct ProductDetailWorkspace: View {
                 Text(product?.name ?? "未选择产品".L())
                     .font(.system(size: 28, weight: .heavy, design: .serif))
                     .foregroundStyle(CompanyTheme.ink)
-                Text("产品办公室 · " + "\(teamLeadName)" + " 负责推进")
+                Text("产品办公室 · ".L() + "\(teamLeadName)" + " 负责推进".L())
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(CompanyTheme.blue)
                 Text(opcProductWorkspaceDisplayName(product?.rootDirectory ?? ""))
@@ -208,7 +208,7 @@ struct ProductDetailWorkspace: View {
                             pendingDeletion = nil
                         }
                     } message: { request in
-                        Text("将永久移除「" + "\(request.productName)" + "」及其全部任务、审批、记忆与交付物，操作无法撤销。")
+                        Text("将永久移除「".L() + "\(request.productName)" + "」及其全部任务、审批、记忆与交付物，操作无法撤销。".L())
                     }
                 }
                 if let ctoAutopilotStatusText = store.ctoAutopilotState.statusText {
@@ -539,7 +539,7 @@ struct AgentMessageRow: View {
                     .foregroundStyle(CompanyTheme.ink)
                     .lineLimit(2)
                 if let taskTitle {
-                    Text("任务：" + "\(taskTitle)")
+                    Text("任务：".L() + "\(taskTitle)")
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundStyle(CompanyTheme.muted)
                         .lineLimit(1)
@@ -995,7 +995,7 @@ struct ReviewGateCard: View {
                 .foregroundStyle(CompanyTheme.muted)
                 .lineLimit(3)
 
-            Text("更新：" + "\(gate.updatedAt.opcDateTimeText)")
+            Text("更新：".L() + "\(gate.updatedAt.opcDateTimeText)")
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
                 .foregroundStyle(CompanyTheme.muted)
         }
@@ -1141,7 +1141,7 @@ private struct ProductTeamMemberCard: View {
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundStyle(CompanyTheme.muted)
                     .lineLimit(1)
-                Text("\("任务 ".L())\(taskCount) · 推进 \(activeCount) · 队列 \(queueCount)")
+                Text("任务 ".L() + "\(taskCount) · \(activeCount) · \(queueCount)")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(CompanyTheme.muted)
             }
@@ -1457,7 +1457,7 @@ private struct TeamTemplatePicker: View {
 
                     let missing = store.missingRoles(for: template)
                     if !missing.isEmpty {
-                        Text("缺少：" + "\(missing.map(\.title).joined(separator: "、"))")
+                        Text("缺少：".L() + "\(missing.map(\.title).joined(separator: "、"))")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(CompanyTheme.warning)
                     }
@@ -1664,7 +1664,7 @@ struct AgentDeskWorkspace: View {
             HStack(alignment: .center) {
                 SectionHeader(title: "我的协作收件箱".L())
                 Spacer()
-                Text("待确认 " + "\(store.selectedAgentPendingMessages.count)")
+                Text("待确认 ".L() + "\(store.selectedAgentPendingMessages.count)")
                     .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(CompanyTheme.muted)
                     .padding(.horizontal, 8)
@@ -2081,7 +2081,7 @@ struct AgentDeskWorkspace: View {
                 SectionHeader(title: "员工工作队列".L())
                 if !store.selectedAgentReworkQueue.isEmpty {
                     Spacer()
-                    Text("返工 " + "\(store.selectedAgentReworkQueue.count)")
+                    Text("返工 ".L() + "\(store.selectedAgentReworkQueue.count)")
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundStyle(CompanyTheme.warning)
                         .padding(.horizontal, 8)

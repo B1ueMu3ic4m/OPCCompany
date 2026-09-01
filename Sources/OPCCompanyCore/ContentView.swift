@@ -676,7 +676,7 @@ struct ProductWorkspaceList: View {
                 pendingDeletion = nil
             }
         } message: { request in
-            Text("将永久移除「" + "\(request.productName)" + "」及其全部任务、审批、记忆与交付物，操作无法撤销。")
+            Text("将永久移除「".L() + "\(request.productName)" + "」及其全部任务、审批、记忆与交付物，操作无法撤销。".L())
         }
     }
 }

@@ -35,6 +35,15 @@ public enum CTOAutopilotState: Equatable {
 
 @MainActor
 public final class CompanyStore: ObservableObject {
+
+    /// Boss-facing closed-loop summary line (localized).
+    static func bossLoopSummaryText(_ trace: MultiAgentClosureTrace) -> String {
+        let head = "最近闭环：".L()
+        let mid = "消息 ".L()
+        let tail = "产物 ".L()
+        return head + "\(trace.goal) · \(trace.completionScore)% · " + mid + "\(trace.messageIDs.count) · " + tail + "\(trace.artifactIDs.count)"
+    }
+
     static let cliResumeContextNotice = "\n[OPC 上下文复用]\n本次任务会接续该员工在当前产品里的上一轮上下文。\n".L()
     static func defaultProductRootDirectory() -> String {
         defaultProductRootDirectoryURL().path
