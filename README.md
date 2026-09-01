@@ -11,9 +11,7 @@
 
 [English](#features) · [中文说明](README.zh-CN.md)
 
-<!-- P3: hero GIF placeholder — replaced by docs/assets/demo-floor.gif
 ![OPC Company in action](docs/assets/demo-floor.gif)
--->
 
 </div>
 
