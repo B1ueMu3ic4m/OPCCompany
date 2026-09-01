@@ -104,7 +104,7 @@ public enum AppStrings {
         [
             // App shell
             "app.name": "OPC Company",
-            "app.name.full": "OPC 公司 / OPC Company",
+            "app.name.full": "OPC Company",
             "menu.newEmployee": "Add Employee",
             "menu.sendCTOBrief": "Send CTO Status Brief",
             "menu.language": "界面语言 / Language",

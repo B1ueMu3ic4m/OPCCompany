@@ -233,7 +233,7 @@ struct ProductDetailWorkspace: View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
             CommandMetricTile(title: "阶段进度".L(), value: "\(completionPercent)%", systemImage: "chart.line.uptrend.xyaxis", color: CompanyTheme.warning)
             CommandMetricTile(title: "任务".L(), value: "\(completedTaskCount)/\(store.selectedProductTasks.count)", systemImage: "checklist", color: CompanyTheme.accent)
-            CommandMetricTile(title: "团队".L(), value: "\(store.selectedProductAgents.count)" + " 人", systemImage: "person.3.fill", color: CompanyTheme.blue)
+            CommandMetricTile(title: "团队".L(), value: "\(store.selectedProductAgents.count)" + " 人".L(), systemImage: "person.3.fill", color: CompanyTheme.blue)
             CommandMetricTile(title: "待审批".L(), value: "\(pendingApprovalCount)", systemImage: "hand.raised.fill", color: pendingApprovalCount == 0 ? CompanyTheme.green : CompanyTheme.red)
             CommandMetricTile(title: "交付物".L(), value: "\(store.selectedProductDeliveryArtifacts.count)", systemImage: "shippingbox.fill", color: CompanyTheme.warning)
         }

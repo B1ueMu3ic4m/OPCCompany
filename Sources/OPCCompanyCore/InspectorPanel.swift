@@ -239,7 +239,7 @@ struct InspectorPanel: View {
         if store.mainWorkspace == .terminalHall {
             return opcBackendCompactDisplay(type: agent.backend.type, command: agent.backend.command, model: agent.backend.model)
         }
-        return agent.role == .boss ? "老板".L() : "\(agent.role.title)" + "席位"
+        return agent.role == .boss ? "老板".L() : "\(agent.role.title)" + "席位".L()
     }
 
     private var canSend: Bool {
