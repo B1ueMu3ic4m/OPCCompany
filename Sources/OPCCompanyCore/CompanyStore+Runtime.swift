@@ -1279,6 +1279,22 @@ extension CompanyStore {
                     let rawValue = String(trimmed.dropFirst(matched.count))
                     return "本地命令已就绪：".L() + "\(opcBackendCommandDisplayName(rawValue))"
                 }
+                if trimmed == "[OPC 会话预热]" || trimmed == "[OPC Session Warmup]" {
+                    return "[OPC 会话预热]".L()
+                }
+                let reasonPrefixes = ["原因：", "Reason: "]
+                if let matched = reasonPrefixes.first(where: { trimmed.hasPrefix($0) }) {
+                    let rawValue = String(trimmed.dropFirst(matched.count))
+                    let body = rawValue.replacingOccurrences(
+                        of: "App 启动后预热当前产品团队",
+                        with: "应用启动后预热当前产品团队")
+                    return "原因：".L() + "\(body)".L()
+                }
+                let collabPrefixes = ["持续协作：", "Continuous collaboration: "]
+                if let matched = collabPrefixes.first(where: { trimmed.hasPrefix($0) }) {
+                    let rawValue = String(trimmed.dropFirst(matched.count))
+                    return "持续协作：".L() + "\(rawValue)"
+                }
                 if line.contains("App 启动后预热当前产品团队".L()) {
                     return line.replacingOccurrences(of: "App 启动后预热当前产品团队".L(), with: "应用启动后预热当前产品团队".L())
                 }

@@ -2959,6 +2959,7 @@
   " 人": " people",
   "人": " people",
   "公司": "Company",
-  "rootDirectory=": "rootDirectory="
+  "rootDirectory=": "rootDirectory=",
+  "本地占位 · ": "Local Placeholder · "
  }
 }

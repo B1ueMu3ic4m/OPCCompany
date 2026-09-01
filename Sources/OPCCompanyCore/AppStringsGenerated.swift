@@ -1966,6 +1966,7 @@ enum AppStringsGenerated {
         "未预热": "Not warmed up",
         "本地 OPC 指挥台": "OPC local command post",
         "本地占位": "Local Placeholder",
+        "本地占位 · ": "Local Placeholder · ",
         "本地占位 · \\(": "Local placeholder · \\(",
         "本地占位员工没有可预热的真实模型来源。": "Local placeholder employees have no real model source to warm up.",
         "本地占位适合老板、人类角色或暂不执行终端任务的角色。": "Local placeholders suit the boss, human roles, or roles that do not run terminal tasks yet.",
