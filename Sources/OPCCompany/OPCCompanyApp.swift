@@ -7,13 +7,22 @@ struct OPCCompanyApp: App {
     @StateObject private var l10n = L10nEnvironment.shared
 
     private var lang: AppLanguage { l10n.language }
+    private var resolved: AppLanguage { lang.resolving() }
+
+    init() {
+        L10nBundleOverride.install()
+        L10nBundleOverride.select(L10nEnvironment.shared.language)
+        AppStrings.sessionLanguage = L10nEnvironment.shared.language.resolving()
+    }
 
     var body: some Scene {
         WindowGroup("app.name.full".tr(lang)) {
             ContentView()
                 .environmentObject(store)
-                .environment(\.appLanguage, lang.resolving())
-                .environment(\.locale, Locale(identifier: lang.resolving() == .english ? "en" : "zh-Hans"))
+                .environment(\.appLanguage, resolved)
+                // Force a full view-tree rebuild on language change so every
+                // Text() re-resolves through the swizzled bundle lookup.
+                .id(resolved)
                 .frame(minWidth: 1280, minHeight: 800)
         }
         .windowStyle(.titleBar)
@@ -38,7 +47,9 @@ struct OPCCompanyApp: App {
                 }
                 .pickerStyle(.inline)
                 .onChange(of: l10n.language) { _, newValue in
-                    AppStrings.sessionLanguage = newValue.resolving()
+                    let r = newValue.resolving()
+                    L10nBundleOverride.select(newValue)
+                    AppStrings.sessionLanguage = r
                 }
             }
         }

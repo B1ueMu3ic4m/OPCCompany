@@ -193,12 +193,12 @@ struct RuntimeSessionHealthAuditPreview: View {
     private var accessibilityValue: String {
         if let latest = store.selectedProductLatestRuntimeSessionHealthAudit() {
             return """
-            最近一次巡检：\(latest.status.title) · \(latest.createdAt.opcDateTimeText)
+            \("最近一次巡检：".L())\(latest.status.title) · \(latest.createdAt.opcDateTimeText)
             \(latest.detail)
             """
         }
         return """
-        尚未运行巡检 · 点击上方按钮可在此就地查看运行来源 / 来源配置 / 来源漂移结果。
+        \("尚未运行巡检 · 点击上方按钮可在此就地查看运行来源 / 来源配置 / 来源漂移结果。".L())
         \(store.runtimeSessionHealthAuditText())
         """
     }
