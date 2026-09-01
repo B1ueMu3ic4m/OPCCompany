@@ -397,7 +397,7 @@ extension CompanyStore {
         case "gemini": brand = "Gemini"
         default: brand = profile.displayName
         }
-        let resumeLabel = profile.supportsResume ? "可按产品接续" : "不接续历史会话"
+        let resumeLabel = profile.supportsResume ? "可按产品接续".L() : "不接续历史会话".L()
         return (brand, resumeLabel, profile.supportsResume)
     }
 

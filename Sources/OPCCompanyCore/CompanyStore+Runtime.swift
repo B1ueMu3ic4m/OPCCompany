@@ -1058,7 +1058,7 @@ extension CompanyStore {
         guard let summary = terminalHallCardLongSessionProductSummary(for: agent) else {
             return nil
         }
-        let scopeLabel = summary.supportsResume ? "可识别历史会话并按产品接续" : "仅使用当前任务上下文"
+        let scopeLabel = summary.supportsResume ? "可识别历史会话并按产品接续".L() : "仅使用当前任务上下文".L()
         return "会话续跑详情：".L() + "\(summary.brand)" + " · ".L() + "\(summary.resumeLabel)" + " · ".L() + "\(scopeLabel)"
     }
     public func terminalHallCardInjectionHint() -> String {
@@ -1273,15 +1273,18 @@ extension CompanyStore {
             .components(separatedBy: .newlines)
             .map { line in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
-                if trimmed.hasPrefix("本地命令已就绪：".L()) {
-                    let rawValue = String(trimmed.dropFirst("本地命令已就绪：".L().count))
+                // Bilingual prefix match: historical logs may have been generated in the other language.
+                let readyPrefixes = ["本地命令已就绪：", "Local command ready: "]
+                if let matched = readyPrefixes.first(where: { trimmed.hasPrefix($0) }) {
+                    let rawValue = String(trimmed.dropFirst(matched.count))
                     return "本地命令已就绪：".L() + "\(opcBackendCommandDisplayName(rawValue))"
                 }
                 if line.contains("App 启动后预热当前产品团队".L()) {
                     return line.replacingOccurrences(of: "App 启动后预热当前产品团队".L(), with: "应用启动后预热当前产品团队".L())
                 }
-                if trimmed.hasPrefix("常驻能力：".L()) {
-                    let rawValue = String(trimmed.dropFirst("常驻能力：".L().count))
+                let residentPrefixes = ["常驻能力：", "Resident capability: "]
+                if let matched = residentPrefixes.first(where: { trimmed.hasPrefix($0) }) {
+                    let rawValue = String(trimmed.dropFirst(matched.count))
                         .trimmingCharacters(in: CharacterSet(charactersIn: " 。."))
                     let displayValue: String
                     if rawValue.contains("常驻".L()) || rawValue.contains("长期".L()) || rawValue.contains("可接".L()) {

@@ -2632,7 +2632,8 @@ static func isPath(_ path: String, insideAnyOf roots: Set<String>) -> Bool {
         flush()
 
         let warmupHeading = "[OPC 会话预热]".L()
-        let warmupBlocks = blocks.filter { $0.isOPC && $0.headingLabel == warmupHeading }
+        let warmupHeadings: Set<String> = ["[OPC 会话预热]", "[OPC Session Warmup]", warmupHeading]
+        let warmupBlocks = blocks.filter { $0.isOPC && warmupHeadings.contains($0.headingLabel) }
         var emittedWarmupSummary = false
 
         var output: [String] = []
