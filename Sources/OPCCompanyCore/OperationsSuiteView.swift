@@ -2360,7 +2360,7 @@ extension View {
     }
 }
 
-private extension String {
+extension String {
     var nilIfBlank: String? {
         isEmpty ? nil : self
     }

@@ -1541,13 +1541,13 @@ private func writeCLIJobArchive(
     //   • send-keys -l text + 单独 send-keys C-m：在并发跑 tmux 时回车抢跑，让 zsh
     //     看到「半截命令 + Enter」并把残段当成路径触发 file-name-too-long。
     let source = try loadOPCCompanyCoreSource("CompanyStore.swift")
-    guard let funcRange = source.range(of: "private func runPersistentTerminalCommand(") else {
+    guard let funcRange = source.range(of: "func runPersistentTerminalCommand(") else {
         Issue.record("未在 CompanyStore.swift 找到 runPersistentTerminalCommand 函数")
         return
     }
     let bodyStart = funcRange.upperBound
-    // 取该函数到下一个 private func 之前的代码区间作为函数体。
-    let nextDeclRange = source.range(of: "\n    private func ", range: bodyStart..<source.endIndex)
+    // 取该函数到下一个 func 之前的代码区间作为函数体。
+    let nextDeclRange = source.range(of: "\n    func ", range: bodyStart..<source.endIndex)
     let bodyEnd = nextDeclRange?.lowerBound ?? source.endIndex
     let body = String(source[bodyStart..<bodyEnd])
 
@@ -1560,12 +1560,12 @@ private func writeCLIJobArchive(
         "runPersistentTerminalCommand 必须用 sendInputLine(shellCommand,) 把 marker 命令发给 tmux，避免长命令在 zsh 触发 file-name-too-long。"
     )
 
-    guard let shellCommandRange = source.range(of: "private func persistentTerminalShellCommand(") else {
+    guard let shellCommandRange = source.range(of: "func persistentTerminalShellCommand(") else {
         Issue.record("未在 CompanyStore.swift 找到 persistentTerminalShellCommand 函数")
         return
     }
     let shellCommandBodyStart = shellCommandRange.upperBound
-    let shellCommandNextDecl = source.range(of: "\n    private func ", range: shellCommandBodyStart..<source.endIndex)
+    let shellCommandNextDecl = source.range(of: "\n    func ", range: shellCommandBodyStart..<source.endIndex)
     let shellCommandBodyEnd = shellCommandNextDecl?.lowerBound ?? source.endIndex
     let shellCommandBody = String(source[shellCommandBodyStart..<shellCommandBodyEnd])
     #expect(
@@ -6250,7 +6250,7 @@ private actor CLIAutoInteractionLoopTestProbe {
 @Test func agentWorkspaceSyncSkipsUnchangedPromptFilesForTokenBudget() async throws {
     let source = try loadOPCCompanyCoreSource("CompanyStore.swift")
 
-    #expect(source.contains("private func writeTextIfChanged(_ text: String, to url: URL) throws"))
+    #expect(source.contains("func writeTextIfChanged(_ text: String, to url: URL) throws"))
     #expect(source.contains("try writeTextIfChanged(agentSystemPrompt(for: agentID), to: directory.appendingPathComponent(\"AGENTS.md\"))"))
     #expect(source.contains("if let existing = try? Data(contentsOf: url), existing == data"))
     #expect(!source.contains("try agentSystemPrompt(for: agentID).write(to: directory.appendingPathComponent(\"AGENTS.md\")"))
@@ -7529,11 +7529,11 @@ private func containsCJK(_ text: String) -> Bool {
 
 @Test func reworkPromptBuildersClipGeneratedReasonsAndSuccessCriteriaForTokenBudget() async throws {
     let source = try loadOPCCompanyCoreSource("CompanyStore.swift")
-    let reviewerStart = try #require(source.range(of: "private func requeueExecutionTaskAfterReviewRejection"))
-    let reviewerEnd = try #require(source.range(of: "\n    private func reworkReason", range: reviewerStart.upperBound..<source.endIndex))
+    let reviewerStart = try #require(source.range(of: "func requeueExecutionTaskAfterReviewRejection"))
+    let reviewerEnd = try #require(source.range(of: "\n    func ", range: reviewerStart.upperBound..<source.endIndex))
     let reviewerReworkSlice = String(source[reviewerStart.lowerBound..<reviewerEnd.lowerBound])
-    let bossStart = try #require(source.range(of: "private func requeueSupervisorGoalAfterBossRejection"))
-    let bossEnd = try #require(source.range(of: "\n    private func completeSupervisorGoalTasks", range: bossStart.upperBound..<source.endIndex))
+    let bossStart = try #require(source.range(of: "func requeueSupervisorGoalAfterBossRejection"))
+    let bossEnd = try #require(source.range(of: "\n    func ", range: bossStart.upperBound..<source.endIndex))
     let bossReworkSlice = String(source[bossStart.lowerBound..<bossEnd.lowerBound])
 
     #expect(reviewerReworkSlice.contains("Self.promptFragment(reason, limit: Self.reworkPromptReasonLimit)"))
@@ -11848,7 +11848,7 @@ private actor AutoLoopInputQueue {
 
 @Test func addEmployeeBackendSwitchDefaultsAvoidCarryingClaudeModelIntoAPI() async throws {
     let source = try loadOPCCompanyCoreSource("AddEmployeeSheet.swift")
-    let marker = "private func applyBackendDefaults(_ backend: BackendType)"
+    let marker = "func applyBackendDefaults(_ backend: BackendType)"
     let start = try #require(source.range(of: marker)?.lowerBound, "应能定位新增员工来源切换默认值逻辑")
     let tail = source[start...]
     let end = try #require(tail.range(of: "\n    }\n}", options: [])?.upperBound, "应能定位默认值函数结尾")
@@ -11926,7 +11926,9 @@ private actor AutoLoopInputQueue {
     var leaks: [(file: String, line: Int, accessor: String, snippet: String)] = []
     for fileURL in allFileURLs {
         let fileName = fileURL.lastPathComponent
-        if allowedSelfReferenceFiles.contains(fileName) { continue }
+        // v0.2 split: CompanyStore's own extensions are still the Store itself —
+        // the invariant guards UI/other types, not the Store's physical layout.
+        if allowedSelfReferenceFiles.contains(fileName) || fileName.hasPrefix("CompanyStore+") { continue }
         guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
         totalChecked += 1
         for (lineIndex, line) in content.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
@@ -15266,8 +15268,8 @@ private actor AutoLoopInputQueue {
 
 @Test func selectionWorkspaceTerminalStatusDetailDoesNotReferToBossInterfaceFromEmployeeDesk() async throws {
     let source = try loadOPCCompanyCoreSource("SelectionWorkspaceView.swift")
-    guard let start = source.range(of: "private func terminalStatusDetail(session: AgentRuntimeSession?, log: String) -> String {")?.lowerBound,
-          let end = source.range(of: "private func runtimeStatusIcon(session: AgentRuntimeSession?, log: String) -> String {")?.lowerBound,
+    guard let start = source.range(of: "func terminalStatusDetail(session: AgentRuntimeSession?, log: String) -> String {")?.lowerBound,
+          let end = source.range(of: "func runtimeStatusIcon(session: AgentRuntimeSession?, log: String) -> String {")?.lowerBound,
           start < end
     else {
         Issue.record("无法定位 terminalStatusDetail 切片")
@@ -16709,12 +16711,29 @@ private func makeStoreWithAPIAgent(
 /// 注意：本 helper 仅适用于读取**单个** `.swift` 源文件；遍历整个 `Sources/OPCCompanyCore` 目录请用
 /// `loadOPCCompanyCoreSwiftFileURLs()`（角色继承期轮 23 抽取）。
 fileprivate func loadOPCCompanyCoreSource(_ relativePath: String) throws -> String {
-    let url = URL(fileURLWithPath: #filePath)
+    let root = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-        .appendingPathComponent("Sources/OPCCompanyCore/\(relativePath)")
-    return normalizeL10nSourceShape(try String(contentsOf: url, encoding: .utf8))
+        .appendingPathComponent("Sources/OPCCompanyCore/")
+    let url = root.appendingPathComponent(relativePath)
+    var combined = normalizeL10nSourceShape(try String(contentsOf: url, encoding: .utf8))
+    // v0.2 split: CompanyStore is distributed across feature extension files.
+    // Shape assertions treat the store as one unit, so aggregate its extensions.
+    if relativePath == "CompanyStore.swift" {
+        let extras = ["CompanyStore+Runtime.swift", "CompanyStore+Tasks.swift",
+                      "CompanyStore+Comms.swift", "CompanyStore+Maintenance.swift",
+                      "CompanyStore+Reports.swift", "CompanyStore+Workspace.swift",
+                      "CompanyStore+Agents.swift", "CompanyStore+Persistence.swift"]
+        for name in extras {
+            let e = root.appendingPathComponent(name)
+            if let data = try? Data(contentsOf: e),
+               let text = String(data: data, encoding: .utf8) {
+                combined += "\n\n// ==== aggregated from " + name + " ====\n" + normalizeL10nSourceShape(text)
+            }
+        }
+    }
+    return combined
 }
 
 /// i18n normalization: tests assert on source shapes that predate the
