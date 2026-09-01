@@ -780,7 +780,7 @@ extension CompanyStore {
         let missing = missingRoles(for: template).map(\.title)
         let detail = missing.isEmpty
             ? "已应用 ".L() + "\(template.title)" + "，当前团队成员：".L() + "\(assigned.count)" + " 人。".L()
-            : "已应用 \(template.title)，当前团队成员：\(assigned.count) 人。缺少：\(missing.joined(separator: "、"))。"
+            : "已应用 ".L() + "\(template.title)" + "，当前团队成员：".L() + "\(assigned.count)" + " 人。缺少：".L() + "\(missing.joined(separator: "、".L()))" + "。".L()
         appendEvent(kind: .statusChanged, title: "产品团队模板已应用".L(), detail: detail, agentID: products[index].teamLeadAgentID)
         restartAgentTeamForSelectedProduct()
         ensureSelectedAgentIsValidForSelectedProduct()
@@ -917,7 +917,7 @@ extension CompanyStore {
         appendEvent(
             kind: .statusChanged,
             title: "默认产品目录已迁移".L(),
-            detail: "已把旧版默认 Desktop 工作区迁移到 OPC 本地应用工作区：\(migratedNames.joined(separator: "、"))。",
+            detail: "已把旧版默认 Desktop 工作区迁移到 OPC 本地应用工作区：".L() + "\(migratedNames.joined(separator: "、".L()))" + "。".L(),
             agentID: ctoID
         )
         syncAllAgentWorkspaces()

@@ -1003,25 +1003,25 @@ extension CompanyStore {
                 id: "message-bus",
                 title: "消息总线".L(),
                 status: hasDispatch && hasWorkCompleted ? .passed : (relatedMessages.isEmpty ? .failed : .warning),
-                detail: "关联消息 \(relatedMessages.count) 条；派发 \(hasDispatch ? "已出现" : "未出现")，回传 \(hasWorkCompleted ? "已出现" : "未出现")。"
+                detail: "关联消息 ".L() + "\(relatedMessages.count)" + " 条；派发 ".L() + "\(hasDispatch ? "已出现".L() : "未出现".L())" + "，回传 ".L() + "\(hasWorkCompleted ? "已出现".L() : "未出现".L())" + "。".L()
             ),
             MultiAgentClosureTraceStep(
                 id: "cto-loop",
                 title: "技术负责人调度".L(),
                 status: hasGoalStarted && hasLoopProgressed ? .passed : (hasGoalStarted ? .warning : .failed),
-                detail: "目标启动 \(hasGoalStarted ? "已记录" : "未记录")；循环推进 \(hasLoopProgressed ? "已记录" : "未记录")。"
+                detail: "目标启动 ".L() + "\(hasGoalStarted ? "已记录".L() : "未记录".L())" + "；循环推进 ".L() + "\(hasLoopProgressed ? "已记录".L() : "未记录".L())" + "。".L()
             ),
             MultiAgentClosureTraceStep(
                 id: "approval",
                 title: "老板审批".L(),
                 status: hasApprovalRequested && hasApprovalDecided ? .passed : (hasApprovalRequested || hasApprovalDecided ? .warning : .failed),
-                detail: "审批请求 \(hasApprovalRequested ? "已创建" : "未创建")；审批结果 \(hasApprovalDecided ? "已回写" : "未回写")。"
+                detail: "审批请求 ".L() + "\(hasApprovalRequested ? "已创建".L() : "未创建".L())" + "；审批结果 ".L() + "\(hasApprovalDecided ? "已回写".L() : "未回写".L())" + "。".L()
             ),
             MultiAgentClosureTraceStep(
                 id: "review-gate",
                 title: "审查门禁".L(),
                 status: hasReviewRequested && hasReviewCompleted && hasAcceptanceCompleted && hasAcceptedGate ? .passed : (relatedGates.isEmpty ? .failed : .warning),
-                detail: "验收门禁 \(relatedGates.count) 条；审查反馈 \(hasReviewCompleted ? "已出现" : "未出现")，老板验收 \(hasAcceptanceCompleted ? "已出现" : "未出现")。"
+                detail: "验收门禁 ".L() + "\(relatedGates.count)" + " 条；审查反馈 ".L() + "\(hasReviewCompleted ? "已出现".L() : "未出现".L())" + "，老板验收 ".L() + "\(hasAcceptanceCompleted ? "已出现".L() : "未出现".L())" + "。".L()
             ),
             MultiAgentClosureTraceStep(
                 id: "evidence",

@@ -3251,7 +3251,7 @@ static func isPath(_ path: String, insideAnyOf roots: Set<String>) -> Bool {
                 lines.append("- 已发送：\(channel.name)\(result.httpStatus.map { "（HTTP \($0)）" } ?? "（本地通道）")，尝试 ".L() + "\(result.attempts)" + " 次".L())
             } else {
                 anyFailed = true
-                lines.append("- 失败：\(channel.name)，尝试 \(result.attempts) 次，\(result.error ?? "未知错误")")
+                lines.append("- 失败：".L() + "\(channel.name)" + "，尝试 ".L() + "\(result.attempts)" + " 次，".L() + "\(result.error ?? "未知错误".L())")
             }
         }
 

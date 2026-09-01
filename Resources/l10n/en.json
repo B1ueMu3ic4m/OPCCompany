@@ -2960,6 +2960,23 @@
   "人": " people",
   "公司": "Company",
   "rootDirectory=": "rootDirectory=",
-  "本地占位 · ": "Local Placeholder · "
+  "本地占位 · ": "Local Placeholder · ",
+  "关联消息 ": "Related messages: ",
+  " 条；派发 ": " sent; dispatch ",
+  "；循环推进 ": "; loop progressed ",
+  "目标启动 ": "Goal kickoff ",
+  "审批请求 ": "Approval request ",
+  "；审批结果 ": "; approval result ",
+  "验收门禁 ": "Acceptance gates: ",
+  " 条；审查反馈 ": " sent; review feedback ",
+  "，老板验收 ": ", boss acceptance ",
+  " 人。缺少：": " people. Missing: ",
+  "、": ", ",
+  "已把旧版默认 Desktop 工作区迁移到 OPC 本地应用工作区：": "Migrated legacy default Desktop workspace to the OPC local app workspace: ",
+  "，尝试 ": ", attempts: ",
+  " 次，": ", error: ",
+  "已回写": "written back",
+  "未回写": "not written back",
+  "未知错误": "unknown error"
  }
 }
