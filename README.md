@@ -11,7 +11,7 @@
 
 [English](#features) · [中文说明](README.zh-CN.md)
 
-![OPC Company in action](docs/assets/demo-floor.gif)
+<!-- Demo GIF pending: record the app window only (not full screen) -->
 
 </div>
 
