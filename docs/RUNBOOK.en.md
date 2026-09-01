@@ -52,7 +52,7 @@ Keep these unless the user explicitly requests a deeper reset:
 
 - `Tests/OPCCompanyTests/**`: regression suite, not disposable test data.
 - `dist/OPCCompany.app`: latest usable local app bundle.
-- `OPC_COMPANY.md`, `CLAUDE.md`, `AGENTS.md`, and `docs/**`: product memory and operating rules.
+- `docs/**`: product documentation; local-only internal files (`OPC_COMPANY.md`, `CLAUDE.md`, `AGENTS.md`) stay outside the public repo.
 - `.claude/`: project-level goal/settings state.
 - `.ccb/`: collaboration logs and handoff trace; can be large, but keep while audit traceability matters.
 - `~/Library/Application Support/OPCCompany/**`: real local product state, history index, checkpoints, and employee workspaces.

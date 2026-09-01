@@ -4,7 +4,7 @@
 
 Last updated: 2026-05-07
 
-Current status: The multi-agent architecture upgrade has reached the single-user local formal-use baseline. This document keeps the plan and architecture notes; current acceptance status, latest test counts, and bundle version are governed by `OPC_COMPANY.md` and `docs/RUNBOOK.md`.
+Current status: The multi-agent architecture upgrade has reached the single-user local formal-use baseline. This document keeps the plan and architecture notes; current acceptance status, latest test counts, and bundle version are governed by the internal project constitution (local only) and `docs/RUNBOOK.md`.
 
 ## Goals for this round
 
@@ -139,7 +139,7 @@ The flow graph / employee workbench can show:
 
 - `CompanySnapshot` gains `agentMessages`, schema upgrade.
 - `createTask` / `enqueueWorkItem` / `completeWorkItem` / `requestApproval` gain message-bus integration.
-- `OPC_COMPANY.md` change log adds this round's upgrade.
+- The internal project constitution (local only) change log adds this round's upgrade.
 - UI adds a lightweight "multi-agent collaboration chain" view, placed in the flow graph / employee workbench first, not piled onto the Boss Command Center.
 
 ### Tested

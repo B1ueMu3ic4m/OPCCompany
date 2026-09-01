@@ -4,7 +4,7 @@
 
 Last updated: 2026-05-07
 
-Current status: CLI orchestration has reached the single-user local formal-use baseline. Codex / Claude Code / Gemini / API backends all have productized configuration and run paths; real terminals, job archives, status observation, exception recovery, and token-budget boundaries are wired in. This document describes the design principles and maintenance boundaries; the latest acceptance records are in `OPC_COMPANY.md`.
+Current status: CLI orchestration has reached the single-user local formal-use baseline. Codex / Claude Code / Gemini / API backends all have productized configuration and run paths; real terminals, job archives, status observation, exception recovery, and token-budget boundaries are wired in. This document describes the design principles and maintenance boundaries; the latest acceptance records live in the internal project constitution (local only).
 
 ## Goals
 

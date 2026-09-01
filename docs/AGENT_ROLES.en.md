@@ -4,7 +4,7 @@
 
 Last updated: 2026-05-07
 
-Current status: These rules are project-level role definitions within the OPC product, not local global personal memory. OPC Company has reached the single-user local formal-use baseline; any future role adjustments must be tied to concrete product requirements and, when they affect architecture or UI behavior, update `OPC_COMPANY.md` in sync.
+Current status: These rules are project-level role definitions within the OPC product, not user-level personal memory. OPC Company has reached the single-user local formal-use baseline; any future role adjustments must be tied to concrete product requirements and, when they affect architecture or UI behavior, update the internal project constitution in sync.
 
 ## Company-wide rules
 

@@ -35,3 +35,10 @@ docs/CLAUDE_CODE_HANDOFF.md
 
 # ===== Scan tooling output =====
 gitleaks-report.*
+
+# ===== Internal working docs (local only, v0.2 decision) =====
+AGENTS.md
+CLAUDE.md
+OPC_COMPANY.md
+docs/IMPLEMENTATION_PLAN.md
+docs/GITHUB_RESEARCH.md
