@@ -114,6 +114,11 @@ The UI ships in 简体中文 and English. Switch anytime: menu bar → **界面�
 
 PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are labeled. Every merged contribution is credited in release notes.
 
+## Security
+
+- Product paths are always displayed tilde-abbreviated (`~/Library/...`) — no usernames leak into screenshots.
+- The demo capture script records the **app window only** (never the full desktop).
+
 ## License
 
 [MIT](LICENSE) © 2026 B1ueMu3ic4m
