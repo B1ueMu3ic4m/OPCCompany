@@ -44,7 +44,7 @@ Not a chat wrapper. Not a dashboard. A **company metaphor with real authority bo
 
 > Requires macOS 14+, and [Swift 6 toolchain](https://www.swift.org/install/) for building.
 
-**Homebrew** (after tap is published):
+**Homebrew**:
 
 ```bash
 brew install --cask B1ueMu3ic4m/tap/opc-company
