@@ -1668,9 +1668,12 @@ static func byteCountText(_ bytes: Int64) -> String {
     static let builtinRosterNames: [(role: AgentRole, zhName: String, enName: String, zhTitle: String, enTitle: String)] = [
         (.boss,      "老板", "Boss", "OPC 公司老板", "OPC Company Boss"),
         (.cto,       "Codex 技术负责人", "Codex CTO", "总技术负责人", "Chief CTO"),
+        (.productArchitect, "产品架构师", "Product Architect", "产品架构师", "Product Architect"),
         (.uiDesigner, "Gemini 界面设计师", "Gemini UI Designer", "视觉产品设计师", "Visual Product Designer"),
         (.codeEngineer, "Claude Code 工程师", "Claude Code Engineer", "高级 macOS 工程师", "Senior macOS Engineer"),
         (.reviewer,  "Codex 审查员", "Codex Reviewer", "风险与验收审查员", "Risk & Acceptance Reviewer"),
+        (.tester,    "测试工程师", "Test Engineer", "测试工程师", "Test Engineer"),
+        (.researcher, "资料研究员", "Research fellow", "资料研究员", "Research Fellow"),
     ]
 
     /// Re-render builtin agent displayName/title in the current session language.
