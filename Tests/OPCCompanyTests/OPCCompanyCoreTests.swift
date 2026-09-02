@@ -3685,6 +3685,47 @@ private func writeCLIJobArchive(
 }
 
 @MainActor
+@Test func visibleTerminalLogRemapsWarmupLinesToCurrentLanguageBothWays() async throws {
+    // 对称重映射:zh 生成的历史日志在 en 会话渲染为 en;en 生成的历史日志在 zh 会话渲染为 zh。
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    let cto = try #require(store.agents.first { $0.role == .cto })
+
+    // zh-generated log: XCTest forces Chinese session, so the zh log renders unchanged.
+    store.terminalLogs[cto.id] = """
+    [OPC 会话预热]
+    原因：应用启动后预热当前产品团队
+    本地命令已就绪：Codex
+    持续协作：可继续接收任务。
+    """
+    let zhRendered = store.visibleTerminalLog(for: cto.id)
+    #expect(zhRendered.contains("[OPC 会话预热]"))
+    #expect(zhRendered.contains("本地命令已就绪：Codex"))
+
+    // en-generated log must be re-rendered in Chinese under the zh session.
+    store.terminalLogs[cto.id] = """
+    [OPC Session Warmup]
+    Reason: Warm up the current product team after launch
+    Local command ready: Codex
+    Continuous collaboration: Can accept more tasks.
+    """
+    let enLogRendered = store.visibleTerminalLog(for: cto.id)
+    #expect(enLogRendered.contains("[OPC 会话预热]"))
+    #expect(enLogRendered.contains("本地命令已就绪：Codex"))
+    #expect(!enLogRendered.contains("Local command ready"))
+    #expect(!enLogRendered.contains("[OPC Session Warmup]"))
+}
+
+@MainActor
+@Test func messageBubbleSystemWelcomeRemapsToCurrentLanguage() {
+    // 系统欢迎语固化于生成时语言;气泡渲染层必须按当前会话语言重映射(zh 会话 → zh 文案)。
+    let enWelcome = "System notice: OPC Company is live. Real conversations call each employee's configured model source; when unconfigured or unavailable, only a system fallback notice is shown."
+    let remapped = MessageBubble.localizedFixedText(enWelcome, author: .system)
+    #expect(remapped.contains("OPC 公司已经上线"))
+    // 非系统消息与未知文案原样透传
+    #expect(MessageBubble.localizedFixedText("hello world", author: .agent) == "hello world")
+}
+
+@MainActor
 @Test func legacyCTOVisibleNamesAreLocalizedForPersistedStores() async throws {
     let store = CompanyStore.bootstrap(loadPersisted: false)
     guard let index = store.agents.firstIndex(where: { $0.role == .cto }) else {

@@ -6,10 +6,12 @@ public enum AppLanguage: String, CaseIterable, Codable, Sendable {
     case simplifiedChinese = "zh-Hans"
     case english = "en"
 
-    /// Label shown in the language picker.
+    /// Label shown in the language picker. The System row shows the language
+    /// it currently resolves to, so "Auto" never surprises the user
+    /// (system preferred languages may not match what the user assumes).
     public var displayName: String {
         switch self {
-        case .system: return "跟随系统 / Auto"
+        case .system: return "跟随系统 / Auto — \(resolving().displayName)"
         case .simplifiedChinese: return "简体中文"
         case .english: return "English"
         }

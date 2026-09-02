@@ -44,6 +44,11 @@ struct OPCCompanyApp: App {
                     }
                 }
                 .pickerStyle(.inline)
+                Divider()
+                // Live resolution feedback: shows exactly which language every
+                // surface (views + store logs) is using right now.
+                Button("Effective: \(resolved.displayName)") {}
+                    .disabled(true)
                 // Side effects (bundle switch + sessionLanguage) live in
                 // L10nEnvironment.didSet so they run before the view-tree
                 // rebuild, not after it in an onChange handler.

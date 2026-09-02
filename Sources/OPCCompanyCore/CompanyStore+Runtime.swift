@@ -1273,27 +1273,27 @@ extension CompanyStore {
             .components(separatedBy: .newlines)
             .map { line in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
-                // Bilingual prefix match: historical logs may have been generated in the other language.
-                let readyPrefixes = ["本地命令已就绪：", "Local command ready: "]
-                if let matched = readyPrefixes.first(where: { trimmed.hasPrefix($0) }) {
-                    let rawValue = String(trimmed.dropFirst(matched.count))
-                    return "本地命令已就绪：".L() + "\(opcBackendCommandDisplayName(rawValue))"
-                }
-                if trimmed == "[OPC 会话预热]" || trimmed == "[OPC Session Warmup]" {
-                    return "[OPC 会话预热]".L()
-                }
-                let reasonPrefixes = ["原因：", "Reason: "]
-                if let matched = reasonPrefixes.first(where: { trimmed.hasPrefix($0) }) {
-                    let rawValue = String(trimmed.dropFirst(matched.count))
-                    let body = rawValue.replacingOccurrences(
-                        of: "App 启动后预热当前产品团队",
-                        with: "应用启动后预热当前产品团队")
-                    return "原因：".L() + "\(body)".L()
-                }
-                let collabPrefixes = ["持续协作：", "Continuous collaboration: "]
-                if let matched = collabPrefixes.first(where: { trimmed.hasPrefix($0) }) {
-                    let rawValue = String(trimmed.dropFirst(matched.count))
-                    return "持续协作：".L() + "\(rawValue)"
+                // Bilingual line remapping: historical warmup logs may have been
+                // generated in either language; re-render each known line in the
+                // CURRENT session language (symmetric zh<->en, direction-free).
+                let warmupLinePairs: [(anyOf: [String], render: (String) -> String)] = [
+                    ([ "[OPC 会话预热]", "[OPC Session Warmup]" ], { _ in "[OPC 会话预热]".L() }),
+                    ([ "本地命令已就绪：", "Local command ready: " ], { body in
+                        "本地命令已就绪：".L() + "\(opcBackendCommandDisplayName(body))"
+                    }),
+                    ([ "原因：", "Reason: " ], { body in
+                        let normalized = body
+                            .replacingOccurrences(of: "App 启动后预热当前产品团队", with: "应用启动后预热当前产品团队")
+                            .replacingOccurrences(of: "Warm up the current product team after launch", with: "应用启动后预热当前产品团队")
+                        return "原因：".L() + "\(normalized)".L()
+                    }),
+                    ([ "持续协作：", "Continuous collaboration: " ], { body in
+                        "持续协作：".L() + "\(body)"
+                    }),
+                ]
+                for pair in warmupLinePairs where pair.anyOf.contains(where: { trimmed.hasPrefix($0) }) {
+                    let matched = pair.anyOf.first { trimmed.hasPrefix($0) }!
+                    return pair.render(String(trimmed.dropFirst(matched.count)))
                 }
                 if line.contains("App 启动后预热当前产品团队".L()) {
                     return line.replacingOccurrences(of: "App 启动后预热当前产品团队".L(), with: "应用启动后预热当前产品团队".L())
