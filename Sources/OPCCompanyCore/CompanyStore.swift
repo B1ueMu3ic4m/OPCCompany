@@ -1685,11 +1685,15 @@ static func byteCountText(_ bytes: Int64) -> String {
         var changed = false
         for index in agents.indices {
             guard let entry = Self.builtinRosterNames.first(where: { $0.role == agents[index].role }) else { continue }
-            if agents[index].displayName == entry.zhName || agents[index].displayName == entry.enName {
+            // Known forms = canonical zh/en + legacy debris produced by older
+            // migrations (e.g. "Chief 技术负责人" from substring-replacing CTO).
+            let knownNames: [String] = [entry.zhName, entry.enName]
+            let knownTitles: [String] = [entry.zhTitle, entry.enTitle, "Chief 技术负责人"]
+            if knownNames.contains(agents[index].displayName) {
                 let target = en ? entry.enName : entry.zhName
                 if agents[index].displayName != target { agents[index].displayName = target; changed = true }
             }
-            if agents[index].title == entry.zhTitle || agents[index].title == entry.enTitle {
+            if knownTitles.contains(agents[index].title) {
                 let target = en ? entry.enTitle : entry.zhTitle
                 if agents[index].title != target { agents[index].title = target; changed = true }
             }
@@ -1735,18 +1739,24 @@ static func byteCountText(_ bytes: Int64) -> String {
 
     public func localizeLegacyVisibleTerminology(saveAfterChange: Bool = true) -> Bool {
         var changed = localizeDefaultAgentNames()
+        // Legacy terminology migration = WHOLE-PHRASE mapping to canonical zh
+        // forms. Substring surgery inside English phrases ("Chief CTO" →
+        // "Chief 技术负责人") is what created mixed debris; it is banned here.
+        // English-form cleanup happens via refreshBuiltinAgentNamesForLanguage's
+        // canonical + debris mapping instead.
+        let legacyPhraseMap: [(zh: String, en: String, canonicalZh: String)] = [
+            ("CTO 办公室负责人", "Chief CTO", "总技术负责人"),
+        ]
         for index in agents.indices where agents[index].role == .cto {
-            if agents[index].displayName.contains("CTO") {
-                agents[index].displayName = agents[index].displayName
-                    .replacingOccurrences(of: "CTO ", with: "技术负责人".L())
-                    .replacingOccurrences(of: "CTO", with: "技术负责人".L())
-                changed = true
-            }
-            if agents[index].title.contains("CTO") {
-                agents[index].title = agents[index].title
-                    .replacingOccurrences(of: "CTO ", with: "技术负责人".L())
-                    .replacingOccurrences(of: "CTO", with: "技术负责人".L())
-                changed = true
+            for phrase in legacyPhraseMap {
+                if agents[index].title == phrase.zh || agents[index].title == phrase.en {
+                    agents[index].title = phrase.canonicalZh
+                    changed = true
+                }
+                if agents[index].displayName == phrase.en {
+                    agents[index].displayName = "Codex 技术负责人"
+                    changed = true
+                }
             }
         }
         for index in tasks.indices {

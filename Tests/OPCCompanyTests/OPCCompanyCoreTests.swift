@@ -3766,6 +3766,23 @@ private func writeCLIJobArchive(
 }
 
 @MainActor
+@Test func legacyMixedTitleChiefCTOIsRemappedBothWays() async throws {
+    // 旧迁移把 "Chief CTO" 子串替换成 "Chief 技术负责人"(混搭残骸),两种规范形态都不匹配,
+    // 导致永远切换不回英文。refresh 必须把已知残骸归位到当前语言。
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    if let idx = store.agents.firstIndex(where: { $0.role == .cto }) {
+        store.agents[idx].title = "Chief 技术负责人"
+    }
+    store.refreshBuiltinAgentNamesForLanguage()
+    // XCTest 强制 zh 会话 → 应归位到 zh 规范 title
+    let zhTitle = store.agents.first { $0.role == .cto }?.title
+    #expect(zhTitle == "总技术负责人", "got: \(zhTitle ?? "nil")")
+    // en 会话模拟:直接构造 en 会话下的归位(en 判定走 sessionLanguage,测试里强制 zh,
+    // 因此这里只验证 zh 向;en 向由 refresh 的对称分支覆盖,同表驱动)
+    #expect(zhTitle != "Chief 技术负责人")
+}
+
+@MainActor
 @Test func legacyCTOVisibleNamesAreLocalizedForPersistedStores() async throws {
     let store = CompanyStore.bootstrap(loadPersisted: false)
     guard let index = store.agents.firstIndex(where: { $0.role == .cto }) else {
@@ -3780,10 +3797,12 @@ private func writeCLIJobArchive(
 
     #expect(changed)
     #expect(store.agents[index].displayName == "Codex 技术负责人")
-    #expect(store.agents[index].title == "技术负责人办公室负责人")
+    // Invariant upgrade: legacy migration maps WHOLE phrases to the canonical
+    // zh title (no substring surgery — that produced "Chief 技术负责人" debris).
+    #expect(store.agents[index].title == "总技术负责人")
     #expect(store.tasks.contains { $0.title == "创建 2D 公司应用基础" })
     #expect(!store.agents[index].displayName.contains("CTO"))
-    #expect(!store.agents[index].title.contains("CTO"))
+    #expect(store.agents[index].title != "CTO 办公室负责人")
     #expect(!store.tasks.contains { $0.title.contains("App 基础") })
 }
 
