@@ -1662,8 +1662,76 @@ static func byteCountText(_ bytes: Int64) -> String {
 
 
 
-    public func localizeLegacyVisibleTerminology(saveAfterChange: Bool = true) -> Bool {
+    /// Builtin roster names in both languages. Language switching re-renders
+    /// builtin displayName/title (data persisted at creation time in the then-
+    /// active language), while user-customized names are left untouched.
+    static let builtinRosterNames: [(role: AgentRole, zhName: String, enName: String, zhTitle: String, enTitle: String)] = [
+        (.boss,      "老板", "Boss", "OPC 公司老板", "OPC Company Boss"),
+        (.cto,       "Codex 技术负责人", "Codex CTO", "总技术负责人", "Chief CTO"),
+        (.uiDesigner, "Gemini 界面设计师", "Gemini UI Designer", "视觉产品设计师", "Visual Product Designer"),
+        (.codeEngineer, "Claude Code 工程师", "Claude Code Engineer", "高级 macOS 工程师", "Senior macOS Engineer"),
+        (.reviewer,  "Codex 审查员", "Codex Reviewer", "风险与验收审查员", "Risk & Acceptance Reviewer"),
+    ]
+
+    /// Re-render builtin agent displayName/title in the current session language.
+    /// Called on every language switch (OPCCompanyApp.onChange(of: resolved)).
+    /// Only names matching a builtin roster entry in EITHER language are
+    /// rewritten — user-customized names are never touched.
+    public func refreshBuiltinAgentNamesForLanguage() {
+        let en = AppStrings.sessionLanguage.resolving() == .english
         var changed = false
+        for index in agents.indices {
+            guard let entry = Self.builtinRosterNames.first(where: { $0.role == agents[index].role }) else { continue }
+            if agents[index].displayName == entry.zhName || agents[index].displayName == entry.enName {
+                let target = en ? entry.enName : entry.zhName
+                if agents[index].displayName != target { agents[index].displayName = target; changed = true }
+            }
+            if agents[index].title == entry.zhTitle || agents[index].title == entry.enTitle {
+                let target = en ? entry.enTitle : entry.zhTitle
+                if agents[index].title != target { agents[index].title = target; changed = true }
+            }
+        }
+        if changed { saveSnapshot() }
+    }
+
+    /// Default bootstrap display names in both language forms. Only EXACT
+    /// matches are re-mapped, so user-customized names are never touched.
+    static let defaultRoleDisplayNames: [(role: AgentRole, zh: String, en: String)] = [
+        (.cto, "Codex 技术负责人", "Codex CTO"),
+        (.productArchitect, "产品架构师", "Product Architect"),
+        (.uiDesigner, "Gemini 界面设计师", "Gemini UI Designer"),
+        (.codeEngineer, "Claude Code 工程师", "Claude Code Engineer"),
+        (.reviewer, "Codex 审查员", "Codex Reviewer"),
+        (.tester, "测试工程师", "Test Engineer"),
+        (.researcher, "资料研究员", "Research fellow"),
+        (.boss, "老板", "Boss"),
+    ]
+
+    /// Re-map default bootstrap display names to the current session language.
+    /// A persisted store always carries the language of its creation; without
+    /// this, "Codex 技术负责人" stays Chinese after switching to English.
+    func localizeDefaultAgentNames() -> Bool {
+        var changed = false
+        let target: String
+        switch AppStrings.sessionLanguage.resolving() {
+        case .english: target = "en"
+        case .simplifiedChinese, .system: target = "zh"
+        }
+        for index in agents.indices {
+            guard let match = Self.defaultRoleDisplayNames.first(where: {
+                $0.role == agents[index].role && (agents[index].displayName == $0.zh || agents[index].displayName == $0.en)
+            }) else { continue }
+            let localized = target == "en" ? match.en : match.zh
+            if agents[index].displayName != localized {
+                agents[index].displayName = localized
+                changed = true
+            }
+        }
+        return changed
+    }
+
+    public func localizeLegacyVisibleTerminology(saveAfterChange: Bool = true) -> Bool {
+        var changed = localizeDefaultAgentNames()
         for index in agents.indices where agents[index].role == .cto {
             if agents[index].displayName.contains("CTO") {
                 agents[index].displayName = agents[index].displayName

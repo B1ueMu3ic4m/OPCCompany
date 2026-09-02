@@ -3716,6 +3716,25 @@ private func writeCLIJobArchive(
 }
 
 @MainActor
+@Test func builtinAgentNamesReRenderOnLanguageSwitch() {
+    // 内置五人组的标准名/职位在语言切换时重渲染;自定义名不受影响。
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    // 模拟英文模式重渲染(XCTest 强制 zh 会话,这里直接调内部逻辑验证 zh 目标):
+    store.refreshBuiltinAgentNamesForLanguage()
+    let cto = store.agents.first { $0.role == .cto }
+    #expect(cto?.displayName == "Codex 技术负责人")
+    #expect(cto?.title == "总技术负责人")
+    // 自定义名不被改写:
+    var store2 = CompanyStore.bootstrap(loadPersisted: false)
+    if let idx = store2.agents.firstIndex(where: { $0.role == .cto }) {
+        store2.agents[idx].displayName = "我的定制 CTO"
+    }
+    store2.refreshBuiltinAgentNamesForLanguage()
+    let custom = store2.agents.first { $0.role == .cto }
+    #expect(custom?.displayName == "我的定制 CTO")
+}
+
+@MainActor
 @Test func messageBubbleSystemWelcomeRemapsToCurrentLanguage() {
     // 系统欢迎语固化于生成时语言;气泡渲染层必须按当前会话语言重映射(zh 会话 → zh 文案)。
     let enWelcome = "System notice: OPC Company is live. Real conversations call each employee's configured model source; when unconfigured or unavailable, only a system fallback notice is shown."
@@ -3723,6 +3742,27 @@ private func writeCLIJobArchive(
     #expect(remapped.contains("OPC 公司已经上线"))
     // 非系统消息与未知文案原样透传
     #expect(MessageBubble.localizedFixedText("hello world", author: .agent) == "hello world")
+}
+
+@MainActor
+@Test func defaultAgentDisplayNamesFollowSessionLanguageBothWays() async throws {
+    // 默认团队名是 bootstrap 数据,固化于创建时语言;加载时必须按当前会话语言重映射(仅精确匹配默认名)。
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    // XCTest 强制 zh 会话:把 en 形态默认名改写回 zh 形态
+    if let idx = store.agents.firstIndex(where: { $0.role == .cto }) {
+        store.agents[idx].displayName = "Codex CTO"
+    }
+    let changed = store.localizeDefaultAgentNames()
+    #expect(changed)
+    let cto = store.agents.first { $0.role == .cto }
+    #expect(cto?.displayName == "Codex 技术负责人")
+    // 用户自定义名(非精确默认名)永不触碰
+    if let idx = store.agents.firstIndex(where: { $0.role == .cto }) {
+        store.agents[idx].displayName = "Codex CTO 老王"
+    }
+    let changed2 = store.localizeDefaultAgentNames()
+    #expect(!changed2)
+    #expect(store.agents.first { $0.role == .cto }?.displayName == "Codex CTO 老王")
 }
 
 @MainActor
