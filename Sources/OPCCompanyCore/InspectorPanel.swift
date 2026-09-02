@@ -889,7 +889,7 @@ struct MessageBubble: View {
                 Text(author)
                     .font(.system(size: 9.5, weight: .heavy, design: .monospaced))
                     .foregroundStyle(labelColor)
-                Text(message.text)
+                Text(Self.localizedFixedText(message.text, author: message.author))
                     .font(.system(size: 12))
                     .foregroundStyle(message.author == .user ? warmUserText : CompanyTheme.ink)
                     .textSelection(.enabled)
@@ -909,6 +909,27 @@ struct MessageBubble: View {
     private var author: String {
         Self.authorLabel(for: message.author, agentRole: agentRole)
     }
+
+    /// Fixed copy (system welcome notices) is generated in the language of its
+    /// creation and persisted. Re-map known system lines to the current session
+    /// language so switching languages never leaves a stale-language welcome.
+    static func localizedFixedText(_ text: String, author: MessageAuthor) -> String {
+        guard author == .system else { return text }
+        switch AppStrings.sessionLanguage.resolving() {
+        case .english:
+            if let pair = knownSystemNotices.first(where: { text == $0.zh }) { return pair.en }
+        case .simplifiedChinese, .system:
+            if let pair = knownSystemNotices.first(where: { text == $0.en }) { return pair.zh }
+        }
+        return text
+    }
+
+    private static let knownSystemNotices: [(zh: String, en: String)] = [
+        ("系统提示：OPC 公司已经上线。正式沟通会调用员工配置的真实模型来源；未配置或不可用时只显示系统降级提示。",
+         "System notice: OPC Company is live. Real conversations call each employee's configured model source; when unconfigured or unavailable, only a system fallback notice is shown."),
+        ("系统提示：OPC 公司已经恢复到默认状态。正式沟通会调用员工配置的真实模型来源。",
+         "System notice: OPC Company restored to default state. Real conversations call each employee's configured model source."),
+    ]
 
     static func authorLabel(for author: MessageAuthor, agentRole: AgentRole?) -> String {
         switch author {
