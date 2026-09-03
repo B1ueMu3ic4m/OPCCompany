@@ -714,7 +714,7 @@ struct AgentMessageCenterSheet: View {
 }
 
 enum AgentMessageCenterCopy {
-    static let viewAllTitle = "查看全部".L()
+    static var viewAllTitle: String { "查看全部".L() }
 }
 
 enum AgentMessageDisplay {
@@ -958,18 +958,18 @@ struct DeliveryAcceptanceCenterSheet: View {
 }
 
 enum DeliveryAcceptanceCenterCopy {
-    static let sheetTitle = "交付验收中心".L()
-    static let sheetSubtitle = "集中查看当前产品的可验收任务、自动验收记录和交付物。".L()
-    static let openTitle = "打开交付验收中心".L()
-    static let viewAllTitle = "查看全部".L()
-    static let reviewGatesSection = "验收门禁".L()
-    static let acceptanceTasksSection = "可验收任务".L()
-    static let verificationsSection = "自动验收记录".L()
-    static let artifactsSection = "交付物记录".L()
-    static let emptyReviewGates = "暂无验收门禁记录。送审、自动验收或老板验收后会出现在这里。".L()
-    static let emptyAcceptanceTasks = "当前没有待验收或已交付任务。".L()
-    static let emptyVerifications = "暂无自动验收记录。".L()
-    static let emptyArtifacts = "暂无交付物记录。".L()
+    static var sheetTitle: String { "交付验收中心".L() }
+    static var sheetSubtitle: String { "集中查看当前产品的可验收任务、自动验收记录和交付物。".L() }
+    static var openTitle: String { "打开交付验收中心".L() }
+    static var viewAllTitle: String { "查看全部".L() }
+    static var reviewGatesSection: String { "验收门禁".L() }
+    static var acceptanceTasksSection: String { "可验收任务".L() }
+    static var verificationsSection: String { "自动验收记录".L() }
+    static var artifactsSection: String { "交付物记录".L() }
+    static var emptyReviewGates: String { "暂无验收门禁记录。送审、自动验收或老板验收后会出现在这里。".L() }
+    static var emptyAcceptanceTasks: String { "当前没有待验收或已交付任务。".L() }
+    static var emptyVerifications: String { "暂无自动验收记录。".L() }
+    static var emptyArtifacts: String { "暂无交付物记录。".L() }
 }
 
 struct ReviewGateCard: View {

@@ -741,24 +741,27 @@ public struct CLIInteractionProfile: Hashable, Sendable {
         }
     }
 
-    fileprivate static let diagnosticPrefixes: [String] = [
-        "error:", "error ", "fatal:", "fatal ", "warning:", "warn:", "warn ",
-        "[error]", "[fatal]", "[warn]", "[warning]",
-        "panic:", "exception:", "exception ", "errno",
-        "session expired", "authentication failed", "auth failed",
-        "not authenticated", "please login", "please log in", "login required",
-        "sign in to your account", "unauthorized", "invalid api key",
-        "plan usage limits", "already running", "rate limit", "quota", "overloaded", "busy",
-        "network error", "network timeout", "connection timed out", "request timed out",
-        "temporarily unavailable", "timeout", "429",
-        // 中文诊断前缀：覆盖工具中文输出。同样要求出现在行首，普通中文句子不会误命中。
-        "错误：".L().L(), "错误 ".L().L(), "致命：".L().L(), "致命 ".L().L(), "致命错误：".L().L(), "严重：".L().L(), "严重错误：".L().L(),
-        "警告：".L().L(), "警告 ".L().L(), "异常：".L().L(), "异常 ".L().L(),
-        "授权失败".L().L(), "授权异常".L().L(), "登录失败".L().L(), "未授权".L().L(), "请登录".L().L(), "请重新登录".L().L(),
-        "网络错误".L().L(), "网络异常".L().L(), "请求超时".L().L(), "连接超时".L().L(), "连接失败".L().L(),
-        "临时不可用".L().L(), "临时异常".L().L(), "服务繁忙".L().L(), "已忙碌".L().L(), "速率限制".L().L(), "配额已用尽".L().L(),
-        "请稍后重试".L().L()
-    ]
+        fileprivate static var diagnosticPrefixes: [String] {
+        [
+            "error:", "error ", "fatal:", "fatal ", "warning:", "warn:", "warn ",
+            "[error]", "[fatal]", "[warn]", "[warning]",
+            "panic:", "exception:", "exception ", "errno",
+            "session expired", "authentication failed", "auth failed",
+            "not authenticated", "please login", "please log in", "login required",
+            "sign in to your account", "unauthorized", "invalid api key",
+            "plan usage limits", "already running", "rate limit", "quota", "overloaded", "busy",
+            "network error", "network timeout", "connection timed out", "request timed out",
+            "temporarily unavailable", "timeout", "429",
+        ] +
+        // 中文诊断前缀双语并集：工具输出可能是中文或英文（跟随 CLI 自身 locale），
+        // 匹配必须两种语言都认。同样要求出现在行首，普通中文句子不会误命中。
+        AppStrings.forms("错误：") + AppStrings.forms("错误 ") + AppStrings.forms("致命：") + AppStrings.forms("致命 ") + AppStrings.forms("致命错误：") + AppStrings.forms("严重：") + AppStrings.forms("严重错误：") +
+        AppStrings.forms("警告：") + AppStrings.forms("警告 ") + AppStrings.forms("异常：") + AppStrings.forms("异常 ") +
+        AppStrings.forms("授权失败") + AppStrings.forms("授权异常") + AppStrings.forms("登录失败") + AppStrings.forms("未授权") + AppStrings.forms("请登录") + AppStrings.forms("请重新登录") +
+        AppStrings.forms("网络错误") + AppStrings.forms("网络异常") + AppStrings.forms("请求超时") + AppStrings.forms("连接超时") + AppStrings.forms("连接失败") +
+        AppStrings.forms("临时不可用") + AppStrings.forms("临时异常") + AppStrings.forms("服务繁忙") + AppStrings.forms("已忙碌") + AppStrings.forms("速率限制") + AppStrings.forms("配额已用尽") +
+        AppStrings.forms("请稍后重试")
+    }
 
     fileprivate static let pathOrIdentifierMarkers: Set<Character> = ["/", "\\", "-", "_", "."]
 
@@ -954,7 +957,7 @@ public enum CLIInteractionStateMachine {
 }
 
 public enum CLIInteractionProfileCatalog {
-    public static let profiles: [CLIInteractionProfile] = [
+    public static var profiles: [CLIInteractionProfile] { [
         CLIInteractionProfile(
             command: "codex",
             displayName: "Codex 命令行交互".L().L(),
@@ -965,10 +968,10 @@ public enum CLIInteractionProfileCatalog {
             sessionIDPattern: #"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"#,
             readySignals: ["codex", "OpenAI Codex", "codex-cli"],
             replReadySignals: ["codex>"],
-            endTurnSignals: ["[命令退出码".L().L(), "turn complete", "response completed"],
-            busySignals: ["busy", "already running", "rate limit", "Plan usage limits", "服务繁忙".L().L(), "已忙碌".L().L(), "已在运行".L().L(), "速率限制".L().L(), "配额已用尽".L().L(), "请稍后重试".L().L()],
-            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权".L().L(), "请登录".L().L(), "请重新登录".L().L(), "授权失败".L().L(), "授权异常".L().L(), "登录失败".L().L()],
-            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时".L().L(), "连接超时".L().L(), "网络异常".L().L(), "网络错误".L().L(), "连接失败".L().L(), "临时不可用".L().L()],
+            endTurnSignals: ["turn complete", "response completed"] + AppStrings.forms("[命令退出码"),
+            busySignals: ["busy", "already running", "rate limit", "Plan usage limits"] + AppStrings.forms("服务繁忙") + AppStrings.forms("已忙碌") + AppStrings.forms("已在运行") + AppStrings.forms("速率限制") + AppStrings.forms("配额已用尽") + AppStrings.forms("请稍后重试"),
+            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key"] + AppStrings.forms("未授权") + AppStrings.forms("请登录") + AppStrings.forms("请重新登录") + AppStrings.forms("授权失败") + AppStrings.forms("授权异常") + AppStrings.forms("登录失败"),
+            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429"] + AppStrings.forms("请求超时") + AppStrings.forms("连接超时") + AppStrings.forms("网络异常") + AppStrings.forms("网络错误") + AppStrings.forms("连接失败") + AppStrings.forms("临时不可用"),
             recommendedTimeoutSeconds: 600
         ),
         CLIInteractionProfile(
@@ -982,9 +985,9 @@ public enum CLIInteractionProfileCatalog {
             readySignals: ["Claude Code", "claude"],
             replReadySignals: ["claude>"],
             endTurnSignals: ["completion_reason", "Done", "result"],
-            busySignals: ["busy", "already running", "overloaded", "rate limit", "服务繁忙".L().L(), "已忙碌".L().L(), "已在运行".L().L(), "过载".L().L(), "速率限制".L().L(), "请稍后重试".L().L()],
-            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权".L().L(), "请登录".L().L(), "请重新登录".L().L(), "授权失败".L().L(), "授权异常".L().L(), "登录失败".L().L()],
-            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时".L().L(), "连接超时".L().L(), "网络异常".L().L(), "网络错误".L().L(), "连接失败".L().L(), "临时不可用".L().L()],
+            busySignals: ["busy", "already running", "overloaded", "rate limit"] + AppStrings.forms("服务繁忙") + AppStrings.forms("已忙碌") + AppStrings.forms("已在运行") + AppStrings.forms("过载") + AppStrings.forms("速率限制") + AppStrings.forms("请稍后重试"),
+            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key"] + AppStrings.forms("未授权") + AppStrings.forms("请登录") + AppStrings.forms("请重新登录") + AppStrings.forms("授权失败") + AppStrings.forms("授权异常") + AppStrings.forms("登录失败"),
+            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429"] + AppStrings.forms("请求超时") + AppStrings.forms("连接超时") + AppStrings.forms("网络异常") + AppStrings.forms("网络错误") + AppStrings.forms("连接失败") + AppStrings.forms("临时不可用"),
             recommendedTimeoutSeconds: 600
         ),
         CLIInteractionProfile(
@@ -998,12 +1001,12 @@ public enum CLIInteractionProfileCatalog {
             readySignals: ["Gemini", "gemini"],
             replReadySignals: ["gemini>"],
             endTurnSignals: ["turn complete", "response completed", "Done"],
-            busySignals: ["busy", "already running", "rate limit", "quota", "服务繁忙".L().L(), "已忙碌".L().L(), "已在运行".L().L(), "速率限制".L().L(), "配额已用尽".L().L(), "请稍后重试".L().L()],
-            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key", "未授权".L().L(), "请登录".L().L(), "请重新登录".L().L(), "授权失败".L().L(), "授权异常".L().L(), "登录失败".L().L()],
-            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429", "请求超时".L().L(), "连接超时".L().L(), "网络异常".L().L(), "网络错误".L().L(), "连接失败".L().L(), "临时不可用".L().L()],
+            busySignals: ["busy", "already running", "rate limit", "quota"] + AppStrings.forms("服务繁忙") + AppStrings.forms("已忙碌") + AppStrings.forms("已在运行") + AppStrings.forms("速率限制") + AppStrings.forms("配额已用尽") + AppStrings.forms("请稍后重试"),
+            authenticationIssueSignals: ["not authenticated", "please login", "please log in", "login required", "sign in to your account", "Unauthorized", "invalid api key"] + AppStrings.forms("未授权") + AppStrings.forms("请登录") + AppStrings.forms("请重新登录") + AppStrings.forms("授权失败") + AppStrings.forms("授权异常") + AppStrings.forms("登录失败"),
+            transientIssueSignals: ["timeout", "network", "temporarily unavailable", "429"] + AppStrings.forms("请求超时") + AppStrings.forms("连接超时") + AppStrings.forms("网络异常") + AppStrings.forms("网络错误") + AppStrings.forms("连接失败") + AppStrings.forms("临时不可用"),
             recommendedTimeoutSeconds: 600
         )
-    ]
+    ] }
 
     public static func profile(forCommand command: String) -> CLIInteractionProfile? {
         let normalized = command.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

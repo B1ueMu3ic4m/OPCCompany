@@ -29,17 +29,20 @@ extension CompanyStore {
     }
     func closureDrillGoal(for goal: String) -> String {
         let cleanGoal = goal.trimmingCharacters(in: .whitespacesAndNewlines)
-        if cleanGoal.hasPrefix(Self.closureDrillGoalMarker) { return cleanGoal }
+        if Self.closureDrillGoalMarkerForms.contains(where: { cleanGoal.hasPrefix($0) }) { return cleanGoal }
         return "\(Self.closureDrillGoalMarker) \(cleanGoal)"
     }
     func closureDrillDisplayGoal(_ goal: String) -> String {
-        goal.replacingOccurrences(of: "\(Self.closureDrillGoalMarker) ", with: "")
-            .replacingOccurrences(of: Self.closureDrillGoalMarker, with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        var result = goal
+        for form in Self.closureDrillGoalMarkerForms {
+            result = result.replacingOccurrences(of: "\(form) ", with: "")
+            result = result.replacingOccurrences(of: form, with: "")
+        }
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     func isClosureDrillTask(_ task: CompanyTask) -> Bool {
-        task.title.contains(Self.closureDrillGoalMarker)
-            || task.successCriteria.contains(Self.closureDrillGoalMarker)
+        Self.closureDrillGoalMarkerForms.contains(where: { task.title.contains($0) })
+            || Self.closureDrillGoalMarkerForms.contains(where: { task.successCriteria.contains($0) })
     }
     func isClosureDrillTaskID(_ taskID: UUID?) -> Bool {
         guard let taskID,
@@ -48,8 +51,8 @@ extension CompanyStore {
         return isClosureDrillTask(task)
     }
     func isClosureDrillArtifact(_ record: ArtifactRecord) -> Bool {
-        record.title.contains(Self.closureDrillGoalMarker)
-            || record.summary.contains(Self.closureDrillGoalMarker)
+        Self.closureDrillGoalMarkerForms.contains(where: { record.title.contains($0) })
+            || Self.closureDrillGoalMarkerForms.contains(where: { record.summary.contains($0) })
             || isClosureDrillTaskID(record.taskID)
     }
     func isClosureDrillVerification(_ record: VerificationRecord) -> Bool {

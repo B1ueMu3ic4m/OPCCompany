@@ -762,7 +762,7 @@ public struct AgentSkillDefinition: Identifiable, Codable, Hashable, Sendable {
 }
 
 public enum AgentSkillCatalog {
-    public static let all: [AgentSkillDefinition] = [
+    public static var all: [AgentSkillDefinition] { [
         AgentSkillDefinition(id: "planning", title: "任务拆解".L().L(), summary: "把老板目标拆成阶段、任务、负责人、风险和验收标准。".L().L(), triggerKeywords: ["拆解".L().L(), "计划".L().L(), "目标".L().L(), "路线".L().L()], defaultRoles: [.cto, .productArchitect]),
         AgentSkillDefinition(id: "product-architecture", title: "产品架构".L().L(), summary: "定义需求结构、模块边界、PRD 和成功标准。".L().L(), triggerKeywords: ["产品".L().L(), "需求".L().L(), "架构".L().L(), "PRD", "模块".L().L()], defaultRoles: [.productArchitect, .cto]),
         AgentSkillDefinition(id: "ui-design", title: "界面设计".L().L(), summary: "输出界面结构、视觉风格、交互路径和动效状态。".L().L(), triggerKeywords: ["UI", "界面".L().L(), "视觉".L().L(), "交互".L().L(), "动效".L().L()], defaultRoles: [.uiDesigner]),
@@ -771,7 +771,7 @@ public enum AgentSkillCatalog {
         AgentSkillDefinition(id: "review", title: "验收审查".L().L(), summary: "按成功标准检查交付质量、风险和缺口。".L().L(), triggerKeywords: ["审查".L().L(), "验收".L().L(), "风险".L().L(), "交付".L().L()], defaultRoles: [.reviewer, .cto]),
         AgentSkillDefinition(id: "research", title: "资料研究".L().L(), summary: "收集资料、竞品、行业信息和上下文证据。".L().L(), triggerKeywords: ["资料".L().L(), "研究".L().L(), "竞品".L().L(), "行业".L().L(), "搜索".L().L()], defaultRoles: [.researcher]),
         AgentSkillDefinition(id: "proposal-writing", title: "方案撰写".L().L(), summary: "组织售前方案、价值表达、实施路径和交付文本。".L().L(), triggerKeywords: ["方案".L().L(), "售前".L().L(), "客户".L().L(), "文档".L().L(), "汇报".L().L()], defaultRoles: [.productArchitect, .cto])
-    ]
+    ] }
 
     public static func skill(id: String) -> AgentSkillDefinition? {
         let normalized = normalize(id)
@@ -861,7 +861,7 @@ public struct AgentRolePack: Identifiable, Codable, Hashable, Sendable {
 }
 
 public enum AgentRolePackCatalog {
-    public static let all: [AgentRolePack] = [
+    public static var all: [AgentRolePack] { [
         AgentRolePack(
             id: "cto-orchestrator",
             title: "技术负责人总控编排包".L().L(),
@@ -946,7 +946,7 @@ public enum AgentRolePackCatalog {
             recommendedBackend: AgentBackend(type: .subscriptionCLI, command: "gemini", model: "", reasoningEffort: .medium),
             recommendedPermissions: [.readFiles, .useNetwork]
         )
-    ]
+    ] }
 
     public static func pack(id: String) -> AgentRolePack? {
         all.first { $0.id == id }
@@ -1354,20 +1354,20 @@ public enum AgentMessageReviewOutcome: String, Codable, CaseIterable, Identifiab
 }
 
 public enum BossDecisionCenterCopy {
-    public static let sheetTitle = "老板决策中心".L().L()
-    public static let sheetSubtitle = "把所有需要老板确认的审批、风险任务和已处理记录集中在一处。".L().L()
-    public static let openTitle = "打开决策中心".L().L()
-    public static let pendingApprovalsSection = "待审批请求".L()
-    public static let riskTasksSection = "风险/阻塞任务".L()
-    public static let riskEventsSection = "风险事件".L()
-    public static let resolvedApprovalsSection = "已处理审批".L()
-    public static let emptyPendingApprovals = "当前没有待审批请求。".L().L()
-    public static let emptyRiskTasks = "当前没有风险或阻塞任务。".L().L()
-    public static let emptyRiskEvents = "近期没有需要老板关注的风险事件。".L().L()
-    public static let emptyResolvedApprovals = "还没有已处理的审批记录。".L().L()
-    public static let statTitle = "待我决策".L().L()
-    public static let summaryTitle = "待我决策".L().L()
-    public static let summaryEmpty = "当前没有需要你批准或驳回的事项。".L().L()
+    public static var sheetTitle: String { "老板决策中心".L().L() }
+    public static var sheetSubtitle: String { "把所有需要老板确认的审批、风险任务和已处理记录集中在一处。".L().L() }
+    public static var openTitle: String { "打开决策中心".L().L() }
+    public static var pendingApprovalsSection: String { "待审批请求".L() }
+    public static var riskTasksSection: String { "风险/阻塞任务".L() }
+    public static var riskEventsSection: String { "风险事件".L() }
+    public static var resolvedApprovalsSection: String { "已处理审批".L() }
+    public static var emptyPendingApprovals: String { "当前没有待审批请求。".L().L() }
+    public static var emptyRiskTasks: String { "当前没有风险或阻塞任务。".L().L() }
+    public static var emptyRiskEvents: String { "近期没有需要老板关注的风险事件。".L().L() }
+    public static var emptyResolvedApprovals: String { "还没有已处理的审批记录。".L().L() }
+    public static var statTitle: String { "待我决策".L().L() }
+    public static var summaryTitle: String { "待我决策".L().L() }
+    public static var summaryEmpty: String { "当前没有需要你批准或驳回的事项。".L().L() }
 
     public static func summaryDetail(count: Int) -> String {
         count == 0

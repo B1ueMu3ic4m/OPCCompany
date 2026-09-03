@@ -24,6 +24,14 @@ public extension String {
 }
 
 extension AppStrings {
+    /// Both language forms of a Chinese source string — for MATCHING persisted
+    /// data (titles, prefixes, signals) that may have been stored in either
+    /// language. Never use for display; use `.L()` for display instead.
+    static func forms(_ zh: String) -> [String] {
+        guard let en = AppStrings.enByZh[zh], en != zh else { return [zh] }
+        return [zh, en]
+    }
+
     /// zh -> en map: generated table first, then hand-written key tables.
     static let enByZh: [String: String] = {
         var map: [String: String] = AppStringsGenerated.zhToEn

@@ -12,8 +12,16 @@ public final class L10nEnvironment: ObservableObject {
             guard language != oldValue else { return }
             Self.persist(language)
             Self.applySideEffects(language)
+            // Store-side data refresh (builtin names/titles follow the language).
+            // MUST run here, not in a view .onChange: the `.id(resolved)` tree
+            // rebuild destroys the observing view before onChange can fire.
+            onChangeHook?(language)
         }
     }
+
+    /// Hook for the app layer to refresh persisted display data on switch
+    /// (set once from ContentView.onAppear).
+    public var onChangeHook: ((AppLanguage) -> Void)?
 
     private static let storageKey = "opc.appLanguage.v1"
 
