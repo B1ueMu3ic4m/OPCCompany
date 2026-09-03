@@ -235,16 +235,16 @@ public enum OPCUIAutomationIdentifier: String, CaseIterable, Sendable {
 }
 
 public enum OPCVisibleInterfaceCopy {
-    public static let intelligenceControlTitle = "智能控制 / 通信".L()
-    public static let commandChannelTitle = "指令通道".L()
-    public static let commandChannelHint = "向选中员工发送目标、约束或状态查询。".L()
-    public static let companySceneTitle = "OPC 智能公司指挥舱".L()
-    public static let companySceneSubtitle = "俯视剖面办公室沙盘 · 本地员工编队".L()
-    public static let presalesTopicPlaceholder = "方案主题，例如：某客户智能知识库建设方案".L()
-    public static let defaultAgentReportPromptText = "汇报你的角色、当前状态和下一步建议。".L()
+    public static var intelligenceControlTitle: String { "智能控制 / 通信".L() }
+    public static var commandChannelTitle: String { "指令通道".L() }
+    public static var commandChannelHint: String { "向选中员工发送目标、约束或状态查询。".L() }
+    public static var companySceneTitle: String { "OPC 智能公司指挥舱".L() }
+    public static var companySceneSubtitle: String { "俯视剖面办公室沙盘 · 本地员工编队".L() }
+    public static var presalesTopicPlaceholder: String { "方案主题，例如：某客户智能知识库建设方案".L() }
+    public static var defaultAgentReportPromptText: String { "汇报你的角色、当前状态和下一步建议。".L() }
     public static let defaultTerminalPromptPlaceholder = defaultAgentReportPromptText
 
-    public static let defaultVisibleTexts = [
+    public static var defaultVisibleTexts: [String] { [
         intelligenceControlTitle,
         commandChannelTitle,
         commandChannelHint,
@@ -252,5 +252,5 @@ public enum OPCVisibleInterfaceCopy {
         companySceneSubtitle,
         presalesTopicPlaceholder,
         defaultAgentReportPromptText
-    ]
+    ] }
 }

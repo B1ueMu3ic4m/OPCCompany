@@ -48,7 +48,7 @@ struct CompanySceneHost: View {
 
             GeometryReader { proxy in
                 ZStack {
-                    SpriteView(scene: makeScene(size: proxy.size))
+                    SpriteView(scene: sceneFor(size: proxy.size))
                         .ignoresSafeArea()
                     OfficeOverlay(size: proxy.size)
                 }
@@ -56,12 +56,29 @@ struct CompanySceneHost: View {
         }
     }
 
-    private func makeScene(size: CGSize) -> SKScene {
-        let scene = OfficeScene()
-        scene.employeeCount = store.agents.filter { $0.seat.room == "employee-hall" }.count
-        scene.size = size
-        scene.scaleMode = .resizeFill
-        scene.backgroundColor = NSColor(CompanyTheme.officeFloor)
+    /// Cached scene: rebuilt only when the roster changes or the view tree is
+    /// recreated (language switch flips .id on the root, resetting @State).
+    /// Previously a fresh scene was constructed on EVERY body evaluation —
+    /// any store mutation tore down and re-added every SK node (UI stutter).
+    @State private var cachedScene: OfficeScene?
+    @State private var cachedEmployeeCount: Int = -1
+
+    private func sceneFor(size: CGSize) -> SKScene {
+        let count = store.agents.filter { $0.seat.room == "employee-hall" }.count
+        let scene: OfficeScene
+        if let cached = cachedScene, cachedEmployeeCount == count {
+            scene = cached
+        } else {
+            scene = OfficeScene()
+            scene.employeeCount = count
+            scene.scaleMode = .resizeFill
+            scene.backgroundColor = NSColor(CompanyTheme.officeFloor)
+            cachedScene = scene
+            cachedEmployeeCount = count
+        }
+        if scene.size != size {
+            scene.size = size
+        }
         return scene
     }
 }

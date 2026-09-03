@@ -418,7 +418,7 @@ extension CompanyStore {
         memories.filter { note in
             note.productID == selectedProductID
                 && note.kind == .summary
-                && note.title.hasPrefix(Self.autoCapturedSummaryTitlePrefix)
+                && Self.autoCapturedSummaryTitlePrefixForms.contains(where: { note.title.hasPrefix($0) })
         }
     }
 

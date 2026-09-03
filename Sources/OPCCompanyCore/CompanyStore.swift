@@ -37,7 +37,7 @@ public enum CTOAutopilotState: Equatable {
 public final class CompanyStore: ObservableObject {
 
 
-    static let cliResumeContextNotice = "\n[OPC 上下文复用]\n本次任务会接续该员工在当前产品里的上一轮上下文。\n".L().L()
+    static var cliResumeContextNotice: String { "\n[OPC 上下文复用]\n本次任务会接续该员工在当前产品里的上一轮上下文。\n".L().L() }
 
 static func defaultProductRootDirectoryURL() -> URL {
         internalProductWorkspaceURL(slug: "default-product")
@@ -89,7 +89,7 @@ static let reworkPromptReasonLimit = 1_200
 static let reworkPromptSuccessCriteriaLimit = 1_200
 static let agentMessageSubjectTextLimit = 240
 static let agentMessageBodyTextLimit = 2_400
-    static let persistentSeatExecutionNotice = "\n[OPC 长期席位执行]\n本次任务会在该员工的长期席位运行；完成后会被收录到产物记录和验收流程。\n".L().L()
+    static var persistentSeatExecutionNotice: String { "\n[OPC 长期席位执行]\n本次任务会在该员工的长期席位运行；完成后会被收录到产物记录和验收流程。\n".L().L() }
 
     @Published public var agents: [CompanyAgent]
     @Published public var selectedAgentID: UUID
@@ -428,13 +428,15 @@ static let agentMessageBodyTextLimit = 2_400
     /// - 例：「命令行作业目录创建失败」「命令行作业档案写入失败」属于 .opc/jobs/ 后端文件操作失败，
     ///   后端继续运行不阻断业务，老板看不懂也无法处理 → 进入白名单。
     /// - 例：「命令行发车被阻止」是老板试图运行命令行任务但前置检查不通过 → 老板需要知道，**不**进入白名单。
-    public static let bossViewExcludedRiskTitlePrefixes: [String] = [
-        "命令行健康预警：".L().L(),
-        "命令行作业".L().L(),
-        "旧任务产品归属迁移".L().L()
-    ]
+    /// Bilingual union: persisted risk titles may carry either language.
+    public static var bossViewExcludedRiskTitlePrefixes: [String] {
+        AppStrings.forms("命令行健康预警：") + AppStrings.forms("命令行作业") + AppStrings.forms("旧任务产品归属迁移")
+    }
 
-    public static let closureDrillGoalMarker = "[演练]".L().L()
+    public static var closureDrillGoalMarker: String { "[演练]".L().L() }
+    /// Both language forms — persisted goals may carry the marker from the
+    /// language that was active when the goal was created.
+    public static var closureDrillGoalMarkerForms: [String] { ["[演练]", "[Drill]"] }
 
     public var selectedProductBossRiskEvents: [CompanyEvent] {
         selectedProductRiskEvents.filter { event in
@@ -512,22 +514,19 @@ static let agentMessageBodyTextLimit = 2_400
     ///   或保持「无显式登记」由源码扫描接受动态文件名作为交付。
     /// 集中分类守门由 `artifactRecordTitleLiteralsAreClassifiedInCompanyStore` 测试在 `swift test`
     /// 阶段强制执行——任何未登记的字面量标题会让测试立刻失败。
-    public static let technicalMaintenanceArtifactTitleExactMatches: Set<String> = [
-        "安全检查点".L().L()
-    ]
+    public static var technicalMaintenanceArtifactTitleExactMatches: Set<String> {
+        Set(AppStrings.forms("安全检查点"))
+    }
 
-    public static let technicalMaintenanceArtifactTitlePrefixes: [String] = [
-        "闭环审计报告：".L().L(),
-        "命令行作业档案：".L().L(),
-        "本地文件索引：".L().L()
-    ]
+    public static var technicalMaintenanceArtifactTitlePrefixes: [String] {
+        AppStrings.forms("闭环审计报告：") + AppStrings.forms("命令行作业档案：") + AppStrings.forms("本地文件索引：")
+    }
 
     public static let deliveryArtifactTitleExactMatches: Set<String> = []
 
-    public static let deliveryArtifactTitlePrefixes: [String] = [
-        "验收产物：".L().L(),
-        "验收报告：".L().L()
-    ]
+    public static var deliveryArtifactTitlePrefixes: [String] {
+        AppStrings.forms("验收产物：") + AppStrings.forms("验收报告：")
+    }
 
 
 
@@ -681,43 +680,19 @@ static func byteCountText(_ bytes: Int64) -> String {
     ///   老板首页 widget、产品详情交付区、交付验收中心、运营套件验收指标都会展示。
     /// 集中分类守门由 `verificationRecordTitlesAreClassifiedAsMaintenanceOrDelivery` 测试在 `swift test`
     /// 阶段扫描 `CompanyStore.swift` 字面量强制执行——任何未登记的新标题会让测试立刻失败。
-    public static let technicalMaintenanceVerificationTitles: Set<String> = [
-        terminalAutoInteractionAuditTitle,
-        terminalAutoInteractionStopAuditTitle,
-        "真实终端工作区".L().L(),
-        "真实终端日志刷新".L().L(),
-        "持久终端可用性巡检".L().L(),
-        "命令行链路压测预检".L().L(),
-        "命令行任务发车计划".L().L(),
-        "命令行与工作区隔离体检".L().L(),
-        "多产品隔离体检".L().L(),
-        "命令行作业幽灵巡检".L().L(),
-        "员工交接待确认巡检".L().L(),
-        "运行会话健康巡检".L().L(),
-        "异常占用会话恢复".L().L(),
-        "历史索引巡检".L().L(),
-        "历史归档迁移".L().L(),
-        "旧任务产品归属迁移".L().L(),
-        "本地文件索引完成".L().L(),
-        "本地文件索引被拒绝".L().L(),
-        "安全检查点已创建".L().L(),
-        "安全检查点失败".L().L(),
-        "运行证据分类巡检".L().L(),
-        "维护数据增长巡检".L().L(),
-        "自动状态摘要去重清理".L().L()
-    ]
+    public static var technicalMaintenanceVerificationTitles: Set<String> {
+        Set(AppStrings.forms("真实终端自动循环就绪审计") + AppStrings.forms("真实终端自动循环停止审计") + AppStrings.forms("真实终端工作区") + AppStrings.forms("真实终端日志刷新") + AppStrings.forms("持久终端可用性巡检") + AppStrings.forms("命令行链路压测预检") + AppStrings.forms("命令行任务发车计划") + AppStrings.forms("命令行与工作区隔离体检") + AppStrings.forms("多产品隔离体检") + AppStrings.forms("命令行作业幽灵巡检") + AppStrings.forms("员工交接待确认巡检") + AppStrings.forms("运行会话健康巡检") + AppStrings.forms("异常占用会话恢复") + AppStrings.forms("历史索引巡检") + AppStrings.forms("历史归档迁移") + AppStrings.forms("旧任务产品归属迁移") + AppStrings.forms("本地文件索引完成") + AppStrings.forms("本地文件索引被拒绝") + AppStrings.forms("安全检查点已创建") + AppStrings.forms("安全检查点失败") + AppStrings.forms("运行证据分类巡检") + AppStrings.forms("维护数据增长巡检") + AppStrings.forms("自动状态摘要去重清理"))
+    }
 
     /// 老板/交付视图必须保留的「交付/验收证据」精确标题。
-    public static let deliveryVerificationTitleExactMatches: Set<String> = [
-        "自动验收检查".L().L(),
-        "产物扫描完成".L().L(),
-        "产物扫描失败".L().L()
-    ]
+    public static var deliveryVerificationTitleExactMatches: Set<String> {
+        Set(AppStrings.forms("自动验收检查") + AppStrings.forms("产物扫描完成") + AppStrings.forms("产物扫描失败"))
+    }
 
     /// 老板/交付视图必须保留的「交付/验收证据」前缀标题（带任务标题等动态后缀）。
-    public static let deliveryVerificationTitlePrefixes: [String] = [
-        "老板验收通过：".L().L()
-    ]
+    public static var deliveryVerificationTitlePrefixes: [String] {
+        AppStrings.forms("老板验收通过：")
+    }
 
 
 
@@ -1681,6 +1656,16 @@ static func byteCountText(_ bytes: Int64) -> String {
     /// Only names matching a builtin roster entry in EITHER language are
     /// rewritten — user-customized names are never touched.
     public func refreshBuiltinAgentNamesForLanguage() {
+        if localizeBuiltinRosterNames() { saveSnapshot() }
+    }
+
+    /// Core roster re-mapping (name + title, canonical + legacy debris) to the
+    /// current session language. Returns whether anything changed. Does NOT
+    /// save — callers decide. Runs at BOTH startup (via localizeLegacyVisible-
+    /// Terminology) and language switch (via refreshBuiltinAgentNamesForLanguage),
+    /// so a store persisted in one language is corrected the moment it loads.
+    @discardableResult
+    func localizeBuiltinRosterNames() -> Bool {
         let en = AppStrings.sessionLanguage.resolving() == .english
         var changed = false
         for index in agents.indices {
@@ -1688,7 +1673,7 @@ static func byteCountText(_ bytes: Int64) -> String {
             // Known forms = canonical zh/en + legacy debris produced by older
             // migrations (e.g. "Chief 技术负责人" from substring-replacing CTO).
             let knownNames: [String] = [entry.zhName, entry.enName]
-            let knownTitles: [String] = [entry.zhTitle, entry.enTitle, "Chief 技术负责人"]
+            let knownTitles: [String] = [entry.zhTitle, entry.enTitle, "Chief 技术负责人", "CTO 办公室负责人"]
             if knownNames.contains(agents[index].displayName) {
                 let target = en ? entry.enName : entry.zhName
                 if agents[index].displayName != target { agents[index].displayName = target; changed = true }
@@ -1698,7 +1683,7 @@ static func byteCountText(_ bytes: Int64) -> String {
                 if agents[index].title != target { agents[index].title = target; changed = true }
             }
         }
-        if changed { saveSnapshot() }
+        return changed
     }
 
     /// Default bootstrap display names in both language forms. Only EXACT
@@ -1718,47 +1703,18 @@ static func byteCountText(_ bytes: Int64) -> String {
     /// A persisted store always carries the language of its creation; without
     /// this, "Codex 技术负责人" stays Chinese after switching to English.
     func localizeDefaultAgentNames() -> Bool {
-        var changed = false
-        let target: String
-        switch AppStrings.sessionLanguage.resolving() {
-        case .english: target = "en"
-        case .simplifiedChinese, .system: target = "zh"
-        }
-        for index in agents.indices {
-            guard let match = Self.defaultRoleDisplayNames.first(where: {
-                $0.role == agents[index].role && (agents[index].displayName == $0.zh || agents[index].displayName == $0.en)
-            }) else { continue }
-            let localized = target == "en" ? match.en : match.zh
-            if agents[index].displayName != localized {
-                agents[index].displayName = localized
-                changed = true
-            }
-        }
-        return changed
+        // Delegate to the full builtin-roster refresh (names + titles + legacy
+        // debris like "Chief 技术负责人"), so the startup path and the switch
+        // path share one source of truth.
+        return localizeBuiltinRosterNames()
     }
 
     public func localizeLegacyVisibleTerminology(saveAfterChange: Bool = true) -> Bool {
-        var changed = localizeDefaultAgentNames()
-        // Legacy terminology migration = WHOLE-PHRASE mapping to canonical zh
-        // forms. Substring surgery inside English phrases ("Chief CTO" →
-        // "Chief 技术负责人") is what created mixed debris; it is banned here.
-        // English-form cleanup happens via refreshBuiltinAgentNamesForLanguage's
-        // canonical + debris mapping instead.
-        let legacyPhraseMap: [(zh: String, en: String, canonicalZh: String)] = [
-            ("CTO 办公室负责人", "Chief CTO", "总技术负责人"),
-        ]
-        for index in agents.indices where agents[index].role == .cto {
-            for phrase in legacyPhraseMap {
-                if agents[index].title == phrase.zh || agents[index].title == phrase.en {
-                    agents[index].title = phrase.canonicalZh
-                    changed = true
-                }
-                if agents[index].displayName == phrase.en {
-                    agents[index].displayName = "Codex 技术负责人"
-                    changed = true
-                }
-            }
-        }
+        var changed = localizeBuiltinRosterNames()
+        // CTO name/title normalization (incl. legacy debris "Chief 技术负责人"
+        // and "CTO 办公室负责人") is handled by localizeBuiltinRosterNames above,
+        // which maps to the CURRENT session language — a fixed zh mapping here
+        // would undo English-mode normalization (regression).
         for index in tasks.indices {
             if tasks[index].title.contains("公司 App 基础".L()) {
                 tasks[index].title = tasks[index].title
@@ -2203,17 +2159,23 @@ static func byteCountText(_ bytes: Int64) -> String {
 
 
 
-    public static let terminalAutoInteractionAuditTitle = "真实终端自动循环就绪审计".L().L()
-    public static let terminalAutoInteractionStopAuditTitle = "真实终端自动循环停止审计".L().L()
+    public static var terminalAutoInteractionAuditTitle: String { "真实终端自动循环就绪审计".L().L() }
+    public static var terminalAutoInteractionStopAuditTitle: String { "真实终端自动循环停止审计".L().L() }
+    static var terminalAutoInteractionAuditTitleForms: [String] {
+        ["真实终端自动循环就绪审计", "Real-terminal auto loop readiness audit"]
+    }
+    static var terminalAutoInteractionStopAuditTitleForms: [String] {
+        ["真实终端自动循环停止审计", "Real-terminal auto loop stop audit"]
+    }
 
     /// 当前产品最近一次真实终端自动循环 preflight 审计记录；技术负责人维护视图使用。
     public var selectedProductLatestTerminalAutoLoopReadinessAudit: VerificationRecord? {
-        selectedProductRecentVerifications.first { $0.title == Self.terminalAutoInteractionAuditTitle }
+        selectedProductRecentVerifications.first { Self.terminalAutoInteractionAuditTitleForms.contains($0.title) }
     }
 
     /// 当前产品最近一次真实终端自动循环停止审计记录（授权异常 / 忙碌 / 临时异常 / 等待超时停止时写入）。
     public var selectedProductLatestTerminalAutoLoopStopAudit: VerificationRecord? {
-        selectedProductRecentVerifications.first { $0.title == Self.terminalAutoInteractionStopAuditTitle }
+        selectedProductRecentVerifications.first { Self.terminalAutoInteractionStopAuditTitleForms.contains($0.title) }
     }
 
 
@@ -2403,7 +2365,8 @@ static func byteCountText(_ bytes: Int64) -> String {
     /// 自动状态摘要在产品记忆中保留 1 小时去重窗口的标题前缀。
     /// 只用于识别 `captureDecisionMemoryFromLatestReport` 自动写入的条目；
     /// 用户通过 `addMemory` 手工保存的同名条目不会受影响（手工保存不会以此前缀开头）。
-    static let autoCapturedSummaryTitlePrefix = "自动记录：".L().L()
+    static var autoCapturedSummaryTitlePrefix: String { "自动记录：".L().L() }
+    static var autoCapturedSummaryTitlePrefixForms: [String] { ["自动记录：", "Auto-recorded: "] }
 
     /// 自动状态摘要去重窗口（秒）。同一产品、相同 detail 前 200 字、1 小时内只写入一条。
     static let autoCapturedSummaryDedupeWindow: TimeInterval = 3600
@@ -2418,7 +2381,7 @@ static func byteCountText(_ bytes: Int64) -> String {
         return memories.contains { note in
             guard note.productID == productID,
                   note.kind == .summary,
-                  note.title.hasPrefix(Self.autoCapturedSummaryTitlePrefix),
+                  Self.autoCapturedSummaryTitlePrefixForms.contains(where: { note.title.hasPrefix($0) }),
                   now.timeIntervalSince(note.createdAt) < Self.autoCapturedSummaryDedupeWindow
             else { return false }
             return String(note.detail.prefix(prefixLength)) == detailPrefix

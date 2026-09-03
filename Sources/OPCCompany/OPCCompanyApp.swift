@@ -18,10 +18,10 @@ struct OPCCompanyApp: App {
             ContentView()
                 .environmentObject(store)
                 .environment(\.appLanguage, resolved)
-                .onChange(of: resolved) { _ in
-                    // Builtin roster names (persisted at creation time) follow
-                    // the newly selected language; custom names untouched.
-                    store.refreshBuiltinAgentNamesForLanguage()
+                .onAppear {
+                    // Wire the switch-time data refresh into L10nEnvironment.didSet
+                    // (view .onChange is dead under .id(resolved) rebuilds).
+                    l10n.onChangeHook = { _ in store.refreshBuiltinAgentNamesForLanguage() }
                 }
                 // Force a full view-tree rebuild on language change so every
                 // Text() re-resolves through the swizzled bundle lookup.

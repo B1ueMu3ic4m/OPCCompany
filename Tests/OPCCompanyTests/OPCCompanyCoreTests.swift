@@ -3777,9 +3777,42 @@ private func writeCLIJobArchive(
     // XCTest 强制 zh 会话 → 应归位到 zh 规范 title
     let zhTitle = store.agents.first { $0.role == .cto }?.title
     #expect(zhTitle == "总技术负责人", "got: \(zhTitle ?? "nil")")
-    // en 会话模拟:直接构造 en 会话下的归位(en 判定走 sessionLanguage,测试里强制 zh,
-    // 因此这里只验证 zh 向;en 向由 refresh 的对称分支覆盖,同表驱动)
     #expect(zhTitle != "Chief 技术负责人")
+
+    // en 会话:debris 必须归位到规范 EN title(回归防护:曾因 legacyPhraseMap 把
+    // 规范 en 值又映射回中文,导致 en 启动显示 "总技术负责人")。
+    let saved = AppStrings.sessionLanguage
+    AppStrings.sessionLanguage = .english
+    defer { AppStrings.sessionLanguage = saved }
+    if let idx = store.agents.firstIndex(where: { $0.role == .cto }) {
+        store.agents[idx].title = "Chief 技术负责人"
+        store.agents[idx].displayName = "Codex 技术负责人"
+    }
+    store.localizeBuiltinRosterNames()
+    let cto = store.agents.first { $0.role == .cto }
+    #expect(cto?.title == "Chief CTO", "en debris → got: \(cto?.title ?? "nil")")
+    #expect(cto?.displayName == "Codex CTO", "en name → got: \(cto?.displayName ?? "nil")")
+}
+
+@MainActor
+@Test func startupLegacyMigrationFixesChiefCTOTitleDebris() async throws {
+    // 端到端:残骸 title 在【启动加载路径】(localizeLegacyVisibleTerminology)就必须归位,
+    // 不能只依赖切换时的 refresh —— 否则以 en 启动且不切换的用户永远看到 "Chief 技术负责人"。
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    guard let idx = store.agents.firstIndex(where: { $0.role == .cto }) else {
+        Issue.record("未找到技术负责人"); return
+    }
+    store.agents[idx].title = "Chief 技术负责人"
+    let changed = store.localizeLegacyVisibleTerminology(saveAfterChange: false)
+    #expect(changed)
+    // XCTest 强制 zh → 归位到 zh 规范 title
+    #expect(store.agents[idx].title == "总技术负责人")
+}
+
+@Test func staticLocalizedCopyFollowsSessionLanguageAtAccessTime() {
+    // static let + .L() 会在首次访问时固化语言;必须为 computed var 才能切换后更新。
+    // 验证决策中心标题在 zh 会话下返回中文(若被固化成 en 则失败)。
+    #expect(BossDecisionCenterCopy.sheetTitle.contains("老板决策中心") || AppStrings.sessionLanguage.resolving() == .english)
 }
 
 @MainActor
