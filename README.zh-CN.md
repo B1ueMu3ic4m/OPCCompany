@@ -6,6 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black)](#快速开始)
+[![CI](https://github.com/B1ueMu3ic4m/OPCCompany/actions/workflows/ci.yml/badge.svg)](https://github.com/B1ueMu3ic4m/OPCCompany/actions/workflows/ci.yml)
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#快速开始)
 
 [English](README.md) · [中文说明](#产品定位)

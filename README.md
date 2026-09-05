@@ -6,6 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black)](#quick-start)
+[![CI](https://github.com/B1ueMu3ic4m/OPCCompany/actions/workflows/ci.yml/badge.svg)](https://github.com/B1ueMu3ic4m/OPCCompany/actions/workflows/ci.yml)
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#quick-start)
 [![i18n](https://img.shields.io/badge/UI-%E4%B8%AD%E6%96%87%20%2F%20English-green)](#language)
 
