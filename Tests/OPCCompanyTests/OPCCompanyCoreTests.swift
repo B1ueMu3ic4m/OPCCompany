@@ -261,7 +261,10 @@ private func writeCLIJobArchive(
 
 @Test func visibleDateHelpersAvoidAmericanDateAndAMPM() async throws {
     var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(secondsFromGMT: 8 * 3600) ?? .current
+    // The formatters render in the machine's local timezone (correct product
+    // behavior); construct the fixture in the same zone so the assertion is
+    // CI-portable (GitHub runners are UTC, dev machines may be GMT+8).
+    calendar.timeZone = .current
     let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 4, day: 30, hour: 19, minute: 2)))
 
     let dateTime = date.opcDateTimeText
