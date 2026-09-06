@@ -12,7 +12,7 @@ Thanks for helping build the AI company! This document covers the basics; archit
 
 ## Ground Rules
 
-1. **Run the tests.** `swift test --no-parallel` must pass (currently 568 tests). Tests encode security boundaries (permission gates, secret handling) — do not weaken them to make code pass.
+1. **Run the tests.** `swift test --no-parallel` must pass (currently 576 tests). Tests encode security boundaries (permission gates, secret handling) — do not weaken them to make code pass.
 2. **Respect the company metaphor.** The boss decides; the CTO dispatches; employees execute. Don't add UI that lets employees bypass approval gates.
 3. **No secrets in code.** API keys live in Keychain or xcconfig. Never hard-code endpoints, tokens, or personal paths. CI and maintainers run secret scanning (gitleaks).
 4. **Keep the i18n invariant.** New user-facing Chinese strings must get an English counterpart in `Resources/l10n/en.json`. Tests assert string-table integrity.
