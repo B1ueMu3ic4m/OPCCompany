@@ -95,7 +95,7 @@ Sources/
     Models.swift           agents, roles, backends, permissions, task graph
     OperationsSuiteView.swift  maintenance: audits, isolation checks, recovery
     ...
-Tests/OPCCompanyTests/    568 tests (state machines, security gates, i18n invariants)
+Tests/OPCCompanyTests/    576 tests (state machines, security gates, i18n invariants)
 ```
 
 Deeper docs: [Product Spec](docs/PRODUCT_SPEC.md) · [Agent Roles](docs/AGENT_ROLES.en.md) · [CLI Orchestration](docs/CLI_ORCHESTRATION.en.md) · [Multi-Agent Architecture](docs/MULTI_AGENT_ARCHITECTURE.en.md) · [Runbook](docs/RUNBOOK.en.md)

@@ -3,9 +3,13 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.1.1] - 2026-09-03
+## [0.1.1] - 2026-09-06
 
 ### Fixed
+- **Release publication**: the v0.1.0 release had been sitting in draft state
+  since the history rewrite — `brew install` and every README download link
+  returned 404. Published, and the Homebrew cask `sha256` re-synced to the
+  current asset (it had drifted after repeated asset rebuilds)
 - **Language switching (root cause, 4 structural bugs)**
   - Switch-time data refresh moved into `L10nEnvironment.didSet` — the previous
     view-level `.onChange` never fired because `.id(resolved)` rebuilt the view
@@ -34,8 +38,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 - CI workflow (`.github/workflows/ci.yml`): build + full test suite on every
-  push and pull request
-- This changelog
+  push and pull request (PR #4)
+- `scripts/verify-release.sh`: checks the release is published, the public
+  asset URL downloads, and the Homebrew cask sha256 matches — run after every
+  asset rebuild
 - Language menu now shows what "Follow System / Auto" resolves to, and the
   currently effective language
 - Test suite grown to 576 tests, including language-switch regression guards
@@ -51,7 +57,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Terminal Hall with per-employee persistent sessions and auto-interaction loops
 - Full bilingual UI (Simplified Chinese / English) with in-app language switcher
 - English translations of all core documentation
-- Homebrew tap installation (`brew install B1ueMu3ic4m/tap/opc-company`)
+- Homebrew tap installation (`brew install --cask B1ueMu3ic4m/tap/opc-company`)
 - 568 tests, MIT license, issue templates, contributing guide
 
 [0.1.1]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.1.0

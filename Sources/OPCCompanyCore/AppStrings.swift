@@ -12,7 +12,7 @@ import Foundation
 public enum AppStrings {
 
     /// Language used for store-generated strings (briefs, log markers, summaries).
-    /// Deterministic under XCTest (forced Chinese) so the 444-test suite stays green.
+    /// Deterministic under XCTest (forced Chinese) so the whole suite stays green.
     /// Mutations happen on the main thread (menu action); enum reads are benign.
     nonisolated(unsafe) public static var sessionLanguage: AppLanguage = {
         let env = ProcessInfo.processInfo.environment

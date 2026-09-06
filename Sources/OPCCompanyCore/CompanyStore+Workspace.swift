@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - Workspace
 // Extracted from CompanyStore.swift (v0.2 god-class split). Implementation
 // moved verbatim; only the file home changed. Behavior covered by the
-// 568-test suite.
+// full test suite.
 
 extension CompanyStore {
 
