@@ -23,18 +23,23 @@ jobs:
             "https://download.swift.org/swift-6.3-release/windows10/swift-6.3-RELEASE/swift-6.3-RELEASE-windows10.exe",
             "https://download.swift.org/swift-6.1.2-release/windows10/swift-6.1.2-RELEASE/swift-6.1.2-RELEASE-windows10.exe"
           )
-          # The Inno Setup GUI installer hangs on the runner (silent flags ignored
-          # by its prerequisite logic). The .exe is still an Inno container —
-          # 7-Zip (preinstalled on runners) extracts the toolchain directly,
-          # no installer, no registry, no hang.
-          $seven = "C:\Program Files\7-Zip\7z.exe"
+          # The Inno Setup GUI installer hangs on headless runners (prerequisite
+          # check pops UI regardless of silent flags). 7-Zip can't read Inno's
+          # embedded data (only sees 9 stub files). innoextract is purpose-built
+          # for Inno containers — download it and extract the toolchain directly.
+          Write-Host "Fetching innoextract…"
+          curl.exe -sSL --fail --max-time 120 -o "$env:RUNNER_TEMP\innoextract.zip" `
+            "https://innoextract.constexpr.org/static/download/archives/innoextract-1.9-windows.zip"
+          Expand-Archive "$env:RUNNER_TEMP\innoextract.zip" -DestinationPath "$env:RUNNER_TEMP\innoextract" -Force
+          $inno = Get-ChildItem "$env:RUNNER_TEMP\innoextract" -Recurse -Filter innoextract.exe | Select-Object -First 1
+          if (-not $inno) { Write-Error "innoextract missing"; exit 1 }
           $installed = $false
           foreach ($u in $urls) {
             Write-Host "Trying $u"
             curl.exe -sSL --fail --max-time 600 -o "$env:RUNNER_TEMP\swift-installer.exe" $u
             if ($LASTEXITCODE -ne 0) { Write-Host "download failed"; continue }
             Write-Host "Downloaded $((Get-Item "$env:RUNNER_TEMP\swift-installer.exe").Length) bytes; extracting…"
-            & $seven x -y "-o$env:RUNNER_TEMP\swift" "$env:RUNNER_TEMP\swift-installer.exe" | Select-Object -Last 3
+            & $inno.FullName "$env:RUNNER_TEMP\swift-installer.exe" -e -d "$env:RUNNER_TEMP\swift" 2>&1 | Select-Object -Last 5
             $exe = Get-ChildItem "$env:RUNNER_TEMP\swift" -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($exe) {
               $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
@@ -42,8 +47,8 @@ jobs:
               Write-Host "swift.exe at: $($exe.FullName)"
               break
             } else {
-              Write-Host "no swift.exe after extract; listing top-level:"
-              Get-ChildItem "$env:RUNNER_TEMP\swift" | ForEach-Object { Write-Host "  $($_.Name)" }
+              Write-Host "no swift.exe after extract; top-level:"
+              Get-ChildItem "$env:RUNNER_TEMP\swift" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
             }
           }
           if (-not $installed) { Write-Error "No Swift toolchain installed"; exit 1 }
