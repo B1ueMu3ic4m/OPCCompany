@@ -74,6 +74,19 @@ graph LR
 
 欢迎 PR,见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
+## 安全
+
+OPC 公司是本地优先应用(无账号、无遥测)。API 密钥存于 macOS 钥匙串,高风险动作需老板批准,员工权限默认全关。完整策略与漏洞私密上报方式见 [SECURITY.md](SECURITY.md)。
+
 ## 许可证
 
 [MIT](LICENSE) © 2026 B1ueMu3ic4m
+
+---
+
+<div align="center">
+
+**觉得有用?点个 ⭐ 能让更多 AI 编程同好发现它。**
+
+</div>
+

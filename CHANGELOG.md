@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `SECURITY.md`: local-first design stance, per-surface protection table,
+  private vulnerability reporting via GitHub Security Advisories
+- README (en/zh): star CTA footer; Security section now links SECURITY.md
+
 ## [0.1.1] - 2026-09-06
 
 ### Fixed
