@@ -39,7 +39,7 @@ jobs:
               Invoke-WebRequest -Uri $u -OutFile "$env:RUNNER_TEMP\swift-installer.exe" -TimeoutSec 900
             } catch { Write-Host "download failed"; continue }
             Start-Process -FilePath "$env:RUNNER_TEMP\swift-installer.exe" `
-              -ArgumentList "//VERYSILENT","//NORESTART","//SUPPRESSMSGBOXES","/DIR=$env:RUNNER_TEMP\swift" -Wait
+              -ArgumentList "/VERYSILENT","/NORESTART","/SUPPRESSMSGBOXES","/NOCANCEL","/SP-","/DIR=$env:RUNNER_TEMP\swift" -Wait
             $exe = Get-ChildItem "$env:RUNNER_TEMP\swift" -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($exe) {
               $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
