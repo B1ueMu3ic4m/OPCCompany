@@ -1,0 +1,62 @@
+name: Windows Port Spike (M1)
+
+# Manual, cloud-hosted Windows compile experiment (see docs/WINDOWS_PORT_RFC.md).
+# No local Windows machine needed: runs on a GitHub-hosted windows-latest runner,
+# installs the official Swift toolchain, and measures how much of OPCCompanyCore
+# compiles on Windows. Logs are uploaded as artifacts + a summary on the run page.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  spike:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift toolchain
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $urls = @()
+          try {
+            $api = Invoke-RestMethod "https://www.swift.org/api/v1/install.json" -TimeoutSec 30
+            $json = $api | ConvertTo-Json -Depth 12
+            $ms = [regex]::Matches($json, 'https://download\.swift\.org/[^"]+windows10[^"]*\.exe')
+            $urls = @($ms | ForEach-Object { $_.Value } | Select-Object -Unique)
+            Write-Host "API candidates: $($urls.Count)"
+          } catch {
+            Write-Host "API query failed: $_"
+          }
+          $urls += @(
+            "https://download.swift.org/swift-6.3-release/windows10/swift-6.3-RELEASE/swift-6.3-RELEASE-windows10.exe",
+            "https://download.swift.org/swift-6.1.2-release/windows10/swift-6.1.2-RELEASE/swift-6.1.2-RELEASE-windows10.exe"
+          )
+          $installed = $false
+          foreach ($u in $urls) {
+            Write-Host "Trying $u"
+            try {
+              Invoke-WebRequest -Uri $u -OutFile "$env:RUNNER_TEMP\swift-installer.exe" -TimeoutSec 900
+            } catch { Write-Host "download failed"; continue }
+            Start-Process -FilePath "$env:RUNNER_TEMP\swift-installer.exe" `
+              -ArgumentList "//VERYSILENT","//NORESTART","//SUPPRESSMSGBOXES","/DIR=$env:RUNNER_TEMP\swift" -Wait
+            $exe = Get-ChildItem "$env:RUNNER_TEMP\swift" -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($exe) {
+              $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+              $installed = $true
+              break
+            }
+          }
+          if (-not $installed) { Write-Error "No Swift toolchain installed"; exit 1 }
+          swift --version
+
+      - name: Run spike
+        shell: pwsh
+        run: ./scripts/windows-spike.ps1
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-spike-logs
+          path: spike-*.txt
+          if-no-files-found: warn
