@@ -19,44 +19,20 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $urls = @(
-            "https://download.swift.org/swift-6.3-release/windows10/swift-6.3-RELEASE/swift-6.3-RELEASE-windows10.exe",
-            "https://download.swift.org/swift-6.1.2-release/windows10/swift-6.1.2-RELEASE/swift-6.1.2-RELEASE-windows10.exe"
-          )
-          # The Inno Setup GUI installer hangs on headless runners (prerequisite
-          # check pops UI regardless of silent flags). 7-Zip can't read Inno's
-          # embedded data (only sees 9 stub files). innoextract is purpose-built
-          # for Inno containers — download it and extract the toolchain directly.
-          Write-Host "Fetching innoextract…"
-          # The constexpr.org "static" path serves an HTML directory listing, not
-          # the zip (curl follows it and writes 56 KB of HTML). The real asset is
-          # on GitHub releases.
-          curl.exe -sSL --fail --max-time 120 -o "$env:RUNNER_TEMP\innoextract.zip" `
-            "https://github.com/dscharrer/innoextract/releases/download/1.9/innoextract-1.9-windows.zip"
-          # Expand-Archive crashes on pwsh 7 runners (GAC probe → OperationStopped);
-          # 7-Zip handles plain zips fine — it was only blind to Inno's format.
-          & "C:\Program Files\7-Zip\7z.exe" x -y "-o$env:RUNNER_TEMP\innoextract" "$env:RUNNER_TEMP\innoextract.zip" | Select-Object -Last 2
-          $inno = Get-ChildItem "$env:RUNNER_TEMP\innoextract" -Recurse -Filter innoextract.exe | Select-Object -First 1
-          if (-not $inno) { Write-Error "innoextract missing"; exit 1 }
-          $installed = $false
-          foreach ($u in $urls) {
-            Write-Host "Trying $u"
-            curl.exe -sSL --fail --max-time 600 -o "$env:RUNNER_TEMP\swift-installer.exe" $u
-            if ($LASTEXITCODE -ne 0) { Write-Host "download failed"; continue }
-            Write-Host "Downloaded $((Get-Item "$env:RUNNER_TEMP\swift-installer.exe").Length) bytes; extracting…"
-            & $inno.FullName "$env:RUNNER_TEMP\swift-installer.exe" -e -d "$env:RUNNER_TEMP\swift" 2>&1 | Select-Object -Last 5
-            $exe = Get-ChildItem "$env:RUNNER_TEMP\swift" -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($exe) {
-              $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-              $installed = $true
-              Write-Host "swift.exe at: $($exe.FullName)"
-              break
-            } else {
-              Write-Host "no swift.exe after extract; top-level:"
-              Get-ChildItem "$env:RUNNER_TEMP\swift" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
-            }
-          }
-          if (-not $installed) { Write-Error "No Swift toolchain installed"; exit 1 }
+          # KEY FINDING (run #7): the Swift Windows .exe is NOT Inno Setup — it's a
+          # WiX Burn bundle (AttachedContainer/*.msi). That's why innoextract said
+          # "Not a supported Inno Setup installer" and 7-Zip saw only 9 stub files.
+          # GitHub's windows runner ships scoop, whose swift manifest unpacks the
+          # Burn bundle correctly (Expand-DarkArchive + Expand-MsiArchive). The
+          # runner image also carries VS 2022 Build Tools + Windows SDK, which the
+          # Swift toolchain needs to actually compile.
+          scoop --version
+          scoop install swift
+          $root = (scoop prefix swift)
+          $exe = Get-ChildItem $root -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Write-Error "swift.exe not found under scoop prefix $root"; exit 1 }
+          $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "swift.exe at: $($exe.FullName)"
           swift --version
 
       - name: Run spike
