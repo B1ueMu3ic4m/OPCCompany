@@ -1,9 +1,9 @@
 name: Windows Port Spike (M1)
 
 # Manual, cloud-hosted Windows compile experiment (see docs/WINDOWS_PORT_RFC.md).
-# The Swift Windows installer is a WiX Burn bundle: install it silently with
-# its OWN CLI (/quiet /norestart — the Inno-style /VERYSILENT from run #3 is
-# what hung it on a GUI), then locate swift.exe.
+# The Swift Windows installer is a WiX Burn bundle; install it with its own
+# /quiet CLI, ensure the VC++ 2022 runtime it links against is present, then
+# diagnose swift.exe before building.
 
 on:
   workflow_dispatch:
@@ -18,25 +18,22 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = "Continue"
+          # Swift's toolchain binaries link against VC++ 2022 (VCRUNTIME140.dll
+          # etc). A missing/incompatible runtime makes swift.exe fail SILENTLY
+          # with exit 0xC0000135 (STATUS_DLL_NOT_FOUND) — exactly run #16's
+          # symptom (exe found, --version produced no output, exit 1).
+          Write-Host "=== ensuring VC++ 2022 runtime ==="
+          winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-source-agreements --accept-package-agreements --silent 2>&1 | Select-Object -Last 2
+
           $url = "https://download.swift.org/swift-6.3.3-release/windows10/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE-windows10.exe"
           $installer = "$env:RUNNER_TEMP\swift-installer.exe"
           curl.exe -sSL --fail --max-time 600 -o $installer $url
           Write-Host "downloaded $((Get-Item $installer).Length) bytes"
-          # WiX Burn bootstrapper CLI: /quiet /norestart /l*v <log>.
-          # Run #3 hung because it passed Inno's /VERYSILENT, which Burn ignores.
           $p = Start-Process $installer -ArgumentList "/quiet","/norestart","/l*v","$env:RUNNER_TEMP\swift-install.log" -PassThru -Wait
           Write-Host "installer exit code: $($p.ExitCode)"
-          if ($p.ExitCode -ne 0) {
-            Write-Host "--- install log tail ---"
-            Get-Content "$env:RUNNER_TEMP\swift-install.log" -ErrorAction SilentlyContinue | Select-Object -Last 30
-          }
-          # Burn installs per-user to %LOCALAPPDATA%\Programs\Swift (scoop's
-          # manifest confirms this layout); machine-wide goes to Program Files.
-          $candidates = @(
-            "$env:LOCALAPPDATA\Programs\Swift",
-            "C:\Program Files\Swift"
-          )
+
+          $candidates = @("$env:LOCALAPPDATA\Programs\Swift", "C:\Program Files\Swift")
           $exe = $null
           foreach ($c in $candidates) {
             if (Test-Path $c) {
@@ -44,20 +41,34 @@ jobs:
               if ($exe) { break }
             }
           }
-          if (-not $exe) {
-            Write-Host "swift.exe not found under: $($candidates -join ', ')"
-            foreach ($c in $candidates) {
-              if (Test-Path $c) {
-                Write-Host "tree of ${c}:"
-                Get-ChildItem $c -Recurse -Depth 4 -ErrorAction SilentlyContinue | Select-Object -First 40 | ForEach-Object { Write-Host "  $($_.FullName)" }
-              }
-            }
+          if (-not $exe) { Write-Host "swift.exe NOT FOUND"; exit 1 }
+          $bin = $exe.DirectoryName
+          Write-Host "swift.exe at $bin"
+
+          function Try-Swift($label, $wd) {
+            $o = "$env:RUNNER_TEMP\so.txt"; $e = "$env:RUNNER_TEMP\se.txt"
+            Remove-Item $o,$e -ErrorAction SilentlyContinue
+            $sp = Start-Process $exe.FullName -ArgumentList "--version" -PassThru -Wait -WorkingDirectory $wd -RedirectStandardOutput $o -RedirectStandardError $e
+            $code = $sp.ExitCode
+            $hex = if ($code -lt 0) { "0x" + ('{0:X8}' -f ([uint32]($code -band 0xFFFFFFFF))) } else { "0x{0:X}" -f $code }
+            Write-Host "[$label] exit=$code ($hex)"
+            $out = (Get-Content $o -Raw -ErrorAction SilentlyContinue)
+            $err = (Get-Content $e -Raw -ErrorAction SilentlyContinue)
+            if ($out) { Write-Host "  stdout: $out" }
+            if ($err) { Write-Host "  stderr: $err" }
+            return $code
+          }
+          $rc = Try-Swift "cwd=temp" $env:RUNNER_TEMP
+          if ($rc -ne 0) { $rc = Try-Swift "cwd=bin" $bin }
+          if ($rc -ne 0) {
+            Write-Host "=== bin dir listing ==="
+            Get-ChildItem $bin -ErrorAction SilentlyContinue | Select-Object -First 40 | ForEach-Object { Write-Host "  $($_.Name)" }
+            Write-Host "=== install log tail ==="
+            Get-Content "$env:RUNNER_TEMP\swift-install.log" -Tail 25 -ErrorAction SilentlyContinue
             exit 1
           }
-          $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          Write-Host "swift.exe at $($exe.FullName)"
-          # GITHUB_PATH only applies to LATER steps — verify via full path here.
-          & $exe.FullName --version
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "swift OK, on PATH for later steps"
 
       - name: Run spike
         shell: pwsh
