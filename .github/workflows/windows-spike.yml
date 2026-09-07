@@ -30,12 +30,15 @@ jobs:
           Write-Host "downloaded $((Get-Item $installer).Length) bytes"
           $burn = "$env:RUNNER_TEMP\burn"
           New-Item -ItemType Directory -Force -Path $burn | Out-Null
-          # scoop's Expand-DarkArchive calls `dark -X:<dir> <bundle>` — capital X
-          # with colon. Run #10's lowercase `-x <dir>` extracted only the UX
-          # container (printed "swift.exe", 2 s) and left AttachedContainer empty.
-          & $dark "-X:$burn" $installer
-          Write-Host "dark exit code: $LASTEXITCODE"
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # Run #10: lowercase `-x` extracted only the UX container (printed
+          # "swift.exe", AttachedContainer stayed empty). Burn bundles need
+          # `-X:<dir>` (capital X, colon form — what scoop's
+          # Expand-DarkArchive uses). Run #11 showed PowerShell's native-arg
+          # parser eats the `-X:` prefix (dark saw bare 'X:...' → DARK1098),
+          # so Start-Process -ArgumentList is required to bypass PS parsing.
+          $dp = Start-Process $dark -ArgumentList "-X:$burn","`"$installer`"" -PassThru -Wait
+          Write-Host "dark exit code: $($dp.ExitCode)"
+          if ($dp.ExitCode -ne 0) { exit 1 }
           Write-Host "burn top-level:"
           Get-ChildItem $burn -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
           $msiDir = "$burn\AttachedContainer"
@@ -44,8 +47,12 @@ jobs:
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           foreach ($m in (Get-ChildItem $msiDir -Filter *.msi)) {
             Write-Host "unpacking $($m.Name) ($([math]::Round($m.Length/1MB)) MB)..."
-            # TARGETDIR must end with a backslash or msiexec treats it as a file.
-            $p = Start-Process msiexec.exe -ArgumentList "/a","`"$($m.FullName)`"","/qn","TARGETDIR=`"$out\`"" -PassThru -Wait
+            # No quotes around TARGETDIR: the path (D:\a\_temp\…) has no spaces,
+            # and a trailing `\"` would be parsed as an escaped quote by
+            # CommandLineToArgvW, swallowing the closing quote. Trailing
+            # backslash IS required (msiexec /a treats TARGETDIR without one as
+            # a destination FILE name).
+            $p = Start-Process msiexec.exe -ArgumentList "/a","`"$($m.FullName)`"","/qn","TARGETDIR=$out\" -PassThru -Wait
             Write-Host "  msiexec exit $($p.ExitCode)"
           }
           $exe = Get-ChildItem $out -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
