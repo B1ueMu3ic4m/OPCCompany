@@ -2,8 +2,7 @@ name: Windows Port Spike (M1)
 
 # Manual, cloud-hosted Windows compile experiment (see docs/WINDOWS_PORT_RFC.md).
 # The Swift Windows installer is a WiX Burn bundle; install it with its own
-# /quiet CLI, ensure the VC++ 2022 runtime it links against is present, then
-# diagnose swift.exe before building.
+# /quiet CLI, then make the whole toolchain's DLLs resolvable before running.
 
 on:
   workflow_dispatch:
@@ -19,13 +18,6 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Continue"
-          # Swift's toolchain binaries link against VC++ 2022 (VCRUNTIME140.dll
-          # etc). A missing/incompatible runtime makes swift.exe fail SILENTLY
-          # with exit 0xC0000135 (STATUS_DLL_NOT_FOUND) — exactly run #16's
-          # symptom (exe found, --version produced no output, exit 1).
-          Write-Host "=== ensuring VC++ 2022 runtime ==="
-          winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-source-agreements --accept-package-agreements --silent 2>&1 | Select-Object -Last 2
-
           $url = "https://download.swift.org/swift-6.3.3-release/windows10/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE-windows10.exe"
           $installer = "$env:RUNNER_TEMP\swift-installer.exe"
           curl.exe -sSL --fail --max-time 600 -o $installer $url
@@ -33,24 +25,29 @@ jobs:
           $p = Start-Process $installer -ArgumentList "/quiet","/norestart","/l*v","$env:RUNNER_TEMP\swift-install.log" -PassThru -Wait
           Write-Host "installer exit code: $($p.ExitCode)"
 
-          $candidates = @("$env:LOCALAPPDATA\Programs\Swift", "C:\Program Files\Swift")
-          $exe = $null
-          foreach ($c in $candidates) {
-            if (Test-Path $c) {
-              $exe = Get-ChildItem $c -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($exe) { break }
-            }
-          }
+          $root = "$env:LOCALAPPDATA\Programs\Swift"
+          if (-not (Test-Path $root)) { $root = "C:\Program Files\Swift" }
+          Write-Host "=== Swift root tree (depth 2) ==="
+          Get-ChildItem $root -Recurse -Depth 2 -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName.Substring($root.Length))" }
+          $exe = Get-ChildItem $root -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $exe) { Write-Host "swift.exe NOT FOUND"; exit 1 }
           $bin = $exe.DirectoryName
-          Write-Host "swift.exe at $bin"
 
-          function Try-Swift($label, $wd) {
+          # Run #17: exit 0xC0000135 (DLL_NOT_FOUND) even with VC++ redist
+          # present. The toolchain's own DLLs live in sibling dirs (usr/lib,
+          # Platforms\*\Windows\lib, Runtimes) that aren't in the default
+          # search path. Put every dir containing *.dll on PATH, then retry.
+          $dllDirs = Get-ChildItem $root -Recurse -Filter *.dll -ErrorAction SilentlyContinue |
+                     Select-Object -ExpandProperty DirectoryName -Unique
+          $env:PATH = ($dllDirs -join ';') + ';' + $env:PATH
+          Write-Host "added $($dllDirs.Count) DLL dirs to PATH"
+
+          function Try-Swift($label) {
             $o = "$env:RUNNER_TEMP\so.txt"; $e = "$env:RUNNER_TEMP\se.txt"
             Remove-Item $o,$e -ErrorAction SilentlyContinue
-            $sp = Start-Process $exe.FullName -ArgumentList "--version" -PassThru -Wait -WorkingDirectory $wd -RedirectStandardOutput $o -RedirectStandardError $e
+            $sp = Start-Process $exe.FullName -ArgumentList "--version" -PassThru -Wait -WorkingDirectory $bin -RedirectStandardOutput $o -RedirectStandardError $e
             $code = $sp.ExitCode
-            $hex = if ($code -lt 0) { "0x" + ('{0:X8}' -f ([uint32]($code -band 0xFFFFFFFF))) } else { "0x{0:X}" -f $code }
+            $hex = '0x{0:X8}' -f ([uint32]($code -band 0xFFFFFFFF))
             Write-Host "[$label] exit=$code ($hex)"
             $out = (Get-Content $o -Raw -ErrorAction SilentlyContinue)
             $err = (Get-Content $e -Raw -ErrorAction SilentlyContinue)
@@ -58,17 +55,20 @@ jobs:
             if ($err) { Write-Host "  stderr: $err" }
             return $code
           }
-          $rc = Try-Swift "cwd=temp" $env:RUNNER_TEMP
-          if ($rc -ne 0) { $rc = Try-Swift "cwd=bin" $bin }
+          $rc = Try-Swift "path-injected"
           if ($rc -ne 0) {
-            Write-Host "=== bin dir listing ==="
-            Get-ChildItem $bin -ErrorAction SilentlyContinue | Select-Object -First 40 | ForEach-Object { Write-Host "  $($_.Name)" }
-            Write-Host "=== install log tail ==="
-            Get-Content "$env:RUNNER_TEMP\swift-install.log" -Tail 25 -ErrorAction SilentlyContinue
+            Write-Host "=== still failing: dumpbin dependents ==="
+            $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath 2>$null
+            $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'Hostx64\\x64' } | Select-Object -First 1
+            if ($dumpbin) {
+              # Run dumpbin inside a vcvars shell so its own deps resolve.
+              $cmd = "`"$($dumpbin.FullName)`" /dependents `"$($exe.FullName)`""
+              cmd /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" >nul 2>&1 && $cmd" 2>&1 | Select-Object -Last 40
+            } else { Write-Host "dumpbin not found" }
             exit 1
           }
-          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          Write-Host "swift OK, on PATH for later steps"
+          "$bin;$($dllDirs -join ';')" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "swift OK; PATH exported for later steps"
 
       - name: Run spike
         shell: pwsh
