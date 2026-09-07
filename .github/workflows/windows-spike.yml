@@ -19,37 +19,31 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $urls = @()
-          try {
-            $api = Invoke-RestMethod "https://www.swift.org/api/v1/install.json" -TimeoutSec 30
-            $json = $api | ConvertTo-Json -Depth 12
-            $ms = [regex]::Matches($json, 'https://download\.swift\.org/[^"]+windows10[^"]*\.exe')
-            $urls = @($ms | ForEach-Object { $_.Value } | Select-Object -Unique)
-            Write-Host "API candidates: $($urls.Count)"
-          } catch {
-            Write-Host "API query failed: $_"
-          }
-          $urls += @(
+          $urls = @(
             "https://download.swift.org/swift-6.3-release/windows10/swift-6.3-RELEASE/swift-6.3-RELEASE-windows10.exe",
             "https://download.swift.org/swift-6.1.2-release/windows10/swift-6.1.2-RELEASE/swift-6.1.2-RELEASE-windows10.exe"
           )
+          # The Inno Setup GUI installer hangs on the runner (silent flags ignored
+          # by its prerequisite logic). The .exe is still an Inno container —
+          # 7-Zip (preinstalled on runners) extracts the toolchain directly,
+          # no installer, no registry, no hang.
+          $seven = "C:\Program Files\7-Zip\7z.exe"
           $installed = $false
           foreach ($u in $urls) {
             Write-Host "Trying $u"
-            # curl.exe is native on the runner and streams to disk; Invoke-WebRequest
-            # buffers 2.5 GB in memory and crawls.
-            curl.exe -sSL --fail --max-time 900 -o "$env:RUNNER_TEMP\swift-installer.exe" $u
+            curl.exe -sSL --fail --max-time 600 -o "$env:RUNNER_TEMP\swift-installer.exe" $u
             if ($LASTEXITCODE -ne 0) { Write-Host "download failed"; continue }
-            Write-Host "Downloaded $((Get-Item "$env:RUNNER_TEMP\swift-installer.exe").Length) bytes; installing…"
-            $p = Start-Process -FilePath "$env:RUNNER_TEMP\swift-installer.exe" `
-              -ArgumentList "/VERYSILENT","/NORESTART","/SUPPRESSMSGBOXES","/NOCANCEL","/SP-","/DIR=$env:RUNNER_TEMP\swift" `
-              -PassThru -Wait
-            Write-Host "Installer exit code: $($p.ExitCode)"
+            Write-Host "Downloaded $((Get-Item "$env:RUNNER_TEMP\swift-installer.exe").Length) bytes; extracting…"
+            & $seven x -y "-o$env:RUNNER_TEMP\swift" "$env:RUNNER_TEMP\swift-installer.exe" | Select-Object -Last 3
             $exe = Get-ChildItem "$env:RUNNER_TEMP\swift" -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($exe) {
               $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
               $installed = $true
+              Write-Host "swift.exe at: $($exe.FullName)"
               break
+            } else {
+              Write-Host "no swift.exe after extract; listing top-level:"
+              Get-ChildItem "$env:RUNNER_TEMP\swift" | ForEach-Object { Write-Host "  $($_.Name)" }
             }
           }
           if (-not $installed) { Write-Error "No Swift toolchain installed"; exit 1 }
