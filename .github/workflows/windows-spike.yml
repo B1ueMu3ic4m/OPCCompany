@@ -36,8 +36,11 @@ jobs:
           # Expand-DarkArchive uses). Run #11 showed PowerShell's native-arg
           # parser eats the `-X:` prefix (dark saw bare 'X:...' → DARK1098),
           # so Start-Process -ArgumentList is required to bypass PS parsing.
-          $dp = Start-Process $dark -ArgumentList "-X:$burn","`"$installer`"" -PassThru -Wait
+          $dp = Start-Process $dark -ArgumentList "-X:$burn","`"$installer`"" -PassThru -Wait `
+            -RedirectStandardOutput "$env:RUNNER_TEMP\dark-out.txt" -RedirectStandardError "$env:RUNNER_TEMP\dark-err.txt"
           Write-Host "dark exit code: $($dp.ExitCode)"
+          Write-Host "--- dark stdout ---"; Get-Content "$env:RUNNER_TEMP\dark-out.txt" -ErrorAction SilentlyContinue | Select-Object -Last 10
+          Write-Host "--- dark stderr ---"; Get-Content "$env:RUNNER_TEMP\dark-err.txt" -ErrorAction SilentlyContinue | Select-Object -Last 10
           if ($dp.ExitCode -ne 0) { exit 1 }
           Write-Host "burn top-level:"
           Get-ChildItem $burn -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
