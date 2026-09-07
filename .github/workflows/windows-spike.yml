@@ -15,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Swift toolchain
+        timeout-minutes: 25
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -35,11 +36,15 @@ jobs:
           $installed = $false
           foreach ($u in $urls) {
             Write-Host "Trying $u"
-            try {
-              Invoke-WebRequest -Uri $u -OutFile "$env:RUNNER_TEMP\swift-installer.exe" -TimeoutSec 900
-            } catch { Write-Host "download failed"; continue }
-            Start-Process -FilePath "$env:RUNNER_TEMP\swift-installer.exe" `
-              -ArgumentList "/VERYSILENT","/NORESTART","/SUPPRESSMSGBOXES","/NOCANCEL","/SP-","/DIR=$env:RUNNER_TEMP\swift" -Wait
+            # curl.exe is native on the runner and streams to disk; Invoke-WebRequest
+            # buffers 2.5 GB in memory and crawls.
+            curl.exe -sSL --fail --max-time 900 -o "$env:RUNNER_TEMP\swift-installer.exe" $u
+            if ($LASTEXITCODE -ne 0) { Write-Host "download failed"; continue }
+            Write-Host "Downloaded $((Get-Item "$env:RUNNER_TEMP\swift-installer.exe").Length) bytes; installing…"
+            $p = Start-Process -FilePath "$env:RUNNER_TEMP\swift-installer.exe" `
+              -ArgumentList "/VERYSILENT","/NORESTART","/SUPPRESSMSGBOXES","/NOCANCEL","/SP-","/DIR=$env:RUNNER_TEMP\swift" `
+              -PassThru -Wait
+            Write-Host "Installer exit code: $($p.ExitCode)"
             $exe = Get-ChildItem "$env:RUNNER_TEMP\swift" -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($exe) {
               $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
