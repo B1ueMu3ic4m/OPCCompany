@@ -16716,7 +16716,7 @@ private actor AutoLoopInputQueue {
 /// 不会污染真实 Keychain。返回新建员工，方便在测试体内 reset baseline 后再触发故障。
 @MainActor
 private func makeStoreWithAPIAgent(
-    keychainStatus: @escaping () -> OSStatus,
+    keychainStatus: @escaping () -> OPCSecretStatus,
     captureWrite: @escaping (String, UUID) -> Void
 ) -> (CompanyStore, CompanyAgent) {
     let store = CompanyStore.bootstrap(loadPersisted: false)
@@ -16738,7 +16738,7 @@ private func makeStoreWithAPIAgent(
 
 @MainActor
 @Test func keychainSaveAPIKeyFailureDuringSnapshotAppendsInMemoryRiskEvent() async throws {
-    var status: OSStatus = errSecSuccess
+    var status: OPCSecretStatus = .success
     var captured: [(String, UUID)] = []
     let (store, agent) = makeStoreWithAPIAgent(
         keychainStatus: { status },
@@ -16748,7 +16748,7 @@ private func makeStoreWithAPIAgent(
     // 切到失败模式后再触发 saveSnapshot，确保失败计入事件流而不是被 addEmployee 吞掉。
     captured.removeAll()
     let baselineEventCount = store.events.count
-    status = errSecAuthFailed
+    status = .authFailed
 
     store.saveSnapshot()
 
@@ -16760,7 +16760,7 @@ private func makeStoreWithAPIAgent(
     #expect(latest.kind == .risk)
     #expect(latest.title == "API Key 写入 Keychain 失败")
     #expect(latest.agentID == agent.id)
-    #expect(latest.detail.contains("OSStatus=\(errSecAuthFailed)"),
+    #expect(latest.detail.contains("OSStatus=\(OPCSecretStatus.authFailed.rawValue)"),
             "事件 detail 必须暴露真实 OSStatus 便于排查 Keychain 锁定 / 沙箱权限缺失，实际 detail=\(latest.detail)")
     #expect(latest.detail.contains("应用重启后会丢失"),
             "事件 detail 必须告知老板「重启会丢失」，避免误以为只是临时提示")
@@ -16768,14 +16768,14 @@ private func makeStoreWithAPIAgent(
 
 @MainActor
 @Test func keychainSaveAPIKeyAdjacentFailuresDeduplicateInEventStream() async throws {
-    var status: OSStatus = errSecSuccess
+    var status: OPCSecretStatus = .success
     let (store, _) = makeStoreWithAPIAgent(
         keychainStatus: { status },
         captureWrite: { _, _ in }
     )
 
     let baselineEventCount = store.events.count
-    status = errSecAuthFailed
+    status = .authFailed
 
     store.saveSnapshot()
     store.saveSnapshot()
@@ -16790,7 +16790,7 @@ private func makeStoreWithAPIAgent(
 @Test func keychainSaveAPIKeySuccessLeavesEventStreamAndAgentApiKeyUntouched() async throws {
     var captured: [(String, UUID)] = []
     let (store, agent) = makeStoreWithAPIAgent(
-        keychainStatus: { errSecSuccess },
+        keychainStatus: { .success },
         captureWrite: { value, agentID in captured.append((value, agentID)) }
     )
 
@@ -16827,7 +16827,7 @@ private func makeStoreWithAPIAgent(
             "save/load/delete 查询必须显式关闭 Keychain 同步，API Key 只应留在当前本机")
 
     let storeSource = try loadOPCCompanyCoreSource("CompanyStore.swift")
-    #expect(storeSource.contains("var keychainSaveAPIKey:"),
+    #expect(storeSource.contains("var keychainSaveAPIKey: ((String, UUID) -> OPCSecretStatus)"),
             "CompanyStore 必须暴露可注入的 keychainSaveAPIKey 闭包以支撑测试与未来诊断 hook")
     #expect(storeSource.contains("recordKeychainSaveFailure"),
             "CompanyStore 必须保留 recordKeychainSaveFailure helper 把 OSStatus 转 in-memory 风险事件")
@@ -16835,6 +16835,34 @@ private func makeStoreWithAPIAgent(
             "CompanyStore 必须使用 writeAPIKeyToKeychain 收敛入口，避免 hydrate / 快照路径漏接失败")
     #expect(!storeSource.contains("OPCKeychainStore.saveAPIKey("),
             "CompanyStore 不应再直接调用 OPCKeychainStore.saveAPIKey，必须走 writeAPIKeyToKeychain 才能转事件")
+}
+
+// MARK: - Windows 移植 M0:平台抽象层不变量(SecretStore / AppPaths)
+
+@Test func windowsPortM0SecurityDepIsConfinedToKeychainStore() async throws {
+    // M0 不变量:除 KeychainStore.swift 外,核心层不得出现 Security framework 依赖,
+    // 否则 Windows 编译 spike 会被单个 API 拖崩。持久化路径必须经 OPCAppPaths。
+    let coreDir = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        .appendingPathComponent("Sources/OPCCompanyCore", isDirectory: true)
+    let files = try FileManager.default.contentsOfDirectory(atPath: coreDir.path)
+    for name in files where name.hasSuffix(".swift") && name != "KeychainStore.swift" && name != "SecretStore.swift" {
+        let content = try String(contentsOf: coreDir.appendingPathComponent(name), encoding: .utf8)
+        #expect(!content.contains("import Security"), "\(name) 不应 import Security")
+        #expect(!content.contains("SecItem"), "\(name) 不应直接调用 SecItem*")
+    }
+    let persistence = try String(contentsOf: coreDir.appendingPathComponent("CompanyPersistence.swift"), encoding: .utf8)
+    #expect(persistence.contains("OPCAppPaths.supportDirectory"),
+            "持久化根目录必须经 OPCAppPaths 解析(Windows 走 %APPDATA%)")
+}
+
+@Test func windowsPortM0SecretStatusKeepsOSStatusCodes() {
+    // 平台中立码必须与 Apple OSStatus 数值一致,保证跨平台诊断信息等价。
+    #expect(OPCSecretStatus.success.rawValue == 0)
+    #expect(OPCSecretStatus.emptyValue.rawValue == -50)
+    #expect(OPCSecretStatus.authFailed.rawValue == -25293)
+    #expect(OPCSecretStatus.success.isSuccess)
+    #expect(!OPCSecretStatus.authFailed.isSuccess)
 }
 
 // MARK: - 源码扫描类测试共享 helper（角色继承期轮 20 抽取 + 轮 23 扩展）

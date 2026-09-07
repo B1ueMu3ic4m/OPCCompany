@@ -9,6 +9,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `SECURITY.md`: local-first design stance, per-surface protection table,
   private vulnerability reporting via GitHub Security Advisories
 - README (en/zh): star CTA footer; Security section now links SECURITY.md
+- **Windows port M0 (platform abstraction)**:
+  - `SecretStore.swift`: `OPCSecretStatus` (platform-neutral codes mirroring
+    OSStatus), `OPCSecretStoreProtocol`, `OPCAppPaths` (%APPDATA% on Windows,
+    Application Support on Apple)
+  - `OPCKeychainSecretStore` adapter bridges Keychain to the protocol;
+    `Security` framework dependency is now confined to `KeychainStore.swift`
+    (enforced by a new source-scan guard test)
+  - 2 new invariant tests (578 total)
 
 ## [0.1.1] - 2026-09-06
 

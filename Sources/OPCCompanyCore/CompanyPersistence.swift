@@ -158,9 +158,9 @@ public enum CompanyPersistence {
         if isLikelyTestProcess(environment: environment, processName: processName, bundlePath: bundlePath, arguments: arguments) {
             return temporaryDirectory.appendingPathComponent("OPCCompanyTests-\(processIdentifier)", isDirectory: true)
         }
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        return OPCAppPaths.supportDirectory(fileManager: .default, environment: environment)
             ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        return base.appendingPathComponent("OPCCompany", isDirectory: true)
+                .appendingPathComponent("OPCCompany", isDirectory: true)
     }
 
     /// 综合多个信号判定当前是否在 XCTest / swift-testing / SwiftPM `swift test` 进程内。
