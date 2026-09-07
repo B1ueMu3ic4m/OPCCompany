@@ -1,9 +1,9 @@
 name: Windows Port Spike (M1)
 
 # Manual, cloud-hosted Windows compile experiment (see docs/WINDOWS_PORT_RFC.md).
-# The Swift Windows installer is a WiX Burn bundle (NOT Inno Setup): split it
-# with dark, then unpack each payload MSI with msiexec /a (Microsoft's own
-# unpacker — scoop's 7z-based Expand-MsiArchive failed on windows.msi, 1603).
+# The Swift Windows installer is a WiX Burn bundle: install it silently with
+# its OWN CLI (/quiet /norestart — the Inno-style /VERYSILENT from run #3 is
+# what hung it on a GUI), then locate swift.exe.
 
 on:
   workflow_dispatch:
@@ -19,41 +19,41 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $scoop = @("$env:USERPROFILE\scoop\shims\scoop.cmd","C:\Users\runneradmin\scoop\shims\scoop.cmd") | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $scoop) { iwr -useb https://get.scoop.sh | iex; $scoop = "$env:USERPROFILE\scoop\shims\scoop.cmd" }
-          & $scoop install dark
-          $dark = "$env:USERPROFILE\scoop\shims\dark.exe"
-          if (-not (Test-Path $dark)) { $dark = (Get-ChildItem "$env:USERPROFILE\scoop\apps\dark" -Recurse -Filter dark.exe | Select-Object -First 1).FullName }
           $url = "https://download.swift.org/swift-6.3.3-release/windows10/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE-windows10.exe"
-          $installer = "$env:RUNNER_TEMP\swift.exe"
+          $installer = "$env:RUNNER_TEMP\swift-installer.exe"
           curl.exe -sSL --fail --max-time 600 -o $installer $url
           Write-Host "downloaded $((Get-Item $installer).Length) bytes"
-          $burn = "$env:RUNNER_TEMP\burn"
-          New-Item -ItemType Directory -Force -Path $burn | Out-Null
-          # Run #10 proved `& $dark -x <dir> <bundle>` DOES populate
-          # AttachedContainer (the script reached the msiexec loop); #10 only
-          # failed on the TARGETDIR trailing-backslash, fixed below. The `-X:`
-          # colon form (runs #11/#12/#13) was a wrong turn — PS's & parser eats
-          # the leading dash and dark then null-crashes.
-          & $dark -x $burn $installer
-          Write-Host "dark exit code: $LASTEXITCODE"
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          Write-Host "burn top-level:"
-          Get-ChildItem $burn -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
-          $msiDir = "$burn\AttachedContainer"
-          if (-not (Test-Path $msiDir)) { Write-Host "no AttachedContainer; tree:"; Get-ChildItem $burn -Recurse | Select-Object -First 30 | ForEach-Object { Write-Host $_.FullName }; exit 1 }
-          $out = "$env:RUNNER_TEMP\swifttoolchain"
-          New-Item -ItemType Directory -Force -Path $out | Out-Null
-          foreach ($m in (Get-ChildItem $msiDir -Filter *.msi)) {
-            Write-Host "unpacking $($m.Name) ($([math]::Round($m.Length/1MB)) MB)..."
-            # TARGETDIR needs a trailing backslash (else msiexec /a treats it as
-            # a destination FILE) and NO surrounding quotes (the path has no
-            # spaces; a trailing `\"` breaks CommandLineToArgvW parsing).
-            $p = Start-Process msiexec.exe -ArgumentList "/a","`"$($m.FullName)`"","/qn","TARGETDIR=$out\" -PassThru -Wait
-            Write-Host "  msiexec exit $($p.ExitCode)"
+          # WiX Burn bootstrapper CLI: /quiet /norestart /l*v <log>.
+          # Run #3 hung because it passed Inno's /VERYSILENT, which Burn ignores.
+          $p = Start-Process $installer -ArgumentList "/quiet","/norestart","/l*v","$env:RUNNER_TEMP\swift-install.log" -PassThru -Wait
+          Write-Host "installer exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) {
+            Write-Host "--- install log tail ---"
+            Get-Content "$env:RUNNER_TEMP\swift-install.log" -ErrorAction SilentlyContinue | Select-Object -Last 30
           }
-          $exe = Get-ChildItem $out -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $exe) { Write-Host "no swift.exe; tree:"; Get-ChildItem $out -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 40 | ForEach-Object { Write-Host $_.FullName }; exit 1 }
+          # Burn installs per-user to %LOCALAPPDATA%\Programs\Swift (scoop's
+          # manifest confirms this layout); machine-wide goes to Program Files.
+          $candidates = @(
+            "$env:LOCALAPPDATA\Programs\Swift",
+            "C:\Program Files\Swift"
+          )
+          $exe = $null
+          foreach ($c in $candidates) {
+            if (Test-Path $c) {
+              $exe = Get-ChildItem $c -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($exe) { break }
+            }
+          }
+          if (-not $exe) {
+            Write-Host "swift.exe not found under: $($candidates -join ', ')"
+            foreach ($c in $candidates) {
+              if (Test-Path $c) {
+                Write-Host "tree of ${c}:"
+                Get-ChildItem $c -Recurse -Depth 4 -ErrorAction SilentlyContinue | Select-Object -First 40 | ForEach-Object { Write-Host "  $($_.FullName)" }
+              }
+            }
+            exit 1
+          }
           $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Write-Host "swift.exe at $($exe.FullName)"
           swift --version
