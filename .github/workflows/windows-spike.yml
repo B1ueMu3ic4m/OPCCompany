@@ -71,8 +71,12 @@ jobs:
           Write-Host "swift OK; PATH exported for later steps"
 
       - name: Run spike
-        shell: pwsh
-        run: ./scripts/windows-spike.ps1
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find VC\Auxiliary\Build\vcvars64.bat > vcvars-path.txt 2>nul
+          set /p VCVARS=<vcvars-path.txt
+          call "%VCVARS%"
+          pwsh -NoProfile -File scripts\windows-spike.ps1
 
       - name: Upload logs
         uses: actions/upload-artifact@v4
