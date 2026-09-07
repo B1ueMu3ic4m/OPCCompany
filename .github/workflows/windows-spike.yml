@@ -29,14 +29,23 @@ jobs:
           curl.exe -sSL --fail --max-time 600 -o $installer $url
           Write-Host "downloaded $((Get-Item $installer).Length) bytes"
           $burn = "$env:RUNNER_TEMP\burn"
-          & $dark -x $burn $installer
+          New-Item -ItemType Directory -Force -Path $burn | Out-Null
+          # scoop's Expand-DarkArchive calls `dark -X:<dir> <bundle>` — capital X
+          # with colon. Run #10's lowercase `-x <dir>` extracted only the UX
+          # container (printed "swift.exe", 2 s) and left AttachedContainer empty.
+          & $dark "-X:$burn" $installer
+          Write-Host "dark exit code: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Write-Host "burn top-level:"
+          Get-ChildItem $burn -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
           $msiDir = "$burn\AttachedContainer"
           if (-not (Test-Path $msiDir)) { Write-Host "no AttachedContainer; tree:"; Get-ChildItem $burn -Recurse | Select-Object -First 30 | ForEach-Object { Write-Host $_.FullName }; exit 1 }
           $out = "$env:RUNNER_TEMP\swifttoolchain"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           foreach ($m in (Get-ChildItem $msiDir -Filter *.msi)) {
             Write-Host "unpacking $($m.Name) ($([math]::Round($m.Length/1MB)) MB)..."
-            $p = Start-Process msiexec.exe -ArgumentList "/a","`"$($m.FullName)`"","/qn","TARGETDIR=`"$out`"" -PassThru -Wait
+            # TARGETDIR must end with a backslash or msiexec treats it as a file.
+            $p = Start-Process msiexec.exe -ArgumentList "/a","`"$($m.FullName)`"","/qn","TARGETDIR=`"$out\`"" -PassThru -Wait
             Write-Host "  msiexec exit $($p.ExitCode)"
           }
           $exe = Get-ChildItem $out -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
