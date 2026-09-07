@@ -1,6 +1,14 @@
 import Foundation
 import Security
 
+/// Bridge between the platform-neutral `OPCSecretStatus` and the raw
+/// `OSStatus` codes this store produces — CompanyStore and the tests speak one
+/// language while Keychain stays the only Security-typed file.
+extension OPCSecretStatus {
+    init(_ status: OSStatus) { self.rawValue = status }
+    var osStatus: OSStatus { rawValue }
+}
+
 public enum OPCKeychainStore {
     private static let service = "OPCCompany.AgentAPIKey"
 
@@ -77,5 +85,26 @@ public enum OPCKeychainStore {
             kSecAttrSynchronizable as String: kCFBooleanFalse as Any
         ]
         SecItemDelete(query as CFDictionary)
+    }
+}
+
+/// Instance-based adapter so the Keychain can serve the platform-neutral
+/// `OPCSecretStoreProtocol` (caseless enums cannot be instantiated).
+public struct OPCKeychainSecretStore: OPCSecretStoreProtocol {
+    public init() {}
+
+    public func saveSecret(_ value: String, account: String) -> OPCSecretStatus {
+        guard let id = UUID(uuidString: account) else { return .emptyValue }
+        return OPCSecretStatus(OPCKeychainStore.saveAPIKey(value, agentID: id))
+    }
+
+    public func loadSecret(account: String) -> String {
+        guard let id = UUID(uuidString: account) else { return "" }
+        return OPCKeychainStore.loadAPIKey(agentID: id)
+    }
+
+    public func deleteSecret(account: String) {
+        guard let id = UUID(uuidString: account) else { return }
+        OPCKeychainStore.deleteAPIKey(agentID: id)
     }
 }

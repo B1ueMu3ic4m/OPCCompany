@@ -1,5 +1,4 @@
 import Foundation
-import Security
 import SwiftUI
 
 public enum CTOAutopilotState: Equatable {
@@ -132,7 +131,9 @@ static let agentMessageBodyTextLimit = 2_400
     /// 测试可注入的 Keychain 写入闭包，默认走真实 `OPCKeychainStore.saveAPIKey`。
     /// 与 `persistSnapshot` 同模式：把 OSStatus 透出后，store 把非 `errSecSuccess` 转换成
     /// 老板可见的 in-memory 风险事件，避免 Keychain 沉默失败导致 API Key 丢失却无人知情。
-    var keychainSaveAPIKey: (String, UUID) -> OSStatus = OPCKeychainStore.saveAPIKey
+    var keychainSaveAPIKey: ((String, UUID) -> OPCSecretStatus) = { value, agentID in
+        OPCKeychainSecretStore().saveSecret(value, account: agentID.uuidString)
+    }
 
     public let ctoID: UUID
     public let bossID: UUID
@@ -4639,7 +4640,7 @@ static func promptInlineList(_ items: [String], empty: String, itemLimit: Int, i
             if !agents[index].backend.apiKey.isEmpty {
                 writeAPIKeyToKeychain(agents[index].backend.apiKey, agentID: agents[index].id, context: "启动时回写".L().L())
             } else {
-                agents[index].backend.apiKey = OPCKeychainStore.loadAPIKey(agentID: agents[index].id)
+                agents[index].backend.apiKey = OPCKeychainSecretStore().loadSecret(account: agents[index].id.uuidString)
             }
         }
     }
@@ -4648,9 +4649,9 @@ static func promptInlineList(_ items: [String], empty: String, itemLimit: Int, i
     /// 调用注入的 keychain 写入闭包并把非成功 OSStatus 转换成老板可见的 in-memory 风险事件。
     /// 把 hydrate / 快照两条路径上的 keychain 写入收敛到一处，避免遗漏其中一处不上报。
     @discardableResult
-    func writeAPIKeyToKeychain(_ value: String, agentID: UUID, context: String) -> OSStatus {
+    func writeAPIKeyToKeychain(_ value: String, agentID: UUID, context: String) -> OPCSecretStatus {
         let status = keychainSaveAPIKey(value, agentID)
-        if status != errSecSuccess {
+        if !status.isSuccess {
             recordKeychainSaveFailure(status: status, agentID: agentID, context: context)
         }
         return status
@@ -4660,10 +4661,10 @@ static func promptInlineList(_ items: [String], empty: String, itemLimit: Int, i
     /// 1. **不调用 saveSnapshot**：失败发生在快照前归档路径，递归 save 会再次触发同一次 keychain 写入失败。
     /// 2. **相邻同员工同状态去重**：避免锁屏 / 沙箱权限缺失等持续性故障刷屏老板事件流。
     /// 3. **保留员工 ID**：方便事件流按员工聚合，老板可定位到具体 API 员工的 Key 配置。
-    func recordKeychainSaveFailure(status: OSStatus, agentID: UUID, context: String) {
+    func recordKeychainSaveFailure(status: OPCSecretStatus, agentID: UUID, context: String) {
         let title = "API Key 写入 Keychain 失败".L().L()
         let name = agents.first(where: { $0.id == agentID })?.displayName ?? "未知员工".L().L()
-        let detail = "\(name)" + " · " + "\(context)" + " · OSStatus=".L() + "\(status)" + "。本次输入的 Key 仍在内存中可用，但应用重启后会丢失，需要重新填写并确认 Keychain 是否被锁定或权限受限。".L().L()
+        let detail = "\(name)" + " · " + "\(context)" + " · OSStatus=".L() + "\(status.rawValue)" + "。本次输入的 Key 仍在内存中可用，但应用重启后会丢失，需要重新填写并确认 Keychain 是否被锁定或权限受限。".L().L()
         if let latest = events.first,
            latest.kind == .risk,
            latest.title == title,
