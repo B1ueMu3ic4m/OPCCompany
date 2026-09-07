@@ -117,9 +117,20 @@ PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are la
 
 ## Security
 
-- Product paths are always displayed tilde-abbreviated (`~/Library/...`) — no usernames leak into screenshots.
-- The demo capture script records the **app window only** (never the full desktop).
+OPC Company is local-first (no accounts, no telemetry). API keys live in the
+macOS Keychain, risky actions require boss approval, and per-employee
+permission gates are default-deny. See [SECURITY.md](SECURITY.md) for the full
+policy and how to report a vulnerability privately.
 
 ## License
 
 [MIT](LICENSE) © 2026 B1ueMu3ic4m
+
+---
+
+<div align="center">
+
+**Found this useful? A ⭐ helps other AI-coding folks discover it.**
+
+</div>
+
