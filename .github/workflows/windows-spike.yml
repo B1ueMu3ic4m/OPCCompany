@@ -30,7 +30,9 @@ jobs:
           Write-Host "Fetching innoextract…"
           curl.exe -sSL --fail --max-time 120 -o "$env:RUNNER_TEMP\innoextract.zip" `
             "https://innoextract.constexpr.org/static/download/archives/innoextract-1.9-windows.zip"
-          Expand-Archive "$env:RUNNER_TEMP\innoextract.zip" -DestinationPath "$env:RUNNER_TEMP\innoextract" -Force
+          # Expand-Archive crashes on pwsh 7 runners (GAC probe → OperationStopped);
+          # 7-Zip handles plain zips fine — it was only blind to Inno's format.
+          & "C:\Program Files\7-Zip\7z.exe" x -y "-o$env:RUNNER_TEMP\innoextract" "$env:RUNNER_TEMP\innoextract.zip" | Select-Object -Last 2
           $inno = Get-ChildItem "$env:RUNNER_TEMP\innoextract" -Recurse -Filter innoextract.exe | Select-Object -First 1
           if (-not $inno) { Write-Error "innoextract missing"; exit 1 }
           $installed = $false
