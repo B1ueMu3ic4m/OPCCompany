@@ -1,6 +1,6 @@
 # Windows Port RFC
 
-Status: **Proposed** · Started: 2026-09-07 · Owner: @B1ueMu3ic4m
+Status: **Route A = GO** (2026-09-08, see [WINDOWS_COMPILE_REPORT.md](WINDOWS_COMPILE_REPORT.md)) · Started: 2026-09-07 · Owner: @B1ueMu3ic4m
 
 ## Why
 
