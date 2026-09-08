@@ -63,16 +63,28 @@ jobs:
           # quirk from the Burn installer. Bypass PowerShell's provider entirely:
           # dump with reg.exe, then FORCE-write the exact nested key the driver
           # expects with the real platform dir as its default value.
-          Write-Host "=== reg.exe dump HKLM\SOFTWARE\Swift ==="
-          reg.exe query "HKLM\SOFTWARE\Swift" /s 2>&1 | Select-Object -First 40
-          Write-Host "=== reg.exe dump WOW6432Node view ==="
-          reg.exe query "HKLM\SOFTWARE\WOW6432Node\Swift" /s 2>&1 | Select-Object -First 20
+          # Run #26: files live in %LOCALAPPDATA% → the Burn install was USER
+          # scope (INSTALLSCOPE=machine silently ignored without elevation), so
+          # the installer wrote HKCU, never HKLM. I had only ever dumped HKLM.
+          Write-Host "=== reg.exe dump HKCU\SOFTWARE\Swift ==="
+          reg.exe query "HKCU\SOFTWARE\Swift" /s 2>&1 | Select-Object -First 40
           $platDir = Get-ChildItem $root -Recurse -Directory -Filter "Windows.platform" -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($platDir) {
-            $key = "HKLM\SOFTWARE\Swift\Platforms\6.3.3\Windows.platform"
-            Write-Host "force-writing $key = $($platDir.FullName)"
-            reg.exe add $key /ve /d $platDir.FullName /f 2>&1
-            reg.exe query $key /ve 2>&1
+            # Does the platform bundle actually contain the stdlib modules?
+            $mod = Get-ChildItem $platDir.FullName -Recurse -Filter "Swift.swiftmodule" -ErrorAction SilentlyContinue | Select-Object -First 1
+            Write-Host "Swift.swiftmodule: $(if ($mod) { $mod.FullName } else { 'NOT FOUND — platform payload missing' })"
+            # Global: does the stdlib exist ANYWHERE under the install root?
+            $gmod = Get-ChildItem $root -Recurse -Filter "Swift.swiftmodule" -ErrorAction SilentlyContinue | Select-Object -First 3
+            if ($gmod) { $gmod | ForEach-Object { Write-Host "  global stdlib: $($_.FullName)" } }
+            else { Write-Host "  global stdlib: NONE under $root — install is incomplete" }
+            # Write the driver's key into BOTH hives with the version parsed
+            # from the real dir path (…\Platforms\<ver>\Windows.platform).
+            $ver = ($platDir.FullName -split '\\')[-2]
+            foreach ($hive in "HKCU","HKLM") {
+              $key = "$hive\SOFTWARE\Swift\Platforms\$ver\Windows.platform"
+              reg.exe add $key /ve /d $platDir.FullName /f 2>&1 | Out-Null
+              Write-Host "wrote $key"
+            }
           } else { Write-Host "no Windows.platform dir under $root" }
           Write-Host "=== toolchain stdlib layout ==="
           $libSwift = Join-Path (Split-Path $bin) "lib\swift"
