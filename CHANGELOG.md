@@ -9,6 +9,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `docs/WINDOWS_COMPILE_REPORT.md`: M1 spike results — core layer compiles on
   Windows with only 2 blocking modules (CryptoKit → swift-crypto, SwiftUI
   observation → OpenCombine); RFC status updated to **Route A = GO**
+- Spike #2 re-run section: both shims verified on real Windows (CryptoKit 60→0,
+  SwiftUI observation 76→0); next blocker SQLite3 (62 errors, 6 files) filed
+  as issue #42
 - `SECURITY.md`: local-first design stance, per-surface protection table,
   private vulnerability reporting via GitHub Security Advisories
 - README (en/zh): star CTA footer; Security section now links SECURITY.md

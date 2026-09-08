@@ -34,6 +34,23 @@ by M0, with the Windows DPAPI store planned in issue #11.)
 Full-package build additionally fails only in the 12k-line SwiftUI/SpriteKit
 UI layer — expected, that's the layer a Windows frontend replaces.
 
+## Spike #2 re-run (2026-09-08, run 34184777279) — shims verified
+
+After PR #41 (CryptoKit→swift-crypto, SwiftUI observation→ObservationCompat):
+
+| Module | M1 census | Spike #2 |
+|---|---|---|
+| CryptoKit | 60 errors | **0** — swift-crypto compiled 461/461 files on MSVC |
+| SwiftUI (observation) | 76 errors | **0** in the logic package — compat layer verified |
+| SQLite3 | 0 (not reached) | **62 errors, 6 files** — next real blocker |
+| Security | 0 (not reached) | queued behind SQLite3 (issue #11) |
+
+The logic build now executes 484 compile jobs (vs aborting at manifest stage in
+M1) — both shims work on real Windows, not just on paper. Remaining core-layer
+work: a SQLite3 strategy (issue #42) + the DPAPI/file secret store (issue #11).
+UI-layer SwiftUI/SpriteKit errors (full-package build) are expected — that is
+the layer the Flutter frontend replaces.
+
 ## Verdict (per the RFC decision tree)
 
 Route A gate was "core compiles with < ~20 blocking errors". Actual: **2
