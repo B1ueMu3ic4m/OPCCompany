@@ -47,24 +47,32 @@ jobs:
           if (-not $exe) { Write-Host "swift.exe NOT FOUND"; exit 1 }
           $bin = $exe.DirectoryName
 
-          # Run #23: HKLM platform key EXISTS and `swift --version` passes, but
-          # compiling fails 'unable to load standard library'. The toolchain
-          # landed in %LOCALAPPDATA% while the HKLM key likely points at
-          # C:\Program Files\Swift\Platforms\… (nonexistent) → invalid platform
-          # path. --version never loads the stdlib, so it can't catch this.
-          # Verify the key's default value and repair it to the real dir.
-          $platKey = "HKLM:\SOFTWARE\Swift\Platforms\6.3.3\Windows.platform"
-          if (Test-Path $platKey) {
-            $v = (Get-Item $platKey).GetValue("")
-            Write-Host "platform default value: '$v' (exists: $([bool]($v -and (Test-Path $v))))"
-            if (-not $v -or -not (Test-Path $v)) {
-              $platDir = Get-ChildItem $root -Recurse -Directory -Filter "Windows.platform" -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($platDir) {
-                Write-Host "REPAIRING registry default -> $($platDir.FullName)"
-                (Get-Item $platKey).SetValue("", $platDir.FullName)
-              } else { Write-Host "no Windows.platform dir found under $root" }
-            }
-          } else { Write-Host "platform key missing: $platKey" }
+          # Run #24: the platform DIR exists ($root\Platforms\6.3.3\Windows.platform)
+          # but PowerShell's Test-Path says the HKLM key is missing — while run #23's
+          # listing DID show a child named '\Platforms\6.3.3\Windows.platform'.
+          # That smells like a hive-view (WOW6432Node) or literal-backslash key-name
+          # quirk from the Burn installer. Bypass PowerShell's provider entirely:
+          # dump with reg.exe, then FORCE-write the exact nested key the driver
+          # expects with the real platform dir as its default value.
+          Write-Host "=== reg.exe dump HKLM\SOFTWARE\Swift ==="
+          reg.exe query "HKLM\SOFTWARE\Swift" /s 2>&1 | Select-Object -First 40
+          Write-Host "=== reg.exe dump WOW6432Node view ==="
+          reg.exe query "HKLM\SOFTWARE\WOW6432Node\Swift" /s 2>&1 | Select-Object -First 20
+          $platDir = Get-ChildItem $root -Recurse -Directory -Filter "Windows.platform" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($platDir) {
+            $key = "HKLM\SOFTWARE\Swift\Platforms\6.3.3\Windows.platform"
+            Write-Host "force-writing $key = $($platDir.FullName)"
+            reg.exe add $key /ve /d $platDir.FullName /f 2>&1
+            reg.exe query $key /ve 2>&1
+          } else { Write-Host "no Windows.platform dir under $root" }
+          Write-Host "=== toolchain stdlib layout ==="
+          $libSwift = Join-Path (Split-Path $bin) "lib\swift"
+          Get-ChildItem $libSwift -Depth 1 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName.Substring($libSwift.Length))" }
+          Write-Host "=== hello-world compile probe ==="
+          Set-Content -Path "$env:RUNNER_TEMP\hello.swift" -Value 'print("hello windows swift")'
+          $hp = Start-Process $exe.FullName -ArgumentList "$env:RUNNER_TEMP\hello.swift" -PassThru -Wait -WorkingDirectory $env:RUNNER_TEMP -RedirectStandardOutput "$env:RUNNER_TEMP\hello-out.txt" -RedirectStandardError "$env:RUNNER_TEMP\hello-err.txt"
+          Write-Host "hello exit=$($hp.ExitCode)"
+          Get-Content "$env:RUNNER_TEMP\hello-out.txt","$env:RUNNER_TEMP\hello-err.txt" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $_" }
 
           # Run #17: exit 0xC0000135 (DLL_NOT_FOUND) even with VC++ redist
           # present. The toolchain's own DLLs live in sibling dirs (usr/lib,
