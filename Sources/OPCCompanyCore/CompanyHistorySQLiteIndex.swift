@@ -1,5 +1,9 @@
 import Foundation
-import SQLite3
+#if canImport(SQLite3)
+import SQLite3  // Apple: OS libsqlite3 via the system module map
+#else
+import CSQLite  // Windows: vendored amalgamation (Sources/CSQLite)
+#endif
 
 public struct CompanyHistoryIndexStats: Equatable, Sendable {
     public var recordCount: Int

@@ -17,9 +17,21 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")
     ],
     targets: [
+        // Vendored SQLite amalgamation (public domain, see
+        // Sources/CSQLite/VENDORED.txt). Only reachable on Windows: the
+        // system `SQLite3` module does not exist there, so the logic files
+        // fall back to this C target (per-file #if canImport(SQLite3)).
+        // macOS/iOS keep the OS libsqlite3 and never build this target
+        // (conditional dependency below keeps macOS CI time unchanged).
+        .target(
+            name: "CSQLite",
+            path: "Sources/CSQLite",
+            publicHeadersPath: "include"
+        ),
         .target(
             name: "OPCCompanyCore",
             dependencies: [
+                .target(name: "CSQLite", condition: .when(platforms: [.windows])),
                 .product(name: "Crypto", package: "swift-crypto",
                          condition: .when(platforms: [.windows]))
             ],

@@ -12,6 +12,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Spike #2 re-run section: both shims verified on real Windows (CryptoKit 60→0,
   SwiftUI observation 76→0); next blocker SQLite3 (62 errors, 6 files) filed
   as issue #42
+- Vendored SQLite amalgamation 3.50.4 as the `CSQLite` C target (public
+  domain; SHA256-tracked `Sources/CSQLite/VENDORED.txt`). The 6 SQLite-using
+  logic files switch per-file between the system `SQLite3` module (Apple)
+  and `CSQLite` (Windows); the dependency is Windows-only so the macOS
+  build graph is untouched (578/578 tests green, closes issue #42)
 - `SECURITY.md`: local-first design stance, per-surface protection table,
   private vulnerability reporting via GitHub Security Advisories
 - README (en/zh): star CTA footer; Security section now links SECURITY.md
