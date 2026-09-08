@@ -35,6 +35,7 @@ AI 编程智能体很强大,但是**看不见**。任务丢进终端,然后就�
 - 💬 **通信网关** —— 飞书 / 企业微信 / 钉钉 / Telegram 通道,手机收汇报、发指令
 - 🔒 **本地优先** —— SQLite 历史索引,钥匙串存密钥,核心链路不依赖云
 - 🌐 **中英双语** —— 应用内一键切换 简体中文 / English
+- ⌨️ **无头 CLI(`opc`,v0.2.0)** —— 终端里 status / goal / advance / report,与 GUI 共用同一份本司快照
 
 ## 快速开始
 
@@ -55,6 +56,20 @@ open dist/OPCCompany.app
 1. 未签名构建先解除 Gatekeeper:`xattr -cr dist/OPCCompany.app`
 2. 点 **新增员工**(⌘⇧N)——选择后端:你已登录的 CLI,或接口模型。
 3. 在总控台给 CTO 输入一句话目标,看公司开工。
+
+## 无头 CLI(`opc`,v0.2.0)
+
+不开窗口也能运营公司——`opc` 读写的就是 GUI 用的同一份本地快照(员工、任务、审批双向同步):
+
+```bash
+swift build -c release --product opc
+.build/release/opc status                 # 团队、任务分布、待批
+.build/release/opc goal "重构 X 模块"      # 把老板目标交给 CTO
+.build/release/opc advance                # CTO 推进所有在途目标一步
+.build/release/opc report                 # 老板视角进度报告
+```
+
+完整英文说明见 [README.md](README.md#headless-cli-opc)。
 
 完整英文文档见 [README.md](README.md)。
 

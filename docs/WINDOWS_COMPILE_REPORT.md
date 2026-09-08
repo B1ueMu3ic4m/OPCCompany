@@ -86,6 +86,25 @@ same-API no-op recorder on Windows (the swizzle only serves SwiftUI
 working via the neutral `.L()` path). Spike #5 = expected zero-blocker
 confirmation for the logic package.
 
+## Spike #6 (2026-09-08, run 34215450265) — M0 CLOSED: zero errors on Windows
+
+After PR #49 (five cross-layer fixes), the **logic package builds on real
+Windows with zero errors**: 496/496 compile jobs, `Build complete! (334.09s)`.
+The census's remaining 83 errors all belong to the *full*-package UI files
+(AddEmployeeSheet etc.) — M3 Flutter scope, not the portable core.
+
+| Round | Blockers peeled (all verified by the next run) |
+|---|---|
+| #1 (M1) | CryptoKit 60, SwiftUI-observation 76 |
+| #2 | SQLite3 62 |
+| #3 | Security 62 (predicted by static audit first) |
+| #4 | ObjectiveC 62 |
+| #5 | cross-layer 420 (FoundationNetworking ×50, missing-Foundation ×42, POSIX kill ×32, logic-in-UI ×84) |
+| **#6** | **0 — M0 portability milestone achieved** |
+
+First Windows-path artifact: the `opc` headless CLI (v0.2.0) links only this
+verified core.
+
 ## Verdict (per the RFC decision tree)
 
 Route A gate was "core compiles with < ~20 blocking errors". Actual across

@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **Headless CLI `opc` (v0.2.0)** — `status` / `goal` / `advance` / `report`
+  drive the same CompanyStore and local snapshot as the GUI; links only the
+  portable core (zero new dependencies, hand-rolled parser), guarded by 2
+  source-scan tests (no UI-framework or direct-persistence imports allowed)
+- Spike #6 (run 34215450265): **logic package builds on real Windows with
+  ZERO errors** (496/496 jobs, 334 s) — M0 portability milestone closed; the
+  83 remaining census errors are UI-layer files only (M3 Flutter scope)
 - `docs/WINDOWS_COMPILE_REPORT.md`: M1 spike results — core layer compiles on
   Windows with only 2 blocking modules (CryptoKit → swift-crypto, SwiftUI
   observation → OpenCombine); RFC status updated to **Route A = GO**
