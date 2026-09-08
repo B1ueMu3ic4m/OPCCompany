@@ -1,0 +1,6 @@
+SQLite amalgamation 3.50.4 (2025-07-31)
+Source: https://www.sqlite.org/2025/sqlite-amalgamation-3500400.zip
+License: public domain (the author disclaims copyright; see header of sqlite3.h)
+SHA256:
+e3f5d6901e7492af4a1fc8c4d745cae84c264942524c3fbfc02b82a5ca8818c8  /tmp/sqlite-amalgamation/sqlite-amalgamation-3500400/sqlite3.c
+abd1514e0351f79393d1be882830afdb40a8099e8257f311f0bfdf8486f11bea  /tmp/sqlite-amalgamation/sqlite-amalgamation-3500400/sqlite3.h

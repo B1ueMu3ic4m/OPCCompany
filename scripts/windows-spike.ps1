@@ -44,16 +44,25 @@ foreach ($f in $logic) {
   $src = Join-Path $root "Sources\OPCCompanyCore\$f"
   if (Test-Path $src) { Copy-Item $src "$core\Sources\OPCCompanyCore\" }
 }
+# Vendored CSQLite (spike #2: Windows has no system SQLite3 module; the logic
+# files fall back to `import CSQLite` there). Copy the amalgamation in and
+# link it unconditionally — this package only ever builds on Windows.
+New-Item -ItemType Directory -Force -Path "$core\Sources\CSQLite" | Out-Null
+Copy-Item "Sources\CSQLite\sqlite3.c" "$core\Sources\CSQLite\"
+Copy-Item "Sources\CSQLite\include" "$core\Sources\CSQLite\include" -Recurse
 @'
 // swift-tools-version: 6.0
 import PackageDescription
 let package = Package(
     name: "OPCCompanyCore",
     dependencies: [.package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")],
-    targets: [.target(name: "OPCCompanyCore",
-        dependencies: [.product(name: "Crypto", package: "swift-crypto")],
-        path: "Sources/OPCCompanyCore",
-        linkerSettings: [.linkedLibrary("sqlite3")])]
+    targets: [
+        .target(name: "CSQLite", path: "Sources/CSQLite", publicHeadersPath: "include"),
+        .target(name: "OPCCompanyCore",
+            dependencies: [
+                .product(name: "Crypto", package: "swift-crypto"),
+                .target(name: "CSQLite")],
+            path: "Sources/OPCCompanyCore")]
 )
 '@ | Set-Content "$core\Package.swift"
 
@@ -88,10 +97,15 @@ $census["total-error-lines"] = ([regex]::Matches($log, "error:")).Count
 $census.GetEnumerator() | ForEach-Object { Write-Host ("{0,-26} {1}" -f $_.Key, $_.Value) }
 $census | ConvertTo-Json | Set-Content spike-census.json
 Write-Host "`nArtifacts: spike-full-log.txt spike-core-log.txt spike-census.json"
-# Honest step status: fail if the census never reached real module errors
-# (everything still stdlib-load failure = environment problem, not data).
-$realModules = ($census["missing-module-SwiftUI"] + $census["missing-module-Combine"] + $census["missing-module-SpriteKit"] + $census["missing-module-AppKit"] + $census["missing-module-Security"] + $census["missing-module-CryptoKit"] + $census["cannot-find-type"])
-if ($realModules -eq 0) {
+# Honest step status: succeed if the build COMPLETED (the port milestone), or
+# if the census reached real module errors (data for the next shim round).
+# Fail only when neither holds — everything still stdlib-load failure = env
+# problem, not data.
+$buildOk = $log -match "Build complete"
+$realModules = ($census["missing-module-SwiftUI"] + $census["missing-module-Combine"] + $census["missing-module-SpriteKit"] + $census["missing-module-AppKit"] + $census["missing-module-Security"] + $census["missing-module-CryptoKit"] + $census["missing-module-SQLite3"] + $census["cannot-find-type"])
+if ($buildOk) {
+  Write-Host "SPIKE MILESTONE: logic package BUILT on Windows (errors: $($census['total-error-lines']))"
+} elseif ($realModules -eq 0) {
   Write-Host "NO REAL MODULE CENSUS — build never reached compilation (env problem). Failing step."
   exit 1
 }
