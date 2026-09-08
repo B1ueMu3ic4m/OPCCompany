@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- `docs/WINDOWS_COMPILE_REPORT.md`: M1 spike results — core layer compiles on
+  Windows with only 2 blocking modules (CryptoKit → swift-crypto, SwiftUI
+  observation → OpenCombine); RFC status updated to **Route A = GO**
 - `SECURITY.md`: local-first design stance, per-surface protection table,
   private vulnerability reporting via GitHub Security Advisories
 - README (en/zh): star CTA footer; Security section now links SECURITY.md
