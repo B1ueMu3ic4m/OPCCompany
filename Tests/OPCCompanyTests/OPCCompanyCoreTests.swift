@@ -16862,7 +16862,49 @@ private func makeStoreWithAPIAgent(
     #expect(OPCSecretStatus.emptyValue.rawValue == -50)
     #expect(OPCSecretStatus.authFailed.rawValue == -25293)
     #expect(OPCSecretStatus.success.isSuccess)
-    #expect(!OPCSecretStatus.authFailed.isSuccess)
+    #expect(OPCSecretStatus.authFailed.isSuccess == false)
+}
+
+@Test func v02HeadlessCLILinksOnlyPortableCore() throws {
+    // v0.2.0 不变量:`opc` CLI 的源码不得触碰任何 Apple-only/UI 框架——
+    // 它是 Windows 移植路径上的第一个可构建产物(Sources/OPC 只依赖
+    // OPCCompanyCore,核心层的 #if canImport 垫片全部在库内收敛)。
+    let cliDir = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        .appendingPathComponent("Sources/OPC", isDirectory: true)
+    let files = try FileManager.default.contentsOfDirectory(atPath: cliDir.path)
+    #expect(files.contains("OPC.swift"), "CLI 入口文件必须存在")
+    for name in files where name.hasSuffix(".swift") {
+        let content = try String(contentsOf: cliDir.appendingPathComponent(name), encoding: .utf8)
+        for forbidden in ["import SwiftUI", "import AppKit", "import SpriteKit",
+                          "import Security", "import CryptoKit", "import SQLite3",
+                          "import ArgumentParser"] {
+            #expect(!content.contains(forbidden), "\(name) 不得依赖 \(forbidden)(CLI 必须可跨平台,零新外部依赖)")
+        }
+        #expect(content.contains("import OPCCompanyCore"), "\(name) 只能经核心层使用公司状态")
+    }
+}
+
+@Test func v02HeadlessCLICommandsMatchCoreEntrypoints() throws {
+    // CLI 与 GUI 必须走同一批核心层公开入口,防止未来 GUI 换实现时
+    // CLI 悄悄读到死数据或调用私有路径。
+    let projectRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let cli = try String(contentsOf: projectRoot.appendingPathComponent("Sources/OPC/OPC.swift"), encoding: .utf8)
+    // 1) CLI 实际调用的每个核心入口,核心层必须有同名公开方法定义。
+    let storeSources = try ["CompanyStore.swift", "CompanyStore+Reports.swift", "CompanyStore+Persistence.swift"]
+        .map { try loadOPCCompanyCoreSource($0) }
+        .joined()
+    let cliEntrypoints = ["startCTOSupervisorGoal", "advanceCTOSupervisorLoop",
+                          "selectedProduct", "bootstrap(loadPersisted: true)"]
+    for call in cliEntrypoints {
+        #expect(cli.contains(call), "CLI 应调用 \(call)(回归信号:入口被误删)")
+    }
+    #expect(storeSources.contains("public func startCTOSupervisorGoal"), "CTO 目标入口必须是 public")
+    #expect(storeSources.contains("public func advanceCTOSupervisorLoop"), "推进入口必须是 public")
+    #expect(storeSources.contains("public var selectedProduct"), "产品选择器必须是 public")
+    // 2) CLI 不得绕过 CompanyStore 直接读快照文件(保持单一事实源)。
+    #expect(!cli.contains("CompanyPersistence.load"), "CLI 必须经 CompanyStore.bootstrap,不得直读持久化")
 }
 
 // MARK: - 源码扫描类测试共享 helper（角色继承期轮 20 抽取 + 轮 23 扩展）

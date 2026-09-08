@@ -9,7 +9,8 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "OPCCompany", targets: ["OPCCompany"])
+        .executable(name: "OPCCompany", targets: ["OPCCompany"]),
+        .executable(name: "opc", targets: ["OPC"])
     ],
     dependencies: [
         // Windows port (RFC: docs/WINDOWS_PORT_RFC.md): swift-crypto replaces
@@ -44,6 +45,11 @@ let package = Package(
             name: "OPCCompany",
             dependencies: ["OPCCompanyCore"],
             path: "Sources/OPCCompany"
+        ),
+        .executableTarget(
+            name: "OPC",
+            dependencies: ["OPCCompanyCore"],
+            path: "Sources/OPC"
         ),
         .testTarget(
             name: "OPCCompanyTests",
