@@ -47,6 +47,25 @@ jobs:
           if (-not $exe) { Write-Host "swift.exe NOT FOUND"; exit 1 }
           $bin = $exe.DirectoryName
 
+          # Run #23: HKLM platform key EXISTS and `swift --version` passes, but
+          # compiling fails 'unable to load standard library'. The toolchain
+          # landed in %LOCALAPPDATA% while the HKLM key likely points at
+          # C:\Program Files\Swift\Platforms\… (nonexistent) → invalid platform
+          # path. --version never loads the stdlib, so it can't catch this.
+          # Verify the key's default value and repair it to the real dir.
+          $platKey = "HKLM:\SOFTWARE\Swift\Platforms\6.3.3\Windows.platform"
+          if (Test-Path $platKey) {
+            $v = (Get-Item $platKey).GetValue("")
+            Write-Host "platform default value: '$v' (exists: $([bool]($v -and (Test-Path $v))))"
+            if (-not $v -or -not (Test-Path $v)) {
+              $platDir = Get-ChildItem $root -Recurse -Directory -Filter "Windows.platform" -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($platDir) {
+                Write-Host "REPAIRING registry default -> $($platDir.FullName)"
+                (Get-Item $platKey).SetValue("", $platDir.FullName)
+              } else { Write-Host "no Windows.platform dir found under $root" }
+            }
+          } else { Write-Host "platform key missing: $platKey" }
+
           # Run #17: exit 0xC0000135 (DLL_NOT_FOUND) even with VC++ redist
           # present. The toolchain's own DLLs live in sibling dirs (usr/lib,
           # Platforms\*\Windows\lib, Runtimes) that aren't in the default
