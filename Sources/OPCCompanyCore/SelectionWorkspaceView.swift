@@ -717,37 +717,10 @@ enum AgentMessageCenterCopy {
     static var viewAllTitle: String { "查看全部".L() }
 }
 
-enum AgentMessageDisplay {
-    static func title(for kind: AgentMessageKind) -> String {
-        switch kind {
-        case .ctoGoalStarted: "技术负责人启动目标".L()
-        case .taskDispatched: "任务派发".L()
-        case .workCompleted: "员工回传".L()
-        case .reviewRequested: "请求审查".L()
-        case .reviewCompleted: "审查反馈".L()
-        case .acceptanceCompleted: "验收通过".L()
-        case .approvalRequested: "审批请求".L()
-        case .approvalDecided: "审批结果".L()
-        case .ctoLoopProgressed: "技术负责人循环推进".L()
-        case .employeeHandoff: "员工交接".L()
-        }
-    }
-
-    static func icon(for kind: AgentMessageKind) -> String {
-        switch kind {
-        case .ctoGoalStarted: "flag.fill"
-        case .taskDispatched: "paperplane.fill"
-        case .workCompleted: "checkmark.seal.fill"
-        case .reviewRequested: "magnifyingglass"
-        case .reviewCompleted: "shield.lefthalf.filled"
-        case .acceptanceCompleted: "checkmark.seal.fill"
-        case .approvalRequested: "hand.raised.fill"
-        case .approvalDecided: "signature"
-        case .ctoLoopProgressed: "arrow.triangle.2.circlepath"
-        case .employeeHandoff: "person.2.wave.2.fill"
-        }
-    }
-
+#if canImport(SwiftUI)
+// Color metadata stayed UI-side; titles/icons moved to AgentMessageDisplay.swift
+// (logic layer) so report generation works headless. Same enum, split by import.
+extension AgentMessageDisplay {
     static func color(for kind: AgentMessageKind) -> Color {
         switch kind {
         case .ctoGoalStarted: CompanyTheme.warning
@@ -762,15 +735,6 @@ enum AgentMessageDisplay {
         case .employeeHandoff: CompanyTheme.blue
         }
     }
-
-    static func statusTitle(for status: AgentMessageStatus) -> String {
-        switch status {
-        case .pending: "待确认".L()
-        case .acknowledged: "已读".L()
-        case .failed: "失败".L()
-        }
-    }
-
     static func statusColor(for status: AgentMessageStatus) -> Color {
         switch status {
         case .pending: CompanyTheme.warning
@@ -779,6 +743,7 @@ enum AgentMessageDisplay {
         }
     }
 }
+#endif
 
 struct DeliveryAcceptanceCenterSheet: View {
     @EnvironmentObject private var store: CompanyStore

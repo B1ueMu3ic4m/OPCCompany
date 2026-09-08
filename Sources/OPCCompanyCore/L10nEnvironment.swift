@@ -1,3 +1,5 @@
+import Foundation  // ProcessInfo/UserDefaults were reaching this file via SwiftUI's transitive import on Apple; declare it
+
 #if canImport(SwiftUI)
 import SwiftUI
 #endif
