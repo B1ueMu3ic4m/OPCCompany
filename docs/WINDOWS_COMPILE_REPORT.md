@@ -71,6 +71,21 @@ saves → boss-visible risk event; no plaintext interim). Spike #4
 (run 34190104162) is the expected **zero-blocker** confirmation for the logic
 package.
 
+## Spike #4 (2026-09-08, run 34190104162) — Security verified, ObjC last
+
+| Module | Spike #3 | Spike #4 |
+|---|---|---|
+| Security | 62 errors | **0** — PR #45 verified on real Windows |
+| SQLite3 / CryptoKit / SwiftUI (logic) | 0 | 0 |
+| ObjectiveC | not reached | **62 — ALL from `L10nBundleOverride.swift`** (the Bundle.main swizzle, issue #10's mechanism) |
+
+The census peeled exactly one layer per round, each fix verified by the next
+run. PR #47 gates the swizzle behind `#if canImport(ObjectiveC)` with a
+same-API no-op recorder on Windows (the swizzle only serves SwiftUI
+`Text("literal")` lookups, which don't exist there; dynamic strings keep
+working via the neutral `.L()` path). Spike #5 = expected zero-blocker
+confirmation for the logic package.
+
 ## Verdict (per the RFC decision tree)
 
 Route A gate was "core compiles with < ~20 blocking errors". Actual across
