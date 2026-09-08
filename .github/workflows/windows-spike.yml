@@ -47,6 +47,15 @@ jobs:
           if (-not $exe) { Write-Host "swift.exe NOT FOUND"; exit 1 }
           $bin = $exe.DirectoryName
 
+          # Inject the toolchain's own DLL dirs into PATH FIRST — swiftc.exe
+          # links against sibling DLLs (usr/lib, Platforms\*\Windows\lib,
+          # Runtimes). Without this every compile probe below false-fails
+          # 0xC0000135 (DLL_NOT_FOUND) before it can report the real error.
+          $dllDirs = Get-ChildItem $root -Recurse -Filter *.dll -ErrorAction SilentlyContinue |
+                     Select-Object -ExpandProperty DirectoryName -Unique
+          $env:PATH = ($dllDirs -join ';') + ';' + $env:PATH
+          Write-Host "added $($dllDirs.Count) DLL dirs to PATH"
+
           # Run #24: the platform DIR exists ($root\Platforms\6.3.3\Windows.platform)
           # but PowerShell's Test-Path says the HKLM key is missing — while run #23's
           # listing DID show a child named '\Platforms\6.3.3\Windows.platform'.
@@ -74,14 +83,21 @@ jobs:
           Write-Host "hello exit=$($hp.ExitCode)"
           Get-Content "$env:RUNNER_TEMP\hello-out.txt","$env:RUNNER_TEMP\hello-err.txt" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $_" }
 
-          # Run #17: exit 0xC0000135 (DLL_NOT_FOUND) even with VC++ redist
-          # present. The toolchain's own DLLs live in sibling dirs (usr/lib,
-          # Platforms\*\Windows\lib, Runtimes) that aren't in the default
-          # search path. Put every dir containing *.dll on PATH, then retry.
-          $dllDirs = Get-ChildItem $root -Recurse -Filter *.dll -ErrorAction SilentlyContinue |
-                     Select-Object -ExpandProperty DirectoryName -Unique
-          $env:PATH = ($dllDirs -join ';') + ';' + $env:PATH
-          Write-Host "added $($dllDirs.Count) DLL dirs to PATH"
+          # DECISIVE: stop guessing the registry layout. Dump the platform bundle
+          # tree (does it contain usr/lib/swift/windows/*.swiftmodule?) and run
+          # swiftc -v so the driver itself prints every stdlib search path.
+          Write-Host "=== Windows.platform tree ==="
+          if ($platDir) {
+            Get-ChildItem $platDir.FullName -Recurse -Depth 4 -ErrorAction SilentlyContinue |
+              Where-Object { $_.FullName -match 'swift|lib|windows' } | Select-Object -First 60 |
+              ForEach-Object { Write-Host "  $($_.FullName.Substring($platDir.FullName.Length))" }
+          }
+          Write-Host "=== swiftc -v hello (driver search paths) ==="
+          $swiftc = Join-Path $bin "swiftc.exe"
+          $hv = Start-Process $swiftc -ArgumentList "-v","`"$env:RUNNER_TEMP\hello.swift`"" -PassThru -Wait -WorkingDirectory $env:RUNNER_TEMP -RedirectStandardOutput "$env:RUNNER_TEMP\hv-out.txt" -RedirectStandardError "$env:RUNNER_TEMP\hv-err.txt"
+          Write-Host "swiftc -v exit=$($hv.ExitCode)"
+          Write-Host "--- stderr (search paths) ---"
+          Get-Content "$env:RUNNER_TEMP\hv-err.txt" -ErrorAction SilentlyContinue | Select-Object -First 60 | ForEach-Object { Write-Host "  $_" }
 
           function Try-Swift($label) {
             $o = "$env:RUNNER_TEMP\so.txt"; $e = "$env:RUNNER_TEMP\se.txt"
