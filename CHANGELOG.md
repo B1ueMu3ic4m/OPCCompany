@@ -17,6 +17,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   logic files switch per-file between the system `SQLite3` module (Apple)
   and `CSQLite` (Windows); the dependency is Windows-only so the macOS
   build graph is untouched (578/578 tests green, closes issue #42)
+- Spike #3 re-run: SQLite shim verified on real Windows (62→0); Security
+  surfaced as the last logic blocker (62 errors, all `KeychainStore.swift`)
+  — fixed by gating it behind `#if canImport(Security)` with a fail-closed
+  Windows placeholder (no plaintext interim; saves raise a boss-visible
+  risk event); spike #4 running for the zero-blocker confirmation
 - `SECURITY.md`: local-first design stance, per-surface protection table,
   private vulnerability reporting via GitHub Security Advisories
 - README (en/zh): star CTA footer; Security section now links SECURITY.md
