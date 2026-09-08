@@ -33,10 +33,11 @@ jobs:
           $p = Start-Process $installer -ArgumentList "/quiet","/norestart","INSTALLSCOPE=machine","/l*v","$env:RUNNER_TEMP\swift-install.log" -PassThru -Wait
           Write-Host "installer exit code: $($p.ExitCode)"
 
-          Write-Host "=== HKLM Swift registry ==="
-          Get-ChildItem "HKLM:\SOFTWARE\Swift" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
-          Write-Host "=== HKCU Swift registry ==="
-          Get-ChildItem "HKCU:\SOFTWARE\Swift" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
+          # Run #22 crashed 0xC00000FD (stack overflow) inside the PowerShell
+          # registry provider's -Recurse walk — the machine-scope install itself
+          # had already succeeded (exit 0). Non-recursive top-level keys only.
+          Write-Host "=== HKLM Swift registry (top-level) ==="
+          Get-ChildItem "HKLM:\SOFTWARE\Swift" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
 
           $root = "C:\Program Files\Swift"
           if (-not (Test-Path $root)) { $root = "$env:LOCALAPPDATA\Programs\Swift" }
