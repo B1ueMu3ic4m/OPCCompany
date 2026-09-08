@@ -9,6 +9,17 @@ Set-Location $root
 Write-Host "=== Swift version ==="
 swift --version
 
+# --- stdlib presence + hello-world probe (run #19: 'unable to load standard
+# library' persisted under vcvars — check whether the stdlib is even on disk) ---
+$tc = Split-Path (Split-Path (Get-Command swift.exe).Source)  # ...\usr
+Write-Host "toolchain usr: $tc"
+Write-Host "=== lib/swift contents ==="
+Get-ChildItem "$tc\lib\swift" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
+Write-Host "=== hello-world probe ==="
+Set-Content "$env:RUNNER_TEMP\hw.swift" 'print("hello")'
+& swiftc "$env:RUNNER_TEMP\hw.swift" -o "$env:RUNNER_TEMP\hw.exe" 2>&1 | ForEach-Object { Write-Host "  $_" }
+if (Test-Path "$env:RUNNER_TEMP\hw.exe") { Write-Host "  hw.exe BUILT ok"; & "$env:RUNNER_TEMP\hw.exe" } else { Write-Host "  hw.exe FAILED" }
+
 # ---------- Step 1: full core target build (expected to fail on UI imports) ----------
 Write-Host "`n=== [1/2] Full OPCCompanyCore build ==="
 swift build --target OPCCompanyCore 2>&1 | Tee-Object -FilePath spike-full-log.txt
@@ -73,3 +84,10 @@ $census["total-error-lines"] = ([regex]::Matches($log, "error:")).Count
 $census.GetEnumerator() | ForEach-Object { Write-Host ("{0,-26} {1}" -f $_.Key, $_.Value) }
 $census | ConvertTo-Json | Set-Content spike-census.json
 Write-Host "`nArtifacts: spike-full-log.txt spike-core-log.txt spike-census.json"
+# Honest step status: fail if the census never reached real module errors
+# (everything still stdlib-load failure = environment problem, not data).
+$realModules = ($census["missing-module-SwiftUI"] + $census["missing-module-Combine"] + $census["missing-module-SpriteKit"] + $census["missing-module-AppKit"] + $census["missing-module-Security"] + $census["missing-module-CryptoKit"] + $census["cannot-find-type"])
+if ($realModules -eq 0) {
+  Write-Host "NO REAL MODULE CENSUS — build never reached compilation (env problem). Failing step."
+  exit 1
+}

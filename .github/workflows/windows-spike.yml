@@ -75,7 +75,9 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find VC\Auxiliary\Build\vcvars64.bat > vcvars-path.txt 2>nul
           set /p VCVARS=<vcvars-path.txt
+          echo VCVARS=%VCVARS%
           call "%VCVARS%"
+          echo WindowsSdkDir=%WindowsSdkDir%
           pwsh -NoProfile -File scripts\windows-spike.ps1
 
       - name: Upload logs
