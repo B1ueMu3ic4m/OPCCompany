@@ -38,6 +38,7 @@ Not a chat wrapper. Not a dashboard. A **company metaphor with real authority bo
 - 💬 **Comms Gateway** — Feishu / WeCom / DingTalk / Telegram channels for phone reports and remote commands
 - 🔒 **Local-first** — SQLite-backed history, Keychain for API keys, no cloud dependency for the core loop
 - 🌐 **Bilingual UI** — in-app switch between 简体中文 and English
+- ⌨️ **Headless CLI (`opc`, v0.2.0)** — status / goal / advance / report from the terminal, driving the same local company snapshot as the GUI
 
 ## Quick Start
 
@@ -65,6 +66,24 @@ open dist/OPCCompany.app
    `xattr -cr dist/OPCCompany.app`
 2. Click **New Employee** (⌘⇧N) — pick a backend: a CLI you're logged into, or an API model.
 3. Type a goal for the CTO in the Command Center. Watch the company work.
+
+## Headless CLI (`opc`)
+
+Since v0.2.0 the same company runs without opening a window — `opc` drives
+the exact same local snapshot as the GUI (employees, tasks, approvals stay
+in sync both ways):
+
+```bash
+swift build -c release --product opc
+.build/release/opc status                 # team, task histogram, approvals
+.build/release/opc goal "refactor X"      # hand a boss goal to the CTO
+.build/release/opc advance                # CTO pushes every open loop one step
+.build/release/opc report                 # boss-readable progress report
+```
+
+`opc` links only the portable core — it's also the first artifact on the
+[Windows port](docs/WINDOWS_PORT_RFC.md) path: the logic package has built on
+real Windows with zero errors since 2026-09-08.
 
 ## The Workflow
 
