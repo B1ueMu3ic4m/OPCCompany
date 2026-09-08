@@ -22,6 +22,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   — fixed by gating it behind `#if canImport(Security)` with a fail-closed
   Windows placeholder (no plaintext interim; saves raise a boss-visible
   risk event); spike #4 running for the zero-blocker confirmation
+- Spike #4 re-run: Security shim verified on real Windows (62→0). Final
+  logic-package blocker `ObjectiveC` (62 errors, all `L10nBundleOverride.swift`)
+  — gated the Bundle swizzle behind `#if canImport(ObjectiveC)` with a
+  same-API no-op recorder on Windows (dynamic strings unaffected; neutral
+  replacement tracked as issue #10). Spike #5 = zero-blocker confirmation
 - `SECURITY.md`: local-first design stance, per-surface protection table,
   private vulnerability reporting via GitHub Security Advisories
 - README (en/zh): star CTA footer; Security section now links SECURITY.md
