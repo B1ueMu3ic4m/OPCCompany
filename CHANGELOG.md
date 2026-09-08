@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-08
+
 ### Added
 - **Headless CLI `opc` (v0.2.0)** — `status` / `goal` / `advance` / `report`
   drive the same CompanyStore and local snapshot as the GUI; links only the
