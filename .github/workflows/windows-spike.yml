@@ -26,11 +26,20 @@ jobs:
           $installer = "$env:RUNNER_TEMP\swift-installer.exe"
           curl.exe -sSL --fail --max-time 600 -o $installer $url
           Write-Host "downloaded $((Get-Item $installer).Length) bytes"
-          $p = Start-Process $installer -ArgumentList "/quiet","/norestart","/l*v","$env:RUNNER_TEMP\swift-install.log" -PassThru -Wait
+          # Machine scope writes HKLM\SOFTWARE\Swift\Platforms, which is where
+          # swift-driver looks for the Windows.platform (holding the stdlib).
+          # Per-user install (run #21) wrote only HKCU → driver found no platform
+          # → "unable to load standard library" despite a valid toolchain.
+          $p = Start-Process $installer -ArgumentList "/quiet","/norestart","INSTALLSCOPE=machine","/l*v","$env:RUNNER_TEMP\swift-install.log" -PassThru -Wait
           Write-Host "installer exit code: $($p.ExitCode)"
 
-          $root = "$env:LOCALAPPDATA\Programs\Swift"
-          if (-not (Test-Path $root)) { $root = "C:\Program Files\Swift" }
+          Write-Host "=== HKLM Swift registry ==="
+          Get-ChildItem "HKLM:\SOFTWARE\Swift" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
+          Write-Host "=== HKCU Swift registry ==="
+          Get-ChildItem "HKCU:\SOFTWARE\Swift" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
+
+          $root = "C:\Program Files\Swift"
+          if (-not (Test-Path $root)) { $root = "$env:LOCALAPPDATA\Programs\Swift" }
           Write-Host "=== Swift root tree (depth 2) ==="
           Get-ChildItem $root -Recurse -Depth 2 -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName.Substring($root.Length))" }
           $exe = Get-ChildItem $root -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
