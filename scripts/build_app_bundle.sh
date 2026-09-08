@@ -20,6 +20,10 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$ROOT_DIR/.build/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 chmod +x "$MACOS_DIR/$APP_NAME"
+# v0.2.0: the headless CLI rides along inside the bundle's MacOS dir so a
+# downloaded app is also a working `opc` (see README "Headless CLI").
+cp "$ROOT_DIR/.build/release/opc" "$MACOS_DIR/opc"
+chmod +x "$MACOS_DIR/opc"
 cp "$ROOT_DIR/Assets/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 mkdir -p "$RESOURCES_DIR/en.lproj" "$RESOURCES_DIR/zh-Hans.lproj"
 if [[ -d "$ROOT_DIR/Resources/l10n/en.lproj" ]]; then
@@ -74,8 +78,11 @@ PLIST
 
 if [[ "${OPC_SKIP_ADHOC_SIGN:-0}" != "1" ]]; then
     if command -v codesign >/dev/null 2>&1; then
-        # Current bundle has no embedded helpers/frameworks; sign nested components explicitly if that changes.
+        # v0.2.0+: opc is a nested Mach-O inside MacOS/ — seal it before the
+        # outer bundle or `codesign --verify` fails on the unsealed binary.
+        codesign --force --sign - "$MACOS_DIR/opc"
         codesign --force --sign - "$APP_DIR"
+        codesign --verify --deep --strict "$APP_DIR"
     else
         echo "warning: codesign not found; bundle remains unsigned" >&2
     fi
