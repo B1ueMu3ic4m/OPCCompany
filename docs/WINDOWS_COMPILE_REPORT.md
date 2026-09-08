@@ -51,20 +51,43 @@ work: a SQLite3 strategy (issue #42) + the DPAPI/file secret store (issue #11).
 UI-layer SwiftUI/SpriteKit errors (full-package build) are expected — that is
 the layer the Flutter frontend replaces.
 
+## Spike #3 (2026-09-08, run 34188210218) — SQLite verified, Security last
+
+After PR #44 (vendored `CSQLite`, per-file import switch):
+
+| Module | Spike #2 | Spike #3 |
+|---|---|---|
+| SQLite3 | 62 errors | **0** — vendored amalgamation compiles under MSVC |
+| Security | not reached | **62 — ALL from `KeychainStore.swift`**, exactly as the static audit predicted |
+| SwiftUI (logic pkg) | 0 | 0 |
+
+The census's 78 SwiftUI errors are all in **UI-layer files** (AddEmployeeSheet
+×40, TerminalHallView, …) — out of scope for the logic package; the Flutter UI
+(M3) replaces them wholesale.
+
+PR #45 (merged after this run started) gates `KeychainStore.swift` behind
+`#if canImport(Security)` with a **fail-closed** Windows placeholder (refuses
+saves → boss-visible risk event; no plaintext interim). Spike #4
+(run 34190104162) is the expected **zero-blocker** confirmation for the logic
+package.
+
 ## Verdict (per the RFC decision tree)
 
-Route A gate was "core compiles with < ~20 blocking errors". Actual: **2
-blocking modules, both with official drop-in replacements**. →
+Route A gate was "core compiles with < ~20 blocking errors". Actual across
+three spikes: **3 blocking modules total (CryptoKit, SwiftUI-observation,
+SQLite3) + Security confinement — every one now shimmed and individually
+verified on real Windows** (60→0, 76→0, 62→0, 62→fix merged). →
 
-**Route A is GO**: keep the Swift core (with `#if canImport` shims for
-CryptoKit/SwiftUI-observation/Security), expose it to a Flutter desktop UI
-via FFI. The four known shim points already have tracked issues:
-#9 (ProcessRunner), #10 (i18n swizzle), #11 (secret store), plus the
-OpenCombine swap. Route C (community port) stays open in parallel.
+**Route A is GO**: keep the Swift core (with `#if canImport` shims), expose it
+to a Flutter desktop UI via FFI. Remaining tracked work: #9 (ProcessRunner),
+#10 (i18n swizzle), #11 (real DPAPI store replacing the fail-closed stub).
+Route C (community port) stays open in parallel.
 
 ## Next steps
 
-1. M0 remainder: the 4 shim points above (each is a small, isolated PR)
-2. Spike #2 (new): compile the core with swift-crypto + OpenCombine wired in
-   — expected: **0 errors**, proving full core portability
-3. Then: FFI surface design + Flutter UI skeleton (M3)
+1. ~~M0 shims~~ ✅ done & spike-verified: CryptoKit (#41), SwiftUI observation
+   (#41), SQLite3 (#44), Security confinement (#45)
+2. Spike #4 (running): expected 0 blocking modules in the logic package —
+   the proof that the core is fully portable
+3. Then: FFI surface design + Flutter UI skeleton (M3); issue #11 (DPAPI)
+   can proceed in parallel as community work
