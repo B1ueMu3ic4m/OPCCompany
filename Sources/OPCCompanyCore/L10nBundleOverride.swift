@@ -1,4 +1,6 @@
 import Foundation
+
+#if canImport(ObjectiveC)
 import ObjectiveC
 
 /// Makes Bundle.main .strings lookups follow the in-app language selection.
@@ -47,3 +49,28 @@ public enum L10nBundleOverride {
         }
     }
 }
+
+#else
+// ═══ Windows / platforms without the ObjC runtime ═══
+//
+// The swizzle exists ONLY to redirect SwiftUI `Text("literal")` lookups
+// through Bundle.main — there is no SwiftUI on Windows, so the mechanism is
+// moot. Dynamic strings keep working through the platform-neutral path
+// (`"中文".L()` → AppStrings.sessionLanguage, set by L10nEnvironment right
+// after this call). Same public API so L10nEnvironment compiles unchanged;
+// `selected` is recorded for behavioral parity and testability.
+// Tracked as issue #10 (replace the swizzle with a neutral lookup).
+public enum L10nBundleOverride {
+    nonisolated(unsafe) static var selected: AppLanguage?
+
+    public static func install() { /* no-op: no Bundle consumers on this platform */ }
+
+    public static func select(_ language: AppLanguage) {
+        switch language.resolving() {
+        case .english: selected = .english
+        case .simplifiedChinese: selected = .simplifiedChinese
+        case .system: selected = nil
+        }
+    }
+}
+#endif
