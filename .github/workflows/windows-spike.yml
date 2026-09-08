@@ -9,7 +9,11 @@ on:
 
 jobs:
   spike:
-    runs-on: windows-latest
+    # windows-latest now ships VS 2026 (v18); Swift 6.3.3's driver fails SDK
+    # detection against it → 'unable to load standard library'. Pin the
+    # windows-2022 image (VS 17), which is the toolset Swift on Windows
+    # officially supports.
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
 
