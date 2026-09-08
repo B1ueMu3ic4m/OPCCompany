@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(SwiftUI)
 import SwiftUI
+#endif
 
 // MARK: - Agents
 // Extracted from CompanyStore.swift (v0.2 god-class split). Implementation

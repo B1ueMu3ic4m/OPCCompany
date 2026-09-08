@@ -1,4 +1,6 @@
+#if canImport(SwiftUI)
 import SwiftUI
+#endif
 
 /// Observable app language state with persistence.
 /// Resolution order: explicit initial value > OPC_FORCE_LANGUAGE env (tests/CI)
@@ -59,6 +61,7 @@ public final class L10nEnvironment: ObservableObject {
     }
 }
 
+#if canImport(SwiftUI)
 /// SwiftUI environment plumbing so every view can read the active language.
 private struct AppLanguageEnvironmentKey: EnvironmentKey {
     public static let defaultValue: AppLanguage = .system
@@ -70,3 +73,4 @@ extension EnvironmentValues {
         set { self[AppLanguageEnvironmentKey.self] = newValue }
     }
 }
+#endif

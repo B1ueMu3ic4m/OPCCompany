@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(SwiftUI)
 import SwiftUI
+#endif
 
 public enum CTOAutopilotState: Equatable {
     case idle
