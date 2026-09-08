@@ -1,9 +1,9 @@
 import Foundation
-import Security
 
-/// Bridge between the platform-neutral `OPCSecretStatus` and the raw
-/// `OSStatus` codes this store produces — CompanyStore and the tests speak one
-/// language while Keychain stays the only Security-typed file.
+#if canImport(Security)
+// Bridge between the platform-neutral `OPCSecretStatus` and the raw
+// `OSStatus` codes this store produces — CompanyStore and the tests speak one
+// language while Keychain stays the only Security-typed file.
 extension OPCSecretStatus {
     init(_ status: OSStatus) { self.rawValue = status }
     var osStatus: OSStatus { rawValue }
@@ -108,3 +108,34 @@ public struct OPCKeychainSecretStore: OPCSecretStoreProtocol {
         OPCKeychainStore.deleteAPIKey(agentID: id)
     }
 }
+
+#else
+// ═══ Windows / other platforms without Security.framework ═══
+//
+// FAIL-CLOSED placeholder: saving a secret REFUSES (authFailed) and loading
+// returns empty, so the boss-facing risk event path (CompanyStore converts any
+// non-success status into a visible warning) fires immediately instead of the
+// app silently storing API keys in plaintext. Plaintext-at-rest is NOT an
+// acceptable interim for a local-first app that holds paid API credentials —
+// see SECURITY.md.
+//
+// The real Windows store (DPAPI via CryptProtectData, per-user profile) is
+// tracked in issue #11 (good-first-issue). When it lands, it replaces this
+// stub's bodies; the type name and protocol stay the same so no call site
+// changes.
+public struct OPCKeychainSecretStore: OPCSecretStoreProtocol {
+    public init() {}
+
+    public func saveSecret(_ value: String, account: String) -> OPCSecretStatus {
+        .authFailed
+    }
+
+    public func loadSecret(account: String) -> String {
+        ""
+    }
+
+    public func deleteSecret(account: String) {
+        // nothing stored — no-op
+    }
+}
+#endif
