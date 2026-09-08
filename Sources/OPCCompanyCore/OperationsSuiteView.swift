@@ -2360,8 +2360,5 @@ extension View {
     }
 }
 
-extension String {
-    var nilIfBlank: String? {
-        isEmpty ? nil : self
-    }
-}
+// nilIfBlank moved to StringExtras.swift (logic layer — spike #5:
+// used by CompanyStore+Runtime/Tasks/Reports, which must compile headless).

@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking  // Windows: URLSession lives here (swift-corelibs split)
+#endif
 
 public protocol CLIAgentRunner {
     func command(for agent: CompanyAgent, prompt: String) -> [String]
@@ -172,7 +175,16 @@ public enum AgentProcessRunner {
                                 let killMessage = "\n命令在 SIGTERM 后仍在运行，已升级到 SIGKILL 强制结束。\n".L().L()
                                 outputBuffer.append(killMessage, isError: true)
                                 onOutput(killMessage)
+                                #if canImport(Darwin) || canImport(Glibc)
                                 kill(pid, SIGKILL)
+                                #else
+                                // Windows has no POSIX signals; Foundation's
+                                // Process.terminate() there maps to
+                                // TerminateProcess — an immediate hard kill
+                                // that a child cannot trap, which is exactly
+                                // what the SIGKILL escalation means.
+                                process.terminate()
+                                #endif
                             }
                         }
                     }

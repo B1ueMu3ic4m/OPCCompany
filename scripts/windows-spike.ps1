@@ -27,7 +27,7 @@ swift build --target OPCCompanyCore 2>&1 | Tee-Object -FilePath spike-full-log.t
 # ---------- Step 2: logic-only package ----------
 Write-Host "`n=== [2/2] Logic-only build ==="
 $logic = @(
-  'Models.swift','CompanyStore.swift','CompanyPersistence.swift','KeychainStore.swift','ObservationCompat.swift',
+  'Models.swift','CompanyStore.swift','CompanyPersistence.swift','KeychainStore.swift','ObservationCompat.swift','AgentMessageDisplay.swift','StringExtras.swift',
   'SecretStore.swift','AppStrings.swift','AppStringsTables.swift','AppStringsReverse.swift',
   'AppStringsGenerated.swift','AppLanguage.swift','L10nEnvironment.swift','L10nBundleOverride.swift',
   'DisplayFormatting.swift','CLIAgentRunner.swift','CLIAutoInteractionLoopGate.swift',

@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking  // Windows: URLSession lives here (swift-corelibs split)
+#endif
 #if canImport(SwiftUI)
 import SwiftUI
 #endif

@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking  // Windows: URLSession lives here (swift-corelibs split)
+#endif
 
 public struct CommunicationDispatchResult: Equatable, Sendable {
     public var succeeded: Bool
