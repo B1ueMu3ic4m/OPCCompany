@@ -89,7 +89,20 @@ jobs:
           Write-Host "=== toolchain stdlib layout ==="
           $libSwift = Join-Path (Split-Path $bin) "lib\swift"
           Get-ChildItem $libSwift -Depth 1 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName.Substring($libSwift.Length))" }
-          Write-Host "=== hello-world compile probe ==="
+          # ═══ THE FIX (from scoop's authoritative swift.json) ═══
+          # scoop NEVER touches the registry — it sets SDKROOT to the platform's
+          # Windows.sdk dir and puts Runtimes\usr\bin + Toolchains\usr\bin on
+          # PATH. That's how swift-driver finds the stdlib. Our registry writes
+          # were a red herring; SDKROOT is the real mechanism.
+          if ($platDir) {
+            $sdk = Join-Path $platDir.FullName "Developer\SDKs\Windows.sdk"
+            if (Test-Path $sdk) {
+              $env:SDKROOT = $sdk
+              "SDKROOT=$sdk" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+              Write-Host "SDKROOT=$sdk"
+            } else { Write-Host "SDK dir missing: $sdk" }
+          }
+          Write-Host "=== hello-world compile probe (with SDKROOT) ==="
           Set-Content -Path "$env:RUNNER_TEMP\hello.swift" -Value 'print("hello windows swift")'
           $hp = Start-Process $exe.FullName -ArgumentList "$env:RUNNER_TEMP\hello.swift" -PassThru -Wait -WorkingDirectory $env:RUNNER_TEMP -RedirectStandardOutput "$env:RUNNER_TEMP\hello-out.txt" -RedirectStandardError "$env:RUNNER_TEMP\hello-err.txt"
           Write-Host "hello exit=$($hp.ExitCode)"
