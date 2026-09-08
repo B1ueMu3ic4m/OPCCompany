@@ -1,4 +1,9 @@
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+// Windows/Linux: apple/swift-crypto provides the identical HMAC<SHA256> API.
+import Crypto
+#endif
 import Foundation
 
 public enum CommunicationInboundVerificationResult: Equatable, Sendable {

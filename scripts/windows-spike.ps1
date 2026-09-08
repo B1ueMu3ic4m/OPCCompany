@@ -27,7 +27,7 @@ swift build --target OPCCompanyCore 2>&1 | Tee-Object -FilePath spike-full-log.t
 # ---------- Step 2: logic-only package ----------
 Write-Host "`n=== [2/2] Logic-only build ==="
 $logic = @(
-  'Models.swift','CompanyStore.swift','CompanyPersistence.swift','KeychainStore.swift',
+  'Models.swift','CompanyStore.swift','CompanyPersistence.swift','KeychainStore.swift','ObservationCompat.swift',
   'SecretStore.swift','AppStrings.swift','AppStringsTables.swift','AppStringsReverse.swift',
   'AppStringsGenerated.swift','AppLanguage.swift','L10nEnvironment.swift','L10nBundleOverride.swift',
   'DisplayFormatting.swift','CLIAgentRunner.swift','CLIAutoInteractionLoopGate.swift',
@@ -49,7 +49,11 @@ foreach ($f in $logic) {
 import PackageDescription
 let package = Package(
     name: "OPCCompanyCore",
-    targets: [.target(name: "OPCCompanyCore", path: "Sources/OPCCompanyCore")]
+    dependencies: [.package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")],
+    targets: [.target(name: "OPCCompanyCore",
+        dependencies: [.product(name: "Crypto", package: "swift-crypto")],
+        path: "Sources/OPCCompanyCore",
+        linkerSettings: [.linkedLibrary("sqlite3")])]
 )
 '@ | Set-Content "$core\Package.swift"
 
