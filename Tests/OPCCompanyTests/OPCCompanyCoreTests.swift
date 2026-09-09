@@ -4562,8 +4562,14 @@ private func writeCLIJobArchive(
     #expect(script.contains("<key>CFBundleVersion</key>"))
     #expect(script.contains("<string>${BUILD_VERSION}</string>"))
     #expect(script.contains("BuildInfo.txt"))
-    #expect(script.contains("sign nested components explicitly if that changes"))
+    // v0.2.0+: the bundle ships a nested Mach-O (opc) — the script must seal
+    // it explicitly (deep sign on the outer bundle alone is the forbidden
+    // pattern; the old "no nested components" comment is obsolete).
+    #expect(script.contains("codesign --force --sign - \"$MACOS_DIR/opc\""),
+            "嵌套的 opc 必须先于外层 bundle 显式签名")
     #expect(script.contains("codesign --force --sign - \"$APP_DIR\""))
+    #expect(script.contains("codesign --verify --deep --strict \"$APP_DIR\""),
+            "打包后必须做 deep-strict 验证,嵌套漏签会被当场抓出")
     #expect(!script.contains("codesign --force --deep --sign - \"$APP_DIR\""))
     #expect(script.contains("OPC_SKIP_ADHOC_SIGN"))
 }
