@@ -85,6 +85,10 @@ swift build -c release --product opc
 [Windows port](docs/WINDOWS_PORT_RFC.md) path: the logic package has built on
 real Windows with zero errors since 2026-09-08.
 
+> Write commands (`goal`, `advance`) refuse to run while the desktop app is
+> open — both share one snapshot and last writer wins. Quit the app, or set
+> `OPC_ALLOW_CONCURRENT_WRITE=1` if you're sure nothing else writes.
+
 ## The Workflow
 
 ```mermaid

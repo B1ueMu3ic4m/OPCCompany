@@ -27,6 +27,9 @@ private func withStore(_ body: (CompanyStore) throws -> Void) throws {
     try body(CompanyStore.bootstrap(loadPersisted: true))
 }
 
+// Errors surfaced as a clean "error: …" line + exit code, never a Swift trap.
+struct CLIError: Error { let message: String }
+
 private func usage() -> String {
     """
     opc — run your local AI company from the terminal. (v0.2.0)
@@ -39,12 +42,9 @@ private func usage() -> String {
 
     All commands read and write the same local company snapshot the desktop app
     uses, so CLI and GUI stay in sync. State lives under the OPC app-support
-    directory; nothing leaves your machine.
+    directory (override with OPC_COMPANY_SUPPORT_DIR); nothing leaves your machine.
     """
 }
-
-// Minimal CLI errors surfaced as clean messages + exit code, not Swift traps.
-struct CLIError: Error { let message: String }
 
 @MainActor
 private func requireProduct(_ store: CompanyStore) throws -> ProductWorkspace {
@@ -52,6 +52,38 @@ private func requireProduct(_ store: CompanyStore) throws -> ProductWorkspace {
         throw CLIError(message: "no product selected — open the desktop app once and pick/create a product first.")
     }
     return product
+}
+
+/// Write commands (goal/advance) refuse to run while the desktop app is
+/// alive: both processes share ONE snapshot file with last-writer-wins
+/// merge, so a CLI save from stale-read state would silently rewind whatever
+/// the app persists meanwhile. Sequential CLI runs (goal && advance) are
+/// safe — each reloads from disk, and only a real GUI process (comm name
+/// "OPCCompany"; the CLI's own name is "opc", so it never self-matches)
+/// can hold unflushed in-memory state. On platforms without pgrep (Windows
+/// port) the check no-ops; a proper cross-process lock belongs to M3 when
+/// the Flutter shell introduces real concurrency.
+/// Override with OPC_ALLOW_CONCURRENT_WRITE=1 (headless CI, scripted setups).
+private func guardNoConcurrentWriter() throws {
+    if ProcessInfo.processInfo.environment["OPC_ALLOW_CONCURRENT_WRITE"] == "1" { return }
+    let pgrep = Process()
+    pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+    pgrep.arguments = ["-x", "OPCCompany"]
+    pgrep.standardOutput = FileHandle.nullDevice
+    pgrep.standardError = FileHandle.nullDevice
+    let appRunning: Bool
+    do {
+        try pgrep.run()
+        pgrep.waitUntilExit()
+        appRunning = pgrep.terminationStatus == 0
+    } catch {
+        appRunning = false  // no pgrep → no detection available
+    }
+    if appRunning {
+        throw CLIError(message: "OPCCompany.app is running — the desktop app shares this snapshot "
+            + "and last writer wins. Quit it first, or set OPC_ALLOW_CONCURRENT_WRITE=1 if you are "
+            + "sure nothing else writes.")
+    }
 }
 
 @main
@@ -120,6 +152,7 @@ struct OPC {
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw CLIError(message: "usage: opc goal \"one-sentence objective\"")
         }
+        try guardNoConcurrentWriter()
         try withStore { store in
             _ = try requireProduct(store)
             let before = Set(store.tasks.map(\.id))
@@ -135,6 +168,7 @@ struct OPC {
 
     @MainActor
     static func advance() throws {
+        try guardNoConcurrentWriter()
         try withStore { store in
             let progressed = store.advanceCTOSupervisorLoop()
             print(progressed

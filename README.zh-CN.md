@@ -71,6 +71,9 @@ swift build -c release --product opc
 
 完整英文说明见 [README.md](README.md#headless-cli-opc)。
 
+> 写命令(`goal`、`advance`)在桌面 App 打开时会被拒绝——两者共用同一份快照,后写者胜。
+> 先退出 App,或确认无其他写入方时设 `OPC_ALLOW_CONCURRENT_WRITE=1`。
+
 完整英文文档见 [README.md](README.md)。
 
 ## 工作流
