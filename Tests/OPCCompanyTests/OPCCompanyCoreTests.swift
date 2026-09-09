@@ -16913,6 +16913,54 @@ private func makeStoreWithAPIAgent(
     #expect(!cli.contains("CompanyPersistence.load"), "CLI 必须经 CompanyStore.bootstrap,不得直读持久化")
 }
 
+#if !canImport(SwiftUI)
+@Test func observationCompatBusTokensAreRemovable() {
+    // Windows/Linux compat 层的总线必须支持摘钩(M3 FFI 断连场景),
+    // remove 之后不得再收到通知。Apple 平台没有这个类型,故条件编译。
+    let bus = OPCObservationBus()
+    var hits = 0
+    let keep = bus.addListener { hits += 1 }
+    _ = bus.addListener { hits += 100 }   // will be removed
+    bus.removeListener(keep)
+    bus.publish()
+    #expect(hits == 100, "removeListener 后仍收到被移除者的通知")
+}
+#endif
+
+@Test func headlessCLIGuardRequiresBothCrossProcessSignals() throws {
+    // v0.2.0 守护的不变量:拦截信号必须跨进程可见(mtime/pgrep),
+    // 禁止用本进程内存时间戳判断"另一个进程在写"——那是结构性 bug。
+    let projectRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let cli = try String(contentsOf: projectRoot.appendingPathComponent("Sources/OPC/OPC.swift"), encoding: .utf8)
+    #expect(cli.contains("guardNoConcurrentWriter"), "写命令必须有并发守护")
+    // 信号必须是进程存活性(pgrep -x OPCCompany):CLI 自身进程名是 opc,永不匹配,
+    // 所以 goal && advance 脚本连跑不被误伤。mtime 方案曾被否决正是因为它把
+    // CLI 自己的保存误判成"别的进程在写"——不得复活。
+    #expect(cli.contains("pgrep"), "守护用进程存活检测")
+    #expect(!cli.contains("modificationDate"), "禁止用快照 mtime 做守护(误伤 CLI 连跑)")
+    #expect(!cli.contains("lastSaveDate"), "禁止依赖进程内时间戳判断他人写入(看不到)")
+    #expect(cli.contains("OPC_ALLOW_CONCURRENT_WRITE"), "必须留无头环境覆盖钩子")
+    // goal/advance 写命令都要先过守护;status/report 只读不拦。
+    func segment(_ text: String, from: String, to: String) -> String {
+        let lo = text.range(of: from)!.lowerBound
+        let hi = text.range(of: to)!.lowerBound
+        return String(text[lo..<hi])
+    }
+    #expect(segment(cli, from: "static func goal", to: "static func advance")
+            .contains("guardNoConcurrentWriter"), "goal 必须走守护")
+    #expect(segment(cli, from: "static func advance", to: "static func report")
+            .contains("guardNoConcurrentWriter"), "advance 必须走守护")
+}
+
+@Test func companyPersistenceHasNoInProcessSaveTimestamp() throws {
+    // 反复活守卫:审计轮(2026-09)曾引入 lastSaveDate 并被 CLI 误用为跨进程信号
+    // (本进程时间戳看不到另一个进程的写入)。持久化层不得再出现进程内"最后保存
+    // 时间"类公共 API —— 跨进程写入检测的唯一正确信号是文件 mtime/pgrep。
+    let src = try loadOPCCompanyCoreSource("CompanyPersistence.swift")
+    #expect(!src.contains("lastSaveDate"), "禁止复活进程内保存时间戳公共 API")
+}
+
 // MARK: - 源码扫描类测试共享 helper（角色继承期轮 20 抽取 + 轮 23 扩展）
 
 /// 读取项目内 `Sources/OPCCompanyCore/<relativePath>` 文件全文。

@@ -36,19 +36,34 @@ public final class Published<Value> {
     }
 }
 
-/// Process-wide change bus for the compat layer.
+/// Process-wide change bus for the compat layer. Listeners are addressable
+/// tokens (added/removed by handle) — the M3 FFI layer subscribes when a UI
+/// client connects and MUST unsubscribe on disconnect, so a leaking closure
+/// list is also a memory leak of whatever it captures.
 public final class OPCObservationBus: @unchecked Sendable {
+    /// Opaque handle returned by addListener; pass to removeListener.
+    public struct Token: Hashable { let id: UInt64 }
+
     public static let shared = OPCObservationBus()
-    private var listeners: [() -> Void] = []
+    private var listeners: [Token: () -> Void] = [:]
+    private var nextID: UInt64 = 1
     private let lock = NSLock()
 
-    public func addListener(_ listener: @escaping () -> Void) {
-        lock.lock(); listeners.append(listener); lock.unlock()
+    @discardableResult
+    public func addListener(_ listener: @escaping () -> Void) -> Token {
+        lock.lock(); defer { lock.unlock() }
+        let token = Token(id: nextID); nextID += 1
+        listeners[token] = listener
+        return token
+    }
+
+    public func removeListener(_ token: Token) {
+        lock.lock(); listeners.removeValue(forKey: token); lock.unlock()
     }
 
     func publish() {
         lock.lock()
-        let snapshot = listeners
+        let snapshot = Array(listeners.values)
         lock.unlock()
         for listener in snapshot { listener() }
     }

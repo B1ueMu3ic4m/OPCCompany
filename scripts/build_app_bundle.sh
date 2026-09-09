@@ -13,6 +13,8 @@ BUILT_AT_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 cd "$ROOT_DIR"
 swift "$ROOT_DIR/scripts/generate_app_icon.swift" "$ROOT_DIR"
+# Builds EVERY product in the package (GUI + the v0.2.0 `opc` CLI) — the
+# bundle embeds both binaries below, so no per-product build line is needed.
 swift build -c release
 
 rm -rf "$APP_DIR"

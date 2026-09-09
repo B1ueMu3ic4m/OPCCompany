@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- **CLI data-loss guard (audit 2026-09-09)**: `opc goal`/`opc advance` now
+  refuse to write while OPCCompany.app is running (pgrep, comm-name exact so
+  the CLI never self-matches; sequential CLI runs stay safe) — previously a
+  CLI save from stale-read state could silently rewind whatever the GUI
+  persisted meanwhile. Override: `OPC_ALLOW_CONCURRENT_WRITE=1`
+- Windows/Linux `OPCObservationBus` listener list is now token-addressable
+  with `removeListener` (M3 FFI disconnects must be able to unsubscribe;
+  the append-only list leaked every connected UI client)
+
+### Added
+- 3 audit regression tests: guard-signal invariants (no mtime, no
+  in-process timestamp — anti-resurrection), bus add/remove semantics
+
 ## [0.2.0] - 2026-09-08
 
 ### Added
