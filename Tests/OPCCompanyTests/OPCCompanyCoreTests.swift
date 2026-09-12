@@ -16953,6 +16953,25 @@ private func makeStoreWithAPIAgent(
             .contains("guardNoConcurrentWriter"), "advance 必须走守护")
 }
 
+@Test func dpapiSecretStorePathSafetyAndWiring() throws {
+    // issue #11 守门(源码级,跨平台可跑):DPAPI store 的路径注入面与接线。
+    let src = try loadOPCCompanyCoreSource("DPAPISecretStore.swift")
+    // blob 文件名必须过 UUID 校验——非 UUID 落空名,天然拒绝目录逃逸。
+    #expect(src.contains("UUID(uuidString: account) != nil"),
+            "blob 路径必须做 UUID 白名单校验(防 ../ 逃逸)")
+    // 必须使用 CRYPTPROTECT_UI_FORBIDDEN(headless 存储不得弹系统对话框)。
+    #expect(src.contains("CRYPTPROTECT_UI_FORBIDDEN"), "DPAPI 必须禁用 UI 提示")
+    // 必须带 app-domain entropy(通道绑定,防其他 DPAPI 应用的 blob 误开)。
+    #expect(src.contains("entropyBlob"), "entropy 必须以 CRYPT_DATA_BLOB 传入")
+    // 整个文件必须同时 gate 在无 Security + 有 CWinDPAPI 平台。
+    #expect(src.hasPrefix("#if !canImport(Security) && canImport(CWinDPAPI)"),
+            "DPAPI store 只能在 Windows+shim 环境编译")
+    let kc = try loadOPCCompanyCoreSource("KeychainStore.swift")
+    #expect(kc.contains("public typealias OPCKeychainSecretStore = OPCDPAPISecretStore"),
+            "DPAPI 可达时 Keychain 门面必须路由到真实 store")
+    #expect(kc.contains("OPCDPAPISecretStore"), "门面接线引用具体类型")
+}
+
 @Test func companyPersistenceHasNoInProcessSaveTimestamp() throws {
     // 反复活守卫:审计轮(2026-09)曾引入 lastSaveDate 并被 CLI 误用为跨进程信号
     // (本进程时间戳看不到另一个进程的写入)。持久化层不得再出现进程内"最后保存

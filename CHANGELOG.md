@@ -5,6 +5,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **Windows DPAPI secret store (closes #11)**: `OPCDPAPISecretStore` —
+  per-user `CryptProtectData` via a header-only `CWinDPAPI` shim (same
+  pattern as CSQLite; crypt32 linked Windows-only). API keys now have a
+  real at-rest protection story on Windows instead of the fail-closed
+  stub: ciphertext blobs under `secrets/<uuid>.blob`, app-domain entropy
+  for channel binding, `CRYPTPROTECT_UI_FORBIDDEN`, UUID-whitelisted paths.
+  `OPCKeychainSecretStore` routes there automatically via typealias —
+  zero call-site changes.
+- Spike #7 gate: a real **runtime probe** (`spikeprobe`) executes
+  save→load-match→ciphertext-on-disk→delete on the Windows runner —
+  compiling DPAPI headers proves nothing; the step now fails unless all
+  four probe lines are green.
+- 1 guard test (path-injection/UI-forbidden/entropy/wiring invariants)
+### Changed
+- KeychainStore's `#else` branch: fail-closed remains ONLY where no DPAPI
+  is reachable (Linux dev boxes); Windows gets the real store.
+
 ### Fixed
 - **CLI data-loss guard (audit 2026-09-09)**: `opc goal`/`opc advance` now
   refuse to write while OPCCompany.app is running (pgrep, comm-name exact so

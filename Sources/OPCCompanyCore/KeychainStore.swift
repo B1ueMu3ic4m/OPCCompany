@@ -112,17 +112,17 @@ public struct OPCKeychainSecretStore: OPCSecretStoreProtocol {
 #else
 // ═══ Windows / other platforms without Security.framework ═══
 //
-// FAIL-CLOSED placeholder: saving a secret REFUSES (authFailed) and loading
-// returns empty, so the boss-facing risk event path (CompanyStore converts any
-// non-success status into a visible warning) fires immediately instead of the
-// app silently storing API keys in plaintext. Plaintext-at-rest is NOT an
-// acceptable interim for a local-first app that holds paid API credentials —
-// see SECURITY.md.
-//
-// The real Windows store (DPAPI via CryptProtectData, per-user profile) is
-// tracked in issue #11 (good-first-issue). When it lands, it replaces this
-// stub's bodies; the type name and protocol stay the same so no call site
-// changes.
+// Where DPAPI is reachable (Windows + the CWinDPAPI shim), the real store
+// takes over — API keys are DPAPI-protected per-user (issue #11 landed).
+// On any other platform the fail-closed placeholder remains: saving a secret
+// REFUSES (authFailed) and loading returns empty, so the boss-facing risk
+// event path (CompanyStore converts any non-success status into a visible
+// warning) fires immediately instead of the app silently storing API keys in
+// plaintext. Plaintext-at-rest is NOT acceptable for a local-first app that
+// holds paid API credentials — see SECURITY.md.
+#if canImport(CWinDPAPI)
+public typealias OPCKeychainSecretStore = OPCDPAPISecretStore
+#else
 public struct OPCKeychainSecretStore: OPCSecretStoreProtocol {
     public init() {}
 
@@ -138,4 +138,5 @@ public struct OPCKeychainSecretStore: OPCSecretStoreProtocol {
         // nothing stored — no-op
     }
 }
+#endif
 #endif
