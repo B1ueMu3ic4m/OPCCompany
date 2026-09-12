@@ -49,7 +49,7 @@ import OPCCompanyCore
 
 let account = UUID().uuidString
 let store = OPCDPAPISecretStore()
-let secret = "sk-probe-secret-abc123"
+let secret = "OPC-DPAPI-PROBE-NOT-A-REAL-KEY"
 let save = store.saveSecret(secret, account: account)
 print("probe-save:\(save.isSuccess)")
 print("probe-load-match:\(store.loadSecret(account: account) == secret)")
@@ -61,7 +61,8 @@ if let raw = try? Data(contentsOf: blob) {
     print("probe-blob-missing:false")
 }
 store.deleteSecret(account: account)
-print("probe-delete:\(store.loadSecret(account: account) == \"\")")
+let gone = store.loadSecret(account: account)
+print("probe-delete:\(gone.isEmpty)")
 '@
 foreach ($f in $logic) {
   $src = Join-Path $root "Sources\OPCCompanyCore\$f"
@@ -133,22 +134,37 @@ foreach ($k in $patterns.Keys) {
 }
 $census["total-error-lines"] = ([regex]::Matches($log, "error:")).Count
 $census.GetEnumerator() | ForEach-Object { Write-Host ("{0,-26} {1}" -f $_.Key, $_.Value) }
-$census | ConvertTo-Json | Set-Content spike-census.json
-Write-Host "`nArtifacts: spike-full-log.txt spike-core-log.txt spike-census.json"
-# Honest step status: succeed if the build COMPLETED (the port milestone), or
-# if the census reached real module errors (data for the next shim round).
-# Fail only when neither holds — everything still stdlib-load failure = env
-# problem, not data.
+Write-Host "`nArtifacts: spike-full-log.txt spike-core-log.txt spike-probe-log.txt spike-census.json"
+# Honest step status. Spike #7 lesson: the old gate could be satisfied by
+# FULL-package noise (UI files are supposed to fail — M3 scope) while the
+# CORE logic package or the DPAPI probe was broken. Separate the signals:
+#   coreErrors  = error: lines from the logic-only build
+#   probeOk     = all four DPAPI runtime lines green on real Windows
+#   MILESTONE   = coreErrors == 0 AND probeOk  → print + exit 0
+#   otherwise   = real core data present → exit 0 (next shim round gets it)
+#                 but a silent env failure (no data at all) → exit 1
+$coreLog = ""
+if (Test-Path spike-core-log.txt) { $coreLog += (Get-Content spike-core-log.txt -Raw) }
+$coreErrorCount = ([regex]::Matches($coreLog, "error:")).Count
+$census["core-error-lines"] = $coreErrorCount
 $probeLog = ""
 if (Test-Path spike-probe-log.txt) { $probeLog += (Get-Content spike-probe-log.txt -Raw) }
-$probeOk = ($probeLog -match "probe-save:True") -and ($probeLog -match "probe-load-match:True") `
-    -and ($probeLog -match "probe-ciphertext-on-disk:True") -and ($probeLog -match "probe-delete:True")
-Write-Host "DPAPI probe all-green: $probeOk"
-$buildOk = ($log -match "Build complete") -and $probeOk
-$realModules = ($census["missing-module-SwiftUI"] + $census["missing-module-Combine"] + $census["missing-module-SpriteKit"] + $census["missing-module-AppKit"] + $census["missing-module-Security"] + $census["missing-module-CryptoKit"] + $census["missing-module-SQLite3"] + $census["cannot-find-type"])
-if ($buildOk) {
-  Write-Host "SPIKE MILESTONE: logic package BUILT on Windows (errors: $($census['total-error-lines']))"
-} elseif ($realModules -eq 0) {
-  Write-Host "NO REAL MODULE CENSUS — build never reached compilation (env problem). Failing step."
-  exit 1
+$probeLines = @{ "probe-save" = $false; "probe-load-match" = $false;
+                 "probe-ciphertext-on-disk" = $false; "probe-delete" = $false }
+foreach ($pl in $probeLines.Keys) {
+  $probeLines[$pl] = ($probeLog -match ($pl + ":True"))
 }
+$probeOk = -not ($probeLines.Values -contains $false)
+Write-Host "DPAPI probe all-green: $probeOk (core errors: $coreErrorCount)"
+$census | ConvertTo-Json | Set-Content spike-census.json
+if ($coreErrorCount -eq 0 -and $probeOk) {
+  Write-Host "SPIKE MILESTONE: logic package builds CLEAN on Windows + DPAPI runtime verified"
+  exit 0
+}
+$realModules = ($census["missing-module-SwiftUI"] + $census["missing-module-Combine"] + $census["missing-module-SpriteKit"] + $census["missing-module-AppKit"] + $census["missing-module-Security"] + $census["missing-module-CryptoKit"] + $census["missing-module-SQLite3"] + $census["cannot-find-type"])
+if ($coreErrorCount -gt 0 -or $realModules -gt 0) {
+  Write-Host "milestone NOT met, but real core/census data collected for the next round"
+  exit 0
+}
+Write-Host "NO REAL DATA — build never reached compilation (env problem). Failing step."
+exit 1
