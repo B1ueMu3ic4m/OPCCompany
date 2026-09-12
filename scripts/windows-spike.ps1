@@ -149,12 +149,17 @@ $coreErrorCount = ([regex]::Matches($coreLog, "error:")).Count
 $census["core-error-lines"] = $coreErrorCount
 $probeLog = ""
 if (Test-Path spike-probe-log.txt) { $probeLog += (Get-Content spike-probe-log.txt -Raw) }
-$probeLines = @{ "probe-save" = $false; "probe-load-match" = $false;
-                 "probe-ciphertext-on-disk" = $false; "probe-delete" = $false }
-foreach ($pl in $probeLines.Keys) {
-  $probeLines[$pl] = ($probeLog -match ($pl + ":True"))
+$probeLines = @("probe-save", "probe-load-match", "probe-ciphertext-on-disk", "probe-delete")
+$probeOk = $true
+foreach ($pl in $probeLines) {
+  # Swift's Bool interpolation prints lowercase `true` — matching ":True"
+  # silently never hits (spike #8 caught this: probe was all-green in the
+  # artifact but the gate said False). Pure concatenation: "$pl`:true" is a
+  # PS scope-parsing trap ($pl:var), and (?i) covers the casing.
+  $hit = ($probeLog -match ("(?i)" + [regex]::Escape($pl) + ":true"))
+  Write-Host ("probe {0}: green={1}" -f $pl, $hit)
+  if (-not $hit) { $probeOk = $false }
 }
-$probeOk = -not ($probeLines.Values -contains $false)
 Write-Host "DPAPI probe all-green: $probeOk (core errors: $coreErrorCount)"
 $census | ConvertTo-Json | Set-Content spike-census.json
 if ($coreErrorCount -eq 0 -and $probeOk) {
