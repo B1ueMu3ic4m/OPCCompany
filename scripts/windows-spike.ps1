@@ -27,7 +27,7 @@ swift build --target OPCCompanyCore 2>&1 | Tee-Object -FilePath spike-full-log.t
 # ---------- Step 2: logic-only package ----------
 Write-Host "`n=== [2/2] Logic-only build ==="
 $logic = @(
-  'Models.swift','CompanyStore.swift','CompanyPersistence.swift','KeychainStore.swift','ObservationCompat.swift','AgentMessageDisplay.swift','StringExtras.swift',
+  'Models.swift','CompanyStore.swift','CompanyPersistence.swift','KeychainStore.swift','ObservationCompat.swift','AgentMessageDisplay.swift','StringExtras.swift','DPAPISecretStore.swift',
   'SecretStore.swift','AppStrings.swift','AppStringsTables.swift','AppStringsReverse.swift',
   'AppStringsGenerated.swift','AppLanguage.swift','L10nEnvironment.swift','L10nBundleOverride.swift',
   'DisplayFormatting.swift','CLIAgentRunner.swift','CLIAutoInteractionLoopGate.swift',
@@ -40,6 +40,29 @@ $logic = @(
 $core = Join-Path $root "spike-core"
 Remove-Item -Recurse -Force $core -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path "$core\Sources\OPCCompanyCore" | Out-Null
+New-Item -ItemType Directory -Force -Path "$core\Sources\spikeprobe" | Out-Null
+# DPAPI runtime probe (issue #11): compiling the headers proves nothing —
+# protect→ciphertext-on-disk→unprotect→delete must actually RUN on Windows.
+Set-Content "$core\Sources\spikeprobe\main.swift" @'
+import Foundation
+import OPCCompanyCore
+
+let account = UUID().uuidString
+let store = OPCDPAPISecretStore()
+let secret = "sk-probe-secret-abc123"
+let save = store.saveSecret(secret, account: account)
+print("probe-save:\(save.isSuccess)")
+print("probe-load-match:\(store.loadSecret(account: account) == secret)")
+let blob = CompanyPersistence.supportDirectory
+    .appendingPathComponent("secrets").appendingPathComponent(account + ".blob")
+if let raw = try? Data(contentsOf: blob) {
+    print("probe-ciphertext-on-disk:\(!raw.contains(Data(secret.utf8)))")
+} else {
+    print("probe-blob-missing:false")
+}
+store.deleteSecret(account: account)
+print("probe-delete:\(store.loadSecret(account: account) == \"\")")
+'@
 foreach ($f in $logic) {
   $src = Join-Path $root "Sources\OPCCompanyCore\$f"
   if (Test-Path $src) { Copy-Item $src "$core\Sources\OPCCompanyCore\" }
@@ -50,6 +73,10 @@ foreach ($f in $logic) {
 New-Item -ItemType Directory -Force -Path "$core\Sources\CSQLite" | Out-Null
 Copy-Item "Sources\CSQLite\sqlite3.c" "$core\Sources\CSQLite\"
 Copy-Item "Sources\CSQLite\include" "$core\Sources\CSQLite\include" -Recurse
+# DPAPI header shim (issue #11): per-user CryptProtectData secret store.
+New-Item -ItemType Directory -Force -Path "$core\Sources\CWinDPAPI" | Out-Null
+Copy-Item "Sources\CWinDPAPI\dpapi_shim.c" "$core\Sources\CWinDPAPI\"
+Copy-Item "Sources\CWinDPAPI\include" "$core\Sources\CWinDPAPI\include" -Recurse
 @'
 // swift-tools-version: 6.0
 import PackageDescription
@@ -58,16 +85,27 @@ let package = Package(
     dependencies: [.package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")],
     targets: [
         .target(name: "CSQLite", path: "Sources/CSQLite", publicHeadersPath: "include"),
+        .target(name: "CWinDPAPI", path: "Sources/CWinDPAPI", publicHeadersPath: "include"),
         .target(name: "OPCCompanyCore",
             dependencies: [
                 .product(name: "Crypto", package: "swift-crypto"),
-                .target(name: "CSQLite")],
-            path: "Sources/OPCCompanyCore")]
+                .target(name: "CSQLite"),
+                .target(name: "CWinDPAPI")],
+            path: "Sources/OPCCompanyCore",
+            linkerSettings: [.linkedLibrary("crypt32")]),
+        .executableTarget(name: "spikeprobe",
+            dependencies: [.target(name: "OPCCompanyCore")],
+            path: "Sources/spikeprobe",
+            linkerSettings: [.linkedLibrary("crypt32")])]
 )
 '@ | Set-Content "$core\Package.swift"
 
 Push-Location $core
 swift build 2>&1 | Tee-Object -FilePath (Join-Path $root "spike-core-log.txt")
+# Probe run: isolated support dir via the app's own documented override hook.
+$env:OPC_COMPANY_SUPPORT_DIR = Join-Path $root "probe-support"
+swift run spikeprobe 2>&1 | Tee-Object -FilePath (Join-Path $root "spike-probe-log.txt")
+Remove-Item Env:OPC_COMPANY_SUPPORT_DIR
 Pop-Location
 
 # ---------- Error census ----------
@@ -101,7 +139,12 @@ Write-Host "`nArtifacts: spike-full-log.txt spike-core-log.txt spike-census.json
 # if the census reached real module errors (data for the next shim round).
 # Fail only when neither holds — everything still stdlib-load failure = env
 # problem, not data.
-$buildOk = $log -match "Build complete"
+$probeLog = ""
+if (Test-Path spike-probe-log.txt) { $probeLog += (Get-Content spike-probe-log.txt -Raw) }
+$probeOk = ($probeLog -match "probe-save:True") -and ($probeLog -match "probe-load-match:True") `
+    -and ($probeLog -match "probe-ciphertext-on-disk:True") -and ($probeLog -match "probe-delete:True")
+Write-Host "DPAPI probe all-green: $probeOk"
+$buildOk = ($log -match "Build complete") -and $probeOk
 $realModules = ($census["missing-module-SwiftUI"] + $census["missing-module-Combine"] + $census["missing-module-SpriteKit"] + $census["missing-module-AppKit"] + $census["missing-module-Security"] + $census["missing-module-CryptoKit"] + $census["missing-module-SQLite3"] + $census["cannot-find-type"])
 if ($buildOk) {
   Write-Host "SPIKE MILESTONE: logic package BUILT on Windows (errors: $($census['total-error-lines']))"

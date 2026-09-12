@@ -29,16 +29,28 @@ let package = Package(
             path: "Sources/CSQLite",
             publicHeadersPath: "include"
         ),
+        // Header shim exposing DPAPI (CryptProtectData/CryptUnprotectData)
+        // to Swift on Windows; the platform's crypt32 is linked below.
+        // macOS never builds it (#if canImport(CWinDPAPI) guards the call
+        // sites, Windows-only conditional dependency below keeps the macOS
+        // graph untouched).
+        .target(
+            name: "CWinDPAPI",
+            path: "Sources/CWinDPAPI",
+            publicHeadersPath: "include"
+        ),
         .target(
             name: "OPCCompanyCore",
             dependencies: [
                 .target(name: "CSQLite", condition: .when(platforms: [.windows])),
+                .target(name: "CWinDPAPI", condition: .when(platforms: [.windows])),
                 .product(name: "Crypto", package: "swift-crypto",
                          condition: .when(platforms: [.windows]))
             ],
             path: "Sources/OPCCompanyCore",
             linkerSettings: [
-                .linkedLibrary("sqlite3")
+                .linkedLibrary("sqlite3"),
+                .linkedLibrary("crypt32", .when(platforms: [.windows]))
             ]
         ),
         .executableTarget(
