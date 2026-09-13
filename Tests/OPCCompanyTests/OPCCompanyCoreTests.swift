@@ -16953,6 +16953,23 @@ private func makeStoreWithAPIAgent(
             .contains("guardNoConcurrentWriter"), "advance 必须走守护")
 }
 
+@Test func v021VersionSingleSource() throws {
+    // 版本号单一事实源:VERSION 文件 = CLI 打印 = 打包脚本变量引用。
+    // 此前版本字面量散在三处,升级漏改任何一处都无人发现(v0.2.1 起收口)。
+    let root = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let version = try String(contentsOf: root.appendingPathComponent("VERSION"), encoding: .utf8)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    #expect(version.matches(of: /^\d+\.\d+\.\d+$/).count == 1, "VERSION 必须是 x.y.z")
+    let cli = try loadOPCCompanyCoreSource("../OPC/OPC.swift")
+    #expect(cli.contains(version), "CLI 打印串必须含 VERSION 的完整版本号 \(version)")
+    let script = try String(contentsOf: root.appendingPathComponent("scripts/build_app_bundle.sh"), encoding: .utf8)
+    #expect(!script.contains("<string>\(version)</string>"),
+            "Info.plist 模板不得硬编码当前版本字面量(必须走 $APP_VERSION)")
+    #expect(script.contains("APP_VERSION=\"$(tr -d"),
+            "打包脚本必须从 VERSION 文件读取版本")
+}
+
 @Test func dpapiSecretStorePathSafetyAndWiring() throws {
     // issue #11 守门(源码级,跨平台可跑):DPAPI store 的路径注入面与接线。
     let src = try loadOPCCompanyCoreSource("DPAPISecretStore.swift")

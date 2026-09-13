@@ -49,7 +49,12 @@ let package = Package(
             ],
             path: "Sources/OPCCompanyCore",
             linkerSettings: [
-                .linkedLibrary("sqlite3"),
+                // Apple: the OS ships libsqlite3. Windows: the vendored CSQLite
+                // target compiles the amalgamation into the build itself — a
+                // `-lsqlite3` there would look for a non-existent sqlite3.lib
+                // (new windows.yml CI caught this; the spike package builds a
+                // separate manifest so it never saw it).
+                .linkedLibrary("sqlite3", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS])),
                 .linkedLibrary("crypt32", .when(platforms: [.windows]))
             ]
         ),

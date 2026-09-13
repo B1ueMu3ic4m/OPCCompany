@@ -9,6 +9,9 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 BUILD_VERSION="${OPC_BUILD_VERSION:-$(date -u +%Y%m%d%H%M%S)}"
+# Single source of truth for the user-visible version; the consistency test
+# (v021VersionSingleSource) keeps CLI + plist + VERSION file in lockstep.
+APP_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
 BUILT_AT_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 cd "$ROOT_DIR"
@@ -60,7 +63,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.2.0</string>
+    <string>${APP_VERSION}</string>
     <key>CFBundleVersion</key>
     <string>${BUILD_VERSION}</string>
     <key>LSMinimumSystemVersion</key>
@@ -74,6 +77,7 @@ PLIST
 {
     printf 'app: %s\n' "$APP_NAME"
     printf 'bundle_identifier: %s\n' "local.opc.company"
+    printf 'version: %s\n' "$APP_VERSION"
     printf 'build_version: %s\n' "$BUILD_VERSION"
     printf 'built_at_utc: %s\n' "$BUILT_AT_UTC"
 } > "$RESOURCES_DIR/BuildInfo.txt"
