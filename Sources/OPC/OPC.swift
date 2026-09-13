@@ -1,4 +1,4 @@
-// opc — the headless entry point for OPC Company (v0.2.0).
+// opc — the headless entry point for OPC Company (v0.2.x).
 //
 // Talks to the SAME CompanyStore the GUI drives, on the SAME local snapshot
 // (CompanyPersistence) — run the company without opening the window. This
@@ -32,7 +32,7 @@ struct CLIError: Error { let message: String }
 
 private func usage() -> String {
     """
-    opc — run your local AI company from the terminal. (v0.2.0)
+    opc — run your local AI company from the terminal. (v0.2.1)
 
     USAGE:
       opc status                 company snapshot (products, team, tasks, approvals)
@@ -98,7 +98,7 @@ struct OPC {
             case "help", "--help", "-h":
                 print(usage())
             case "version", "--version":
-                print("opc 0.2.0")
+                print("opc 0.2.1")
             case "status":
                 try status()
             case "goal":

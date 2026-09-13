@@ -5,41 +5,61 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-13
+
 ### Added
+- **Continuous Windows CI (`windows.yml`)**: every push to main and every PR
+  touching the portable core builds `opc.exe` with the EXACT toolchain
+  sequence validated across spikes #5–#9 (Burn /quiet + machine-scope +
+  DLL PATH + SDKROOT) and uploads it as an artifact. CI runs the binary
+  (`opc.exe version` + `help`) — "compiles" can't regress to "links but
+  won't launch".
 - **Windows DPAPI secret store (closes #11)**: `OPCDPAPISecretStore` —
   per-user `CryptProtectData` via a header-only `CWinDPAPI` shim (same
-  pattern as CSQLite; crypt32 linked Windows-only). API keys now have a
-  real at-rest protection story on Windows instead of the fail-closed
-  stub: ciphertext blobs under `secrets/<uuid>.blob`, app-domain entropy
-  for channel binding, `CRYPTPROTECT_UI_FORBIDDEN`, UUID-whitelisted paths.
-  `OPCKeychainSecretStore` routes there automatically via typealias —
-  zero call-site changes.
-- Spike #7 gate: a real **runtime probe** (`spikeprobe`) executes
-  save→load-match→ciphertext-on-disk→delete on the Windows runner —
-  compiling DPAPI headers proves nothing; the step now fails unless all
-  four probe lines are green.
-- Spike #9 (run 34734919125): **SPIKE MILESTONE** — first run where the
-  honest gate agrees with the artifact: core-error-lines 0 + all four DPAPI
-  probe lines green (live save/load/ciphertext/delete on Windows). M0 closed
-  with runtime evidence; issue #11 closed.
-- 1 guard test (path-injection/UI-forbidden/entropy/wiring invariants)
-### Changed
-- KeychainStore's `#else` branch: fail-closed remains ONLY where no DPAPI
-  is reachable (Linux dev boxes); Windows gets the real store.
+  pattern as CSQLite; crypt32 linked Windows-only). API keys move from the
+  fail-closed placeholder to real at-rest protection: ciphertext blobs under
+  `secrets/<uuid>.blob`, app-domain entropy for channel binding,
+  `CRYPTPROTECT_UI_FORBIDDEN`, UUID-whitelisted paths.
+  `OPCKeychainSecretStore` routes there via typealias — zero call-site
+  changes; fail-closed remains only where no DPAPI exists (Linux dev).
+- **DPAPI runtime probe in the spike**: `spikeprobe` executes
+  save→load-match→ciphertext-on-disk→delete on the real runner; the
+  milestone gate requires all four lines + zero core errors. Spike #9
+  printed the first honest **SPIKE MILESTONE** line.
+- `VERSION` file = single source of truth for the app version, consumed by
+  the bundle script, asserted against the CLI by a new consistency test
+  (version literals previously lived in three places)
+- 4 audit regression tests (CLI guard invariants, DPAPI wiring/path safety,
+  version consistency, persistence anti-resurrection)
 
 ### Fixed
-- **CLI data-loss guard (audit 2026-09-09)**: `opc goal`/`opc advance` now
-  refuse to write while OPCCompany.app is running (pgrep, comm-name exact so
-  the CLI never self-matches; sequential CLI runs stay safe) — previously a
-  CLI save from stale-read state could silently rewind whatever the GUI
-  persisted meanwhile. Override: `OPC_ALLOW_CONCURRENT_WRITE=1`
-- Windows/Linux `OPCObservationBus` listener list is now token-addressable
-  with `removeListener` (M3 FFI disconnects must be able to unsubscribe;
-  the append-only list leaked every connected UI client)
-
-### Added
-- 3 audit regression tests: guard-signal invariants (no mtime, no
-  in-process timestamp — anti-resurrection), bus add/remove semantics
+- **CLI data-loss guard**: `opc goal`/`opc advance` refuse to run while
+  OPCCompany.app is alive (pgrep, exact comm name — the CLI never
+  self-matches, sequential CLI scripting stays safe). Previously a CLI save
+  from stale-read state could silently rewind GUI changes.
+  Override: `OPC_ALLOW_CONCURRENT_WRITE=1`
+- **Whole-file SwiftUI gating for the 8 pure-view files** (windows.yml first
+  run caught it): the main `OPCCompanyCore` target still compiled
+  AddEmployeeSheet/CommandCenterView/CompanyScene/ContentView/InspectorPanel/
+  OperationsSuiteView/SelectionWorkspaceView/TerminalHallView unconditionally
+  → `no such module 'SwiftUI'` on Windows. The spike package (its own 33-file
+  manifest) never included them, so nine green spikes masked this. Each is now
+  `#if canImport(SwiftUI)` around the whole file — an empty unit on Windows
+  until M3 replaces them with the Flutter shell.
+- `sqlite3` was force-linked on all platforms: the Windows main-package
+  build would request a non-existent `sqlite3.lib` (the spike package's
+  separate manifest masked it; only the new continuous CI caught this).
+  Now `.when(platforms:)`-gated — Apple links the OS copy, Windows uses the
+  vendored CSQLite objects.
+- DPAPI store fixed for real Windows (spike #7): `LPCWSTR` description
+  param, `Self.`-qualified static call, and pointer-lifetime UB
+  (`withUnsafeMutableBufferPointer` around the Crypt* calls)
+- Windows/Linux `OPCObservationBus`: token-addressable listeners with
+  `removeListener` (the append-only list would leak every future FFI
+  client)
+- Milestone-gate honesty (spikes #7→#8 lessons): core errors counted from
+  the logic build only; probe matcher made case-insensitive against Swift's
+  lowercase `true`; per-line green reporting
 
 ## [0.2.0] - 2026-09-08
 
