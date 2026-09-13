@@ -1,0 +1,51 @@
+/* opc_bridge.h — stable C ABI of the OPC Company portable core.
+ *
+ * The single source of truth for symbols is OPCBridge.swift (@_cdecl names);
+ * this header mirrors it for C/C++/Zig consumers and ships with the
+ * OPCCompanyBridge dynamic library. Dart: use dart:ffi with these typedefs,
+ * and free returned pointers with malloc.free (allocator pairs by contract).
+ *
+ * Threading contract (v1): call from the host's main/platform thread and
+ * serialize calls. Violations trap deliberately (MainActor isolation).
+ */
+#ifndef OPC_BRIDGE_H
+#define OPC_BRIDGE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h>
+
+/* Bootstrap the store from the shared local snapshot.
+ * Returns 0 on success, -1 if already created (see opc_bridge_last_error). */
+int32_t opc_bridge_create(void);
+
+/* Drop the store handle (memory stays owned by Swift; idempotent). */
+void opc_bridge_destroy(void);
+
+/* Verbatim reason of the last refusal. Free with opc_bridge_free. */
+char *opc_bridge_last_error(void);
+
+/* Full company snapshot as UTF-8 JSON (schema == company-state.json,
+ * includes schemaVersion). Returns NULL on OOM. Free with opc_bridge_free. */
+char *opc_bridge_snapshot_json(void);
+
+/* Execute a boss-level command. payload_json is a UTF-8 JSON object:
+ *   "goal"    {"text": "..."}
+ *   "advance" {}
+ *   "decide"  {"approvalID": "<uuid>", "approved": true}
+ *   "save"    {}
+ * Unknown verbs return -1 (never a silent no-op). Write verbs honor the
+ * core's cross-process writer guard (OPC_ALLOW_CONCURRENT_WRITE=1 overrides).
+ * Returns 0 on success, -1 on refusal — read opc_bridge_last_error. */
+int32_t opc_bridge_command(const char *verb, const char *payload_json);
+
+/* Release any buffer returned by this API (NULL tolerated). */
+void opc_bridge_free(void *ptr);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* OPC_BRIDGE_H */

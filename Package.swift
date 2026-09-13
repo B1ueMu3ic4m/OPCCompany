@@ -10,7 +10,12 @@ let package = Package(
     ],
     products: [
         .executable(name: "OPCCompany", targets: ["OPCCompany"]),
-        .executable(name: "opc", targets: ["OPC"])
+        .executable(name: "opc", targets: ["OPC"]),
+        // M3: the portable core + C-ABI bridge as a dynamic library for
+        // non-Swift hosts (Flutter/dart:ffi via OPCBridge). Purely additive
+        // — macOS CI still builds/test the same way; `swift build` here
+        // produces the dylib so the bridge can never rot unnoticed.
+        .library(name: "OPCCompanyBridge", type: .dynamic, targets: ["OPCCompanyCore"])
     ],
     dependencies: [
         // Windows port (RFC: docs/WINDOWS_PORT_RFC.md): swift-crypto replaces
