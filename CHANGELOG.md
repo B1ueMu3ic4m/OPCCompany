@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **Shell boss loop (M3)**: goal input bar + approvals queue with
+  approve/reject (`decide`) in the Flutter shell — filing goals and
+  resolving decisions now works headless of the SwiftUI app; snapshot
+  selectors are junk-payload defensive (2 more unit tests, 5 total)
 - **Audit-round hardening (2026-09-14)**:
   - Bridge stress suite (`OPCBridgeStressTests`, +6 tests → 593): NULL/
     malformed/1MB payloads through the real @_cdecl entries (refuse-clean,
