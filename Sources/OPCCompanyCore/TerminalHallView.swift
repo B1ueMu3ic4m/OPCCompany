@@ -1,3 +1,7 @@
+#if canImport(SwiftUI)
+// Whole-file UI gate (windows.yml lesson): this is a pure SwiftUI/SpriteKit view;
+// on Windows it is an empty unit until the Flutter shell (M3) replaces it. The
+// portable core + `opc` CLI build clean there — see docs/WINDOWS_COMPILE_REPORT.md.
 import SwiftUI
 
 /// 终端大厅默认信息架构：摘要化工作台。
@@ -881,3 +885,4 @@ private struct TerminalAgentCard: View {
         preflightText = store.terminalAgentCardPreflightSummary(for: agent.id, prompt: prompt)
     }
 }
+#endif

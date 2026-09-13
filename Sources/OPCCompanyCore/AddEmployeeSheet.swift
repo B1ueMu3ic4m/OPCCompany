@@ -1,3 +1,7 @@
+#if canImport(SwiftUI)
+// Whole-file UI gate (windows.yml lesson): this is a pure SwiftUI/SpriteKit view;
+// on Windows it is an empty unit until the Flutter shell (M3) replaces it. The
+// portable core + `opc` CLI build clean there — see docs/WINDOWS_COMPILE_REPORT.md.
 import SwiftUI
 
 struct AddEmployeeSheet: View {
@@ -203,3 +207,4 @@ struct AddEmployeeSheet: View {
         }
     }
 }
+#endif

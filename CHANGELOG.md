@@ -38,6 +38,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   self-matches, sequential CLI scripting stays safe). Previously a CLI save
   from stale-read state could silently rewind GUI changes.
   Override: `OPC_ALLOW_CONCURRENT_WRITE=1`
+- **Whole-file SwiftUI gating for the 8 pure-view files** (windows.yml first
+  run caught it): the main `OPCCompanyCore` target still compiled
+  AddEmployeeSheet/CommandCenterView/CompanyScene/ContentView/InspectorPanel/
+  OperationsSuiteView/SelectionWorkspaceView/TerminalHallView unconditionally
+  → `no such module 'SwiftUI'` on Windows. The spike package (its own 33-file
+  manifest) never included them, so nine green spikes masked this. Each is now
+  `#if canImport(SwiftUI)` around the whole file — an empty unit on Windows
+  until M3 replaces them with the Flutter shell.
 - `sqlite3` was force-linked on all platforms: the Windows main-package
   build would request a non-existent `sqlite3.lib` (the spike package's
   separate manifest masked it; only the new continuous CI caught this).

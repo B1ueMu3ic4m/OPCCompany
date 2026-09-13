@@ -1,3 +1,7 @@
+#if canImport(SwiftUI)
+// Whole-file UI gate (windows.yml lesson): this is a pure SwiftUI/SpriteKit view;
+// on Windows it is an empty unit until the Flutter shell (M3) replaces it. The
+// portable core + `opc` CLI build clean there — see docs/WINDOWS_COMPILE_REPORT.md.
 import SwiftUI
 import SpriteKit
 
@@ -2077,3 +2081,4 @@ struct SpeechBubble: View {
             .background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: 8))
     }
 }
+#endif
