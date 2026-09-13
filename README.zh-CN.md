@@ -69,7 +69,11 @@ swift build -c release --product opc
 .build/release/opc report                 # 老板视角进度报告
 ```
 
-完整英文说明见 [README.md](README.md#headless-cli-opc)。
+`opc` 只链接可移植核心层——它也是 Windows 移植路径上的第一个产物:逻辑层自
+2026-09-08 起在真实 Windows 上零错误编译;v0.2.1 起每次 push 都在 CI 里构建
+**`opc.exe`**(Windows Build workflow → `opc-windows-x86_64` artifact),
+API 密钥由 DPAPI 加密保护。GUI 在 M3 Flutter 外壳落地前仍仅限 macOS;
+无头 CLI 已具备 Windows 可用性。完整英文说明见 [README.md](README.md#headless-cli-opc)。
 
 > 写命令(`goal`、`advance`)在桌面 App 打开时会被拒绝——两者共用同一份快照,后写者胜。
 > 先退出 App,或确认无其他写入方时设 `OPC_ALLOW_CONCURRENT_WRITE=1`。
