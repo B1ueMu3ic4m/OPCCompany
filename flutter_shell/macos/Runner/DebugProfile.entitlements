@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- OPC shell deliberately runs UNSANDBOXED (both configs): its purpose is
+	 reading/writing the user's OPC company snapshot outside any container
+	 (same file the GUI app and opc CLI share). It is not a Mac App Store
+	 distribution; the MAS-sandboxed variant would need container redirection
+	 that breaks the shared-data premise. -->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+</dict>
+</plist>

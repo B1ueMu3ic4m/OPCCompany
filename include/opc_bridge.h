@@ -5,8 +5,9 @@
  * OPCCompanyBridge dynamic library. Dart: use dart:ffi with these typedefs,
  * and free returned pointers with malloc.free (allocator pairs by contract).
  *
- * Threading contract (v1): call from the host's main/platform thread and
- * serialize calls. Violations trap deliberately (MainActor isolation).
+ * Threading (v1.1): safe to call from ANY host thread — the bridge hops to
+ * the main queue internally. Avoid calling from a main-thread block that
+ * never drains (classic FFI deadlock hygiene).
  */
 #ifndef OPC_BRIDGE_H
 #define OPC_BRIDGE_H
