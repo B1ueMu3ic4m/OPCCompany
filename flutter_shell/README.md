@@ -35,6 +35,6 @@ can prove: dlopen, symbol resolution, and the malloc/free allocator contract.
 - [x] dart:ffi bindings + ABI smoke green (11/11 on macOS dylib)
 - [x] behavioral cycle green (10/10: create/snapshot/goal→+4 chain/advance/save/refusals/durability)
 - [x] snapshot dashboard skeleton
-- [ ] goal text field + approvals list UI
+- [x] goal text field + approvals list UI (decide wired)
 - [ ] Windows runner (needs the bridge built on Windows — tracked in #57+ CI)
 - [ ] real app packaging (flutter build macos/windows + bridge bundled)
