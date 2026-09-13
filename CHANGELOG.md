@@ -15,9 +15,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   cross-process guard the CLI uses — extracted to core (`OPCWriteGuard`)
   so rule drift between entry points is structurally impossible.
   Host contract: `malloc`-allocated returns (Dart `malloc.free` /
-  C `free()` compatible), main-thread calls enforced by MainActor
-  (contract violations trap loudly, by design). `include/opc_bridge.h`
-  documents the ABI; a source-gate test keeps header ↔ exports in sync.
+  C `free()` compatible); callable from any host thread — the bridge hops
+  onto the main queue internally (the first real host, a bare `dart run`
+  FFI, disproved the original main-thread-trap design on smoke run #1).
+  `include/opc_bridge.h` documents the ABI; a source-gate test keeps
+  header ↔ exports in sync.
 - 3 M3 guard tests (guard single-implementation, live bridge round-trip
   incl. double-create refusal + unknown-verb refusal, header/symbol sync)
 

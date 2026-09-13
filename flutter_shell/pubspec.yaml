@@ -1,0 +1,25 @@
+name: opc_flutter_shell
+description: Cross-platform desktop shell for OPC Company, driving the portable core over a C-ABI bridge (dart:ffi).
+
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # dart:ffi string/struct helpers (toDartString / toNativeUtf8). The
+  # bindings themselves import only dart:ffi + dart:convert, so the pure
+  # CLI smoke tests (bin/smoke.dart, bin/e2e.dart) run on a bare Dart VM.
+  ffi: ^2.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

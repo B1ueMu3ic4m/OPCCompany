@@ -27,13 +27,13 @@ import Foundation
 // Why JSON not per-field accessors: the FFI contract must stay frozen while
 // the data model evolves (it already has, 7 schema versions).
 //
-// THREADING CONTRACT (v1, enforced not suggested): call every function from
-// the host's MAIN thread. Synchronous dart:ffi calls on Flutter desktop run
-// on the platform/main thread, so the shell satisfies this naturally; do
-// NOT bridge from `compute()` isolates. The store itself is @MainActor —
-// each entry hops in via assumeIsolated, which TRAPS (loudly, by design) if
-// the contract is violated. A background-thread multiplexing layer is real
-// M3 work once a host actually needs it.
+// THREADING (v1.1): callable from ANY host thread — each entry hops to the
+// main queue when needed (onMain below), so the @MainActor store is touched
+// exactly one call at a time. The first real host (Dart VM FFI, smoke #1)
+// proved why: its "main" isolate thread is NOT the Swift MainActor executor,
+// and a strict assumeIsolated contract trapped immediately. One constraint
+// remains: do not call from a main-thread block that keeps the main queue
+// busy (classic FFI deadlock hygiene; Flutter platform-thread calls are fine).
 // ═══════════════════════════════════════════════════════════════════════
 
 /// Bridge-owned mutable state. The NSLock makes every field access safe
@@ -53,11 +53,24 @@ private func withBridgeLock<T>(_ body: (OPCBridgeBox) -> T) -> T {
     return body(bridgeBox)
 }
 
+/// Run @MainActor store work from any host thread: assume in place when we
+/// are already on main; otherwise hop via main-queue sync (the blocked
+/// caller frees the main thread to service it). Darwin MainActor == main
+/// queue, so both paths satisfy the isolation check legitimately.
+private func onMain<T: Sendable>(_ work: @MainActor () -> T) -> T {
+    if Thread.isMainThread {
+        return MainActor.assumeIsolated(work)
+    }
+    var result: T?
+    DispatchQueue.main.sync { result = work() }
+    return result!
+}
+
 /// Bootstrap the store from the shared local snapshot (same file the GUI
 /// and CLI read). Returns 0 on success; -1 when a bridge already exists.
 @_cdecl("opc_bridge_create")
 public func opc_bridge_create() -> Int32 {
-    MainActor.assumeIsolated {
+    onMain {
         withBridgeLock { box in
             guard box.store == nil else {
                 box.lastError = "bridge already created — call opc_bridge_destroy first"
@@ -90,7 +103,7 @@ public func opc_bridge_last_error() -> UnsafeMutablePointer<CChar>? {
 /// Free the result with opc_bridge_free.
 @_cdecl("opc_bridge_snapshot_json")
 public func opc_bridge_snapshot_json() -> UnsafeMutablePointer<CChar>? {
-    let json: String? = MainActor.assumeIsolated {
+    let json: String? = onMain {
         withBridgeLock { box in
             guard let store = box.store else { return nil }
             let encoder = JSONEncoder()
@@ -117,7 +130,7 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
     // buffers for the duration of this synchronous call.
     let verbString = verb.map { String(cString: $0) }
     let payloadText = payloadJSON.map { String(cString: $0) }
-    return MainActor.assumeIsolated {
+    return onMain {
         withBridgeLock { box in
             guard let store = box.store, let verbString else {
                 box.lastError = "bridge not created"
