@@ -54,35 +54,17 @@ private func requireProduct(_ store: CompanyStore) throws -> ProductWorkspace {
     return product
 }
 
-/// Write commands (goal/advance) refuse to run while the desktop app is
-/// alive: both processes share ONE snapshot file with last-writer-wins
-/// merge, so a CLI save from stale-read state would silently rewind whatever
-/// the app persists meanwhile. Sequential CLI runs (goal && advance) are
-/// safe — each reloads from disk, and only a real GUI process (comm name
-/// "OPCCompany"; the CLI's own name is "opc", so it never self-matches)
-/// can hold unflushed in-memory state. On platforms without pgrep (Windows
-/// port) the check no-ops; a proper cross-process lock belongs to M3 when
-/// the Flutter shell introduces real concurrency.
-/// Override with OPC_ALLOW_CONCURRENT_WRITE=1 (headless CI, scripted setups).
+// Write commands (goal/advance) enforce the core's cross-process exclusivity
+// (OPCWriteGuard — shared with the M3 Flutter FFI bridge so the rule can
+// never drift between entry points): the desktop app may hold unflushed
+// state in this very snapshot; sequential CLI runs are safe (each reloads
+// from disk; the CLI's comm name `opc` never self-matches pgrep's target).
+// Override: OPC_ALLOW_CONCURRENT_WRITE=1 (headless CI, scripted setups).
 private func guardNoConcurrentWriter() throws {
-    if ProcessInfo.processInfo.environment["OPC_ALLOW_CONCURRENT_WRITE"] == "1" { return }
-    let pgrep = Process()
-    pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-    pgrep.arguments = ["-x", "OPCCompany"]
-    pgrep.standardOutput = FileHandle.nullDevice
-    pgrep.standardError = FileHandle.nullDevice
-    let appRunning: Bool
     do {
-        try pgrep.run()
-        pgrep.waitUntilExit()
-        appRunning = pgrep.terminationStatus == 0
-    } catch {
-        appRunning = false  // no pgrep → no detection available
-    }
-    if appRunning {
-        throw CLIError(message: "OPCCompany.app is running — the desktop app shares this snapshot "
-            + "and last writer wins. Quit it first, or set OPC_ALLOW_CONCURRENT_WRITE=1 if you are "
-            + "sure nothing else writes.")
+        try OPCWriteGuard.ensureExclusiveAccess()
+    } catch let e as OPCConcurrentWriterError {
+        throw CLIError(message: e.message)
     }
 }
 

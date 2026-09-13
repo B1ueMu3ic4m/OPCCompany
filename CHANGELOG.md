@@ -5,6 +5,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **M3 first slice — the C-ABI bridge (`OPCBridge`)**: the portable core is
+  now callable from non-Swift hosts. New dynamic-library product
+  `OPCCompanyBridge` exports 6 C symbols (`opc_bridge_create/destroy/
+  last_error/snapshot_json/command/free`, verified with `nm` on the built
+  dylib); company state crosses as versioned JSON so the C header stays
+  frozen while the schema evolves. Write verbs honor the same
+  cross-process guard the CLI uses — extracted to core (`OPCWriteGuard`)
+  so rule drift between entry points is structurally impossible.
+  Host contract: `malloc`-allocated returns (Dart `malloc.free` /
+  C `free()` compatible), main-thread calls enforced by MainActor
+  (contract violations trap loudly, by design). `include/opc_bridge.h`
+  documents the ABI; a source-gate test keeps header ↔ exports in sync.
+- 3 M3 guard tests (guard single-implementation, live bridge round-trip
+  incl. double-create refusal + unknown-verb refusal, header/symbol sync)
+
 ## [0.2.1] - 2026-09-13
 
 ### Added

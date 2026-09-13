@@ -16953,6 +16953,74 @@ private func makeStoreWithAPIAgent(
             .contains("guardNoConcurrentWriter"), "advance 必须走守护")
 }
 
+@Test func m3WriteGuardLivesInCoreAndCLIDelegates() throws {
+    // M3 不变量:跨进程写守护只有一份实现(核心层 OPCWriteGuard)。
+    // CLI 再出现私有 pgrep 复制 = 未来桥/CLI 规则漂移的开始。
+    let guardSrc = try loadOPCCompanyCoreSource("OPCWriteGuard.swift")
+    #expect(guardSrc.contains("ensureExclusiveAccess"), "核心守卫入口存在")
+    #expect(guardSrc.contains("OPC_ALLOW_CONCURRENT_WRITE"), "覆盖钩子在守卫内")
+    let projectRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let cli = try String(contentsOf: projectRoot.appendingPathComponent("Sources/OPC/OPC.swift"), encoding: .utf8)
+    #expect(!cli.contains("executableURL"),
+            "CLI 不得再自带进程启动实现(pgrep 只许存在于核心守卫;注释提及不受限)")
+    #expect(cli.contains("OPCWriteGuard.ensureExclusiveAccess"), "CLI 写命令走核心守卫")
+}
+
+@Test @MainActor func m3BridgeSurfaceContract() throws {
+    // 桥的最小活体契约(Swift 侧直调,即 @_cdecl 符号本体):
+    // double-create 拒绝 → snapshot JSON 是含 schemaVersion 的对象 →
+    // 未知动词必须报错而非静默 no-op → destroy 后再命令报 not created。
+    #expect(opc_bridge_create() == 0)
+    #expect(opc_bridge_create() == -1, "double-create 必须拒绝")
+    if let err = opc_bridge_last_error() {
+        #expect(String(cString: err).contains("already"), "拒绝原因必须可见")
+        opc_bridge_free(err)
+    } else {
+        Issue.record("last_error 为空指针")
+    }
+    if let snap = opc_bridge_snapshot_json() {
+        let json = String(cString: snap)
+        if let data = json.data(using: .utf8),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            #expect(obj["schemaVersion"] != nil, "桥快照必须携带 schemaVersion")
+        } else {
+            Issue.record("snapshot 不是合法 JSON 对象")
+        }
+        opc_bridge_free(snap)
+    } else {
+        Issue.record("snapshot 空指针")
+    }
+    let verb = strdup("bogus")
+    let payload = strdup("{}")
+    defer { free(verb); free(payload) }
+    #expect(opc_bridge_command(verb, payload) == -1, "未知动词必须失败")
+    if let err = opc_bridge_last_error() {
+        #expect(String(cString: err).contains("unknown bridge verb"))
+        opc_bridge_free(err)
+    }
+    opc_bridge_destroy()
+    #expect(opc_bridge_command(verb, payload) == -1, "destroy 后命令必须拒绝")
+}
+
+@Test func m3BridgeCHeaderMatchesSwiftExports() throws {
+    // include 头与 @_cdecl 导出名同步:漏一个符号 = 宿主 dlsym 时才炸,
+    // 这比编译期发现晚得多。source-gate 逐符号双向核对。
+    let bridge = try loadOPCCompanyCoreSource("OPCBridge.swift")
+    let projectRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let header = try String(contentsOf: projectRoot.appendingPathComponent("include/opc_bridge.h"), encoding: .utf8)
+    let exported = ["opc_bridge_create", "opc_bridge_destroy", "opc_bridge_last_error",
+                    "opc_bridge_snapshot_json", "opc_bridge_command", "opc_bridge_free"]
+    for sym in exported {
+        #expect(bridge.contains("@_cdecl(\"\(sym)\")"), "Swift 侧缺少 @_cdecl(\(sym))")
+        #expect(header.contains(sym + "("), "头文件缺少 \(sym) 声明")
+    }
+    // malloc 配对契约:桥内存必须走 C 分配器(宿主 free 兼容)。
+    #expect(bridge.contains("malloc("), "返回内存必须 malloc(跨宿主 free 配对)")
+    #expect(bridge.contains("free(ptr)"), "opc_bridge_free 必须用 C free")
+}
+
 @Test func v021VersionSingleSource() throws {
     // 版本号单一事实源:VERSION 文件 = CLI 打印 = 打包脚本变量引用。
     // 此前版本字面量散在三处,升级漏改任何一处都无人发现(v0.2.1 起收口)。
