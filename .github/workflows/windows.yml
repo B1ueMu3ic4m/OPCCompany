@@ -23,6 +23,9 @@ on:
       - '.github/workflows/windows.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     # VS17 toolset (spike lesson: the VS2026 image breaks Swift SDK detection)

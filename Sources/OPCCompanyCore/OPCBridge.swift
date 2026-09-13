@@ -76,7 +76,11 @@ public func opc_bridge_create() -> Int32 {
                 box.lastError = "bridge already created — call opc_bridge_destroy first"
                 return -1
             }
-            box.store = CompanyStore.bootstrap(loadPersisted: true)
+            // liveChatEnabled:false — least privilege for this entry point:
+            // the bridge's verbs never send employee chats, and a shell must
+            // not inherit the GUI's default-on live-backend behavior by
+            // accident (bootstrap's default == loadPersisted!).
+            box.store = CompanyStore.bootstrap(loadPersisted: true, liveChatEnabled: false)
             return 0
         }
     }

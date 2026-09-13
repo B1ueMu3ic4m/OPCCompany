@@ -1,0 +1,20 @@
+# gitleaks policy for OPCCompany (audit round 2026-09-14)
+# Two accepted non-secret classes, allowlisted so scans stay zero-noise and
+# CI can gate on exit code:
+#  1. vendored SQLite amalgamation (Sources/CSQLite) — upstream ships test
+#     corpora matching generic-key patterns; the directory is SHA256-pinned
+#     to sqlite.org releases in VENDORED.txt, so per-line review is moot.
+#  2. the DPAPI probe sentinel in the spike script — literally named
+#     NOT-A-REAL-KEY and only ever fed to CryptProtectData on the runner.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "vendored sqlite corpus + DPAPI probe sentinel"
+paths = [
+  '''^Sources/CSQLite/'''
+]
+regexes = [
+  '''OPC-DPAPI-PROBE-NOT-A-REAL-KEY''',
+  '''sk-probe-secret-abc123'''  # earlier name of the same sentinel, git history only
+]
