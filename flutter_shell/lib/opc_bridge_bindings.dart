@@ -67,6 +67,34 @@ class OpcSnapshot {
   List get tasks => (raw['tasks'] as List?) ?? const [];
   List get products => (raw['products'] as List?) ?? const [];
   List get approvals => (raw['approvals'] as List?) ?? const [];
+
+  String? get selectedProductID => raw['selectedProductID'] as String?;
+
+  /// Approvals of the selected product still awaiting the boss.
+  List<Map<String, dynamic>> get pendingApprovals => approvals
+      .whereType<Map<String, dynamic>>()
+      .where((a) =>
+          a['status'] == 'pending' &&
+          (selectedProductID == null || a['productID'] == selectedProductID))
+      .toList();
+
+  /// tasks of the selected product grouped by their status rawValue.
+  Map<String, List<Map<String, dynamic>>> get tasksByStatus {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final t in tasks.whereType<Map<String, dynamic>>()) {
+      if (selectedProductID != null && t['productID'] != selectedProductID) {
+        continue;
+      }
+      grouped.putIfAbsent(t['status'] as String? ?? '?', () => []).add(t);
+    }
+    return grouped;
+  }
+
+  /// employees (name + working state) of the snapshot.
+  List<(String, String)> get roster => [
+        for (final a in agents.whereType<Map<String, dynamic>>())
+          (a['displayName'] as String? ?? '?', a['status'] as String? ?? '?'),
+      ];
 }
 
 /// Thin object wrapper over the six C entry points. All calls are synchronous
