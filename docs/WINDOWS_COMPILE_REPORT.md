@@ -148,6 +148,33 @@ secret store was exercised live (encrypt → persist ciphertext → decrypt →
 delete). Issue #11 closed. Remaining census errors are UI-layer only
 (M3 Flutter scope).
 
+## Spike #10 (windows.yml production CI, 2026-09-13) — experiment-vs-product drift caught
+
+The new continuous Windows build (PR #57) failed on its FIRST run with
+`no such module 'SwiftUI'` on `AddEmployeeSheet.swift` — inside the MAIN
+OPCCompanyCore target. Nine green spikes never saw this because the spike
+package compiles a curated 33-file manifest that excludes all pure-view
+files, while the real target includes everything in the directory.
+
+This was the last architectural gap M0 claimed to close: "the logic package
+builds clean on Windows" was true OF THE SPIKE MANIFEST, not of the shipping
+product. Fixed the same day: all 8 pure-view files (AddEmployeeSheet,
+CommandCenterView, CompanyScene, ContentView, InspectorPanel,
+OperationsSuiteView, SelectionWorkspaceView, TerminalHallView) got whole-file
+`#if canImport(SwiftUI)` gates — empty units on Windows until M3's Flutter
+shell replaces them.
+
+Honest tally of what each layer proves:
+| layer | proof |
+|---|---|
+| spike manifest (33 logic files) | ✅ compiles + DPAPI runtime probe green |
+| **main product target (all 41 files)** | ⏳ pending PR #57 re-run |
+| opc.exe from the main package, launched in CI | ⏳ same run |
+
+Lesson (the same class as gate false-positives): **a hand-curated
+build list is not the product**. Continuous CI against the real package is
+what turns "ported" from a spike claim into a standing guarantee.
+
 ## Verdict (per the RFC decision tree)
 
 Route A gate was "core compiles with < ~20 blocking errors". Actual across
