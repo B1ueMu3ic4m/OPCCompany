@@ -50,16 +50,13 @@ void main() {
     'opc_bridge_command',
     'opc_bridge_free',
   ];
-  final lookups = <String, bool>{};
   for (final name in wanted) {
     try {
       // Dart has no raw lookupSymbol; probe via a uniform native signature —
       // resolution itself is what's under test, never the call.
       lib.lookupFunction<Void Function(), void Function()>(name);
-      lookups[name] = true;
       _check(true, 'b: symbol $name resolves');
     } catch (_) {
-      lookups[name] = false;
       _check(false, 'b: symbol $name MISSING');
     }
   }

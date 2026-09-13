@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     # Package.swift declares swift-tools-version 6.3 (needs Xcode 26.x).

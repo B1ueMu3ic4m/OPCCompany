@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **Audit-round hardening (2026-09-14)**:
+  - Bridge stress suite (`OPCBridgeStressTests`, +6 tests → 593): NULL/
+    malformed/1MB payloads through the real @_cdecl entries (refuse-clean,
+    never trap), 25 create/destroy churn cycles, 250 returned-buffer frees
+    (allocator-contract soak), 1000-call guard-latency budget, parameterized
+    env matrix proving only exact "1" disables detection ("0"/""/yes must
+    not — a semantic security hole), and 200-goal core scaling (≥800 tasks,
+    snapshot-encode + save time-boxes). User live snapshot verified
+    byte-identical across the whole run (isolation, not promises).
+  - `.gitleaks.toml`: documented allowlist for the two accepted non-secret
+    classes (SHA256-pinned vendored SQLite corpora + the DPAPI probe
+    sentinel, incl. its earlier git-history name) — scan exits 0.
+  - `scripts/scan-secrets.sh`: runs the policy locally by design — wiring
+    gitleaks into CI would pull a third-party container image, widening the
+    supply chain this same audit just hardened.
 - **M3 first slice — the C-ABI bridge (`OPCBridge`)**: the portable core is
   now callable from non-Swift hosts. New dynamic-library product
   `OPCCompanyBridge` exports 6 C symbols (`opc_bridge_create/destroy/
@@ -51,6 +66,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   version consistency, persistence anti-resurrection)
 
 ### Fixed
+- **Bridge least privilege**: `opc_bridge_create` now pins
+  `liveChatEnabled: false` — the bridge's verbs never send employee chats,
+  so a shell must not inherit the GUI's default-on live-backend behavior
+  through bootstrap's `liveChatEnabled ?? loadPersisted` default.
+- CI least privilege: `permissions: contents: read` on all three workflows
+  (was: repo-default, i.e. unbounded); flutter_shell ABI smoke dead map
+  (`lookups`) removed.
 - **CLI data-loss guard**: `opc goal`/`opc advance` refuse to run while
   OPCCompany.app is alive (pgrep, exact comm name — the CLI never
   self-matches, sequential CLI scripting stays safe). Previously a CLI save

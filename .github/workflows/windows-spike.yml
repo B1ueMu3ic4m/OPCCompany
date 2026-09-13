@@ -7,6 +7,9 @@ name: Windows Port Spike (M1)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   spike:
     # windows-latest now ships VS 2026 (v18); Swift 6.3.3's driver fails SDK
