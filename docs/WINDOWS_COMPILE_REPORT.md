@@ -105,6 +105,29 @@ The census's remaining 83 errors all belong to the *full*-package UI files
 First Windows-path artifact: the `opc` headless CLI (v0.2.0) links only this
 verified core.
 
+## Spike #7–#8 (2026-09-12, runs 34684564763 → 34687031765) — DPAPI on real Windows
+
+Spike #7 (run 34684564763) exposed that DPAPISecretStore (PR #53) never
+compiled on Windows — `LPCWSTR` description param, a `Self.`-less static
+call, and (by review) dangling `&localVar` pointers across statements.
+Fixed in PR #54; the same run also exposed a false-POSITIVE milestone gate
+(full-package UI noise satisfying `Build complete`).
+
+Spike #8 (run 34687031765, PR #54's gate + fixed store):
+
+| Signal | Value (from artifact, not gate) |
+|---|---|
+| core-error-lines | **0** |
+| probe-save | **true** |
+| probe-load-match | **true** |
+| probe-ciphertext-on-disk | **true** — API keys at rest are DPAPI ciphertext |
+| probe-delete | **true** |
+
+The gate still said False — its matcher expected `:True` while Swift prints
+lowercase `true` (false-NEGATIVE; fixed in PR #55 with `(?i)` + regex-escaped
+concatenation and per-line green reporting). Spike #9 confirms the full
+honest chain: clean compile + live probe + truthful verdict.
+
 ## Verdict (per the RFC decision tree)
 
 Route A gate was "core compiles with < ~20 blocking errors". Actual across
