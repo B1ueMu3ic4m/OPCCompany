@@ -83,7 +83,10 @@ swift build -c release --product opc
 
 `opc` links only the portable core — it's also the first artifact on the
 [Windows port](docs/WINDOWS_PORT_RFC.md) path: the logic package has built on
-real Windows with zero errors since 2026-09-08.
+real Windows with zero errors since 2026-09-08, and since v0.2.1 every push
+builds **`opc.exe` in CI** (Windows Build workflow → `opc-windows-x86_64`
+artifact) with API keys protected by DPAPI. GUI is macOS-only until the M3
+Flutter shell lands; the headless CLI is already Windows-ready.
 
 > Write commands (`goal`, `advance`) refuse to run while the desktop app is
 > open — both share one snapshot and last writer wins. Quit the app, or set
