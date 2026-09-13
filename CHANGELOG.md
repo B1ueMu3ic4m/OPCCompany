@@ -18,6 +18,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   save→load-match→ciphertext-on-disk→delete on the Windows runner —
   compiling DPAPI headers proves nothing; the step now fails unless all
   four probe lines are green.
+- Spike #9 (run 34734919125): **SPIKE MILESTONE** — first run where the
+  honest gate agrees with the artifact: core-error-lines 0 + all four DPAPI
+  probe lines green (live save/load/ciphertext/delete on Windows). M0 closed
+  with runtime evidence; issue #11 closed.
 - 1 guard test (path-injection/UI-forbidden/entropy/wiring invariants)
 ### Changed
 - KeychainStore's `#else` branch: fail-closed remains ONLY where no DPAPI

@@ -128,6 +128,26 @@ lowercase `true` (false-NEGATIVE; fixed in PR #55 with `(?i)` + regex-escaped
 concatenation and per-line green reporting). Spike #9 confirms the full
 honest chain: clean compile + live probe + truthful verdict.
 
+## Spike #9 (2026-09-13, run 34734919125) — MILESTONE, gate-verified ✅
+
+First run where every layer of the story agrees, with the per-signal gate
+from #55:
+
+```
+probe probe-save: green=True
+probe probe-load-match: green=True
+probe probe-ciphertext-on-disk: green=True
+probe probe-delete: green=True
+DPAPI probe all-green: True (core errors: 0)
+SPIKE MILESTONE: logic package builds CLEAN on Windows + DPAPI runtime verified
+```
+
+**M0 is closed with runtime evidence, not just compile evidence**: the full
+business-logic layer compiles with zero errors on Windows AND the DPAPI
+secret store was exercised live (encrypt → persist ciphertext → decrypt →
+delete). Issue #11 closed. Remaining census errors are UI-layer only
+(M3 Flutter scope).
+
 ## Verdict (per the RFC decision tree)
 
 Route A gate was "core compiles with < ~20 blocking errors". Actual across
