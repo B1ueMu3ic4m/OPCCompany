@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **Shell packaging (M3)**: `scripts/build-shell-macos.sh` produces a
+  standalone `OPCCompanyShell.app` — release Flutter build + bridge dylib
+  bundled in `Contents/Frameworks` (rpath already present in the Flutter
+  release binary; script verifies instead of mutating). The build is only
+  done when the PACKAGED app itself passes the behavioral self-check with
+  an isolated support dir: `PROVED: packaged app self-check ALL PASS`.
 - **Shell boss loop (M3)**: goal input bar + approvals queue with
   approve/reject (`decide`) in the Flutter shell — filing goals and
   resolving decisions now works headless of the SwiftUI app; snapshot
