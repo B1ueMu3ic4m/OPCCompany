@@ -34,13 +34,47 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
-      # The swift env var set differs per toolchain; the recursive DLL search
-      # below handles it — no guessing needed.
+      - name: Install Swift toolchain
+        timeout-minutes: 25
+        shell: pwsh
+        run: |
+          $url = "https://download.swift.org/swift-6.3.3-release/windows10/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE-windows10.exe"
+          $installer = "$env:RUNNER_TEMP\swift-installer.exe"
+          curl.exe -sSL --fail --max-time 600 -o $installer $url
+          # INSTALLSCOPE=machine writes HKLM + Program Files (GH runners are
+          # elevated; spike #5-#9 runs all used this exact sequence).
+          $p = Start-Process $installer -ArgumentList "/quiet","/norestart","INSTALLSCOPE=machine" -PassThru -Wait
+          Write-Host "installer exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { exit 1 }
+
+          $root = "C:\Program Files\Swift"
+          if (-not (Test-Path $root)) { $root = "$env:LOCALAPPDATA\Programs\Swift" }
+          $exe = Get-ChildItem $root -Recurse -Filter swift.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Write-Host "swift.exe NOT FOUND"; exit 1 }
+
+          # Toolchain DLL dirs on PATH or every compile false-fails 0xC0000135.
+          $dllDirs = Get-ChildItem $root -Recurse -Filter *.dll -ErrorAction SilentlyContinue |
+                     Select-Object -ExpandProperty DirectoryName -Unique
+          $env:PATH = ($dllDirs -join ';') + ';' + $env:PATH
+
+          # THE mechanism (scoop's recipe): SDKROOT points swift-driver at the
+          # Windows.sdk inside the platform bundle. Registry keys are NOT needed.
+          $platDir = Get-ChildItem $root -Recurse -Directory -Filter "Windows.platform" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $platDir) { Write-Host "no Windows.platform under $root"; exit 1 }
+          $sdk = Join-Path $platDir.FullName "Developer\SDKs\Windows.sdk"
+          if (-not (Test-Path $sdk)) { Write-Host "missing SDK dir $sdk"; exit 1 }
+          # Persist env for the LATER build step (GITHUB_ENV/GITHUB_PATH).
+          "SDKROOT=$sdk" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $bin = $exe.DirectoryName
+          (($dllDirs + @($bin)) -join ';') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "toolchain ready: SDKROOT=$sdk"
+
       - name: Build bridge DLL (release)
         shell: pwsh
         run: |
