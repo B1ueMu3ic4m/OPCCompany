@@ -1,0 +1,132 @@
+name: Windows Shell
+
+# M3 end-to-end assembly on Windows: the bridge DLL (same toolchain as
+# windows.yml) + a Flutter release build of the shell + the DLL dropped
+# beside the exe. The packaging story for `OPCCompanyShell` on Windows,
+# gated on the exact artifact layout a user would copy.
+#
+# Supply-chain policy (see scripts/scan-secrets.sh rationale): Flutter is
+# fetched from Google's OFFICIAL release infra pinned to the same stable we
+# develop on (3.41.5) — no third-party flutter actions.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'flutter_shell/**'
+      - 'Sources/OPCCompanyCore/OPCBridge.swift'
+      - 'Package.swift'
+      - '.github/workflows/windows-shell.yml'
+  pull_request:
+    paths:
+      - 'flutter_shell/**'
+      - 'Sources/OPCCompanyCore/OPCBridge.swift'
+      - 'Package.swift'
+      - '.github/workflows/windows-shell.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.41.5
+  SWIFT_BUILD_DIR: .build\x86_64-unknown-windows-msvc
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # The swift env var set differs per toolchain; the recursive DLL search
+      # below handles it — no guessing needed.
+      - name: Build bridge DLL (release)
+        shell: pwsh
+        run: |
+          swift build -c release --product OPCCompanyBridge
+          $dll = Get-ChildItem -Path .build -Recurse -Filter OPCCompanyBridge.dll |
+                 Where-Object { $_.FullName -match 'release' } |
+                 Select-Object -First 1
+          if (-not $dll) { Write-Host "DLL not found under .build"; exit 1 }
+          Write-Host "DLL at $($dll.FullName) ($($dll.Length) bytes)"
+          Copy-Item $dll.FullName "$env:RUNNER_TEMP\OPCCompanyBridge.dll"
+
+      - name: Install pinned Flutter SDK (official infra)
+        shell: pwsh
+        run: |
+          $url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_${env:FLUTTER_VERSION}-stable.zip"
+          Write-Host "fetch $url"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\flutter.zip"
+          Expand-Archive -Path "$env:RUNNER_TEMP\flutter.zip" -DestinationPath "$env:GITHUB_WORKSPACE\flutter-sdk"
+          "$env:GITHUB_WORKSPACE\flutter-sdk\flutter\bin" | Add-Content -Path $env:GITHUB_PATH
+
+      - name: Flutter doctor (version pin assertion)
+        shell: pwsh
+        run: |
+          flutter --version
+          flutter config --no-analytics
+          if (-not (flutter --version | Select-String -Quiet "$env:FLUTTER_VERSION")) {
+            Write-Host "flutter version drift — expected $env:FLUTTER_VERSION"; exit 1
+          }
+          flutter doctor -v | Select-String -Pattern 'Visual Studio|Windows'
+
+      - name: Build shell (release) + assemble package
+        shell: pwsh
+        working-directory: flutter_shell
+        run: |
+          flutter pub get
+          flutter build windows --release
+          $rel = Get-ChildItem -Path build -Recurse -Directory -Filter Release |
+                 Where-Object { $_.FullName -match 'runner' } |
+                 Select-Object -First 1
+          if (-not $rel) { Write-Host "no Release dir under build/"; exit 1 }
+          # The bridge lands beside the exe: Dart's DynamicLibrary.open(
+          # 'OPCCompanyBridge.dll') hits the exe-directory search order first.
+          Copy-Item "$env:RUNNER_TEMP\OPCCompanyBridge.dll" $rel.FullName
+          Get-ChildItem $rel.FullName | Select-Object Name, Length
+          $exe = Get-ChildItem $rel.FullName -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { Write-Host "no exe in Release dir"; exit 1 }
+          if (-not (Test-Path "$($rel.FullName)\OPCCompanyBridge.dll")) {
+            Write-Host "assembly failed"; exit 1
+          }
+          # fixed staging path for the artifact upload (the build tree layout
+          # varies across Flutter versions — search once, stage once)
+          $stage = "$env:RUNNER_TEMP\shell-package"
+          Copy-Item $rel.FullName $stage -Recurse
+          Write-Host "staged: $stage"
+
+      - name: Run shell behavioral smoke on the assembled package
+        shell: pwsh
+        run: |
+          # The same 10-check cycle macOS runs — NOW against the Windows DLL
+          # through the Windows exe: dlopen path, cdecl calls, main-thread
+          # hop under a real message loop. A fresh support dir bootstraps a
+          # factory company (verified on macOS: 3 tasks, goal -> +4), so the
+          # relative assertions hold without seeding.
+          $pkg = "$env:RUNNER_TEMP\shell-package"
+          $exe = Get-ChildItem $pkg -Filter *.exe | Select-Object -First 1
+          $work = "$env:RUNNER_TEMP\shell-smoke"
+          New-Item -ItemType Directory -Force -Path $work | Out-Null
+          $verdict = "$work\verdict.json"
+          Remove-Item $verdict -ErrorAction SilentlyContinue
+          $env:OPC_SHELL_SMOKE = "1"
+          $env:OPC_SHELL_SMOKE_OUT = $verdict
+          $env:OPC_COMPANY_SUPPORT_DIR = "$work\support"
+          $p = Start-Process $exe.FullName -PassThru
+          if (-not $p.WaitForExit(180000)) {
+            Stop-Process -Id $p.Id -Force
+            Write-Host "smoke app did not exit in 180s"; exit 1
+          }
+          if (-not (Test-Path $verdict)) { Write-Host "no verdict file"; exit 1 }
+          $v = Get-Content $verdict -Raw
+          Write-Host $v
+          if ($v -notmatch '"ok":true') { Write-Host "smoke NOT all-pass"; exit 1 }
+          Write-Host "WINDOWS SHELL SMOKE: ALL PASS"
+
+      - name: Upload assembled shell package
+        uses: actions/upload-artifact@v4
+        with:
+          name: opc-shell-windows-x86_64
+          path: ${{ runner.temp }}/shell-package/
+          if-no-files-found: error
