@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **Windows shell package assembled + run in CI (M3 close-out)**:
+  `windows-shell.yml` builds the bridge DLL (release), fetches the OFFICIAL
+  pinned Flutter SDK 3.41.5 (no third-party actions), builds the shell
+  `--release`, drops the DLL beside the exe, then LAUNCHES the assembled
+  `opc_flutter_shell.exe` with `OPC_SHELL_SMOKE=1` — the same 10-check
+  behavioral cycle macOS runs, through the Windows DLL, must verdict
+  `"ok":true`. Artifact `opc-shell-windows-x86_64` is the user-runnable
+  package (exe + 33.3 MB bridge + flutter_windows.dll). The Swift install
+  block is the exact 9-spike battle-tested sequence from windows.yml
+  (windows-2022, Burn quiet/machine, DLL dirs PATH, SDKROOT).
 - **Shell packaging (M3)**: `scripts/build-shell-macos.sh` produces a
   standalone `OPCCompanyShell.app` — release Flutter build + bridge dylib
   bundled in `Contents/Frameworks` (rpath already present in the Flutter
