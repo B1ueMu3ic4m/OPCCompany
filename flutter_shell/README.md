@@ -36,5 +36,5 @@ can prove: dlopen, symbol resolution, and the malloc/free allocator contract.
 - [x] behavioral cycle green (10/10: create/snapshot/goal→+4 chain/advance/save/refusals/durability)
 - [x] snapshot dashboard skeleton
 - [x] goal text field + approvals list UI (decide wired)
-- [ ] Windows runner (needs the bridge built on Windows — tracked in #57+ CI)
-- [ ] real app packaging (flutter build macos/windows + bridge bundled)
+- [x] **standalone .app** — `scripts/build-shell-macos.sh` bundles the bridge dylib into Frameworks and PROVES it: the packaged release app self-checks ALL PASS with no env tricks (`dist/OPCCompanyShell.app`)
+- [ ] Windows runner (DLL build + export verification live in CI; flutter build windows is the next step)
