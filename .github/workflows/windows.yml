@@ -79,9 +79,42 @@ jobs:
           & $bin version   # runtime proof, not just a compile
           & $bin help | Select-Object -First 3
 
-      - name: Upload artifact
+      - name: Build OPCCompanyBridge.dll + verify exports
+        shell: pwsh
+        run: |
+          # The Flutter shell's dependency: a C-ABI DLL from the same core.
+          # This step is the production probe for @_cdecl + malloc/free on
+          # Windows — if .dynamic can't build here, the M3 shell story must
+          # know it now, not at app-link time.
+          swift build -c release --product OPCCompanyBridge
+          $dll = ".build\release\OPCCompanyBridge.dll"
+          if (-not (Test-Path $dll)) { Write-Host "bridge DLL missing"; exit 1 }
+          Write-Host "DLL: $((Get-Item $dll).Length) bytes"
+          # Exports must carry all six symbols (dumpbin ships with the VS
+          # toolset the Swift toolchain already required).
+          $dumpbin = (Get-ChildItem "C:\Program Files*\Microsoft Visual Studio\*\*\VC\Tools\MSVC\*\bin\Host*\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1)
+          if ($dumpbin) {
+            $exports = & $dumpbin.FullName /EXPORTS $dll | Out-String
+            foreach ($sym in "opc_bridge_create","opc_bridge_destroy","opc_bridge_last_error","opc_bridge_snapshot_json","opc_bridge_command","opc_bridge_free") {
+              if ($exports -notmatch $sym) { Write-Host "MISSING EXPORT: $sym"; exit 1 }
+              Write-Host "export ok: $sym"
+            }
+          } else {
+            # Fallback without dumpbin: the import library at least proves the
+            # linker saw the exports; symbol names live in the binary image.
+            $bytes = [IO.File]::ReadAllBytes((Resolve-Path $dll))
+            $text = [Text.Encoding]::ASCII.GetString($bytes)
+            foreach ($sym in "opc_bridge_create","opc_bridge_command","opc_bridge_free") {
+              if ($text -notmatch [regex]::Escape($sym)) { Write-Host "symbol string absent: $sym"; exit 1 }
+            }
+            Write-Host "export strings present (dumpbin unavailable)"
+          }
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: opc-windows-x86_64
-          path: .build/release/opc.exe
+          path: |
+            .build/release/opc.exe
+            .build/release/OPCCompanyBridge.dll
           if-no-files-found: error
