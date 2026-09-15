@@ -24,13 +24,17 @@ class OpcShellApp extends StatelessWidget {
 }
 
 class CompanyHome extends StatefulWidget {
-  const CompanyHome({super.key});
+  const CompanyHome({super.key, this.bridge});
+
+  /// Widget-test seam: inject a fake; production passes null → real bridge.
+  final OpcBridge? bridge;
+
   @override
   State<CompanyHome> createState() => _CompanyHomeState();
 }
 
 class _CompanyHomeState extends State<CompanyHome> {
-  final OpcBridge _bridge = OpcBridge();
+  late final OpcBridge _bridge = widget.bridge ?? OpcBridge();
   final TextEditingController _goalController = TextEditingController();
   final FocusNode _goalFocus = FocusNode();
   OpcSnapshot? _snap;
