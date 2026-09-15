@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **Shell UI behavior, widget-tested + CI-pinned**: `FakeOpcBridge` scripts
+  the six C entry points (with the malloc/free contract checked pointer-by-
+  pointer — the wrapper's marshalling is exercised, not stubbed); 9 new
+  widget tests cover rendering, create-failure surfacing, goal send/clear/
+  empty-refuse, verbatim refusal text, approve/reject decide payloads,
+  advance verb, and cross-product approval filtering. New
+  `shell-tests.yml` runs analyze + these 14 tests on every push (official
+  pinned Flutter SDK — the Dart layer had never seen CI).
 - **Process-launch seam (`OPCProcessRunner`, closes #9)**: all five
   scattered `Process()` sites in the portable core now construct through one
   file. Windows translation lands there once: PATHEXT probing (npm ships

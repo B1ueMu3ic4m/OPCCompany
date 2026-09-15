@@ -100,16 +100,34 @@ class OpcSnapshot {
 /// Thin object wrapper over the six C entry points. All calls are synchronous
 /// and, by contract, must run on the host's main/platform thread.
 class OpcBridge {
-  OpcBridge([DynamicLibrary? lib]) : _lib = lib ?? openOpcBridge() {
-    create = _lib.lookupFunction<CreateNative, CreateDart>('opc_bridge_create');
-    _destroy = _lib.lookupFunction<DestroyNative, DestroyDart>('opc_bridge_destroy');
-    _lastError = _lib.lookupFunction<LastErrorNative, LastErrorDart>('opc_bridge_last_error');
-    _snapshotJson = _lib.lookupFunction<SnapshotJsonNative, SnapshotJsonDart>('opc_bridge_snapshot_json');
-    _command = _lib.lookupFunction<CommandNative, CommandDart>('opc_bridge_command');
-    _free = _lib.lookupFunction<FreeNative, FreeDart>('opc_bridge_free');
+  OpcBridge([DynamicLibrary? lib]) {
+    final resolved = lib ?? openOpcBridge();
+    create = resolved.lookupFunction<CreateNative, CreateDart>('opc_bridge_create');
+    _destroy = resolved.lookupFunction<DestroyNative, DestroyDart>('opc_bridge_destroy');
+    _lastError = resolved.lookupFunction<LastErrorNative, LastErrorDart>('opc_bridge_last_error');
+    _snapshotJson = resolved.lookupFunction<SnapshotJsonNative, SnapshotJsonDart>('opc_bridge_snapshot_json');
+    _command = resolved.lookupFunction<CommandNative, CommandDart>('opc_bridge_command');
+    _free = resolved.lookupFunction<FreeNative, FreeDart>('opc_bridge_free');
   }
 
-  final DynamicLibrary _lib;
+  /// Widget-test seam: the six function slots supplied directly, so the UI
+  /// can be driven against a scripted fake of the C ABI (no dlopen, no
+  /// singleton, no main-thread contract). The free callback receives every
+  /// pointer the wrapper hands back, exactly like the real bridge.
+  /// (Named forTesting rather than annotated @visibleForTesting: this library
+  /// stays Flutter/meta-free by design — see the header comment.)
+  OpcBridge.forTesting({
+    required this.create,
+    required DestroyDart destroy,
+    required LastErrorDart lastError,
+    required SnapshotJsonDart snapshotJson,
+    required CommandDart command,
+    required FreeDart free,
+  })  : _destroy = destroy,
+        _lastError = lastError,
+        _snapshotJson = snapshotJson,
+        _command = command,
+        _free = free;
 
   late final CreateDart create;
   late final DestroyDart _destroy;

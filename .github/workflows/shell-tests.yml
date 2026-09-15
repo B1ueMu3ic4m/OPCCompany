@@ -1,0 +1,56 @@
+name: Shell Tests (Dart)
+
+# The flutter_shell's Dart layers were only ever run on a dev machine; this
+# pins them to CI. Official Flutter release zip, version-matched to the SDK
+# windows-shell.yml uses (one Flutter across the fleet) — no third-party
+# actions, per the repo supply-chain policy.
+#
+# Scope: dart analyze + flutter test (widget/unit — headless, no dlopen).
+# The dylib-loading smoke stays local/Windows-CI (needs the Swift toolchain;
+# windows-shell.yml already runs the behavioral cycle end to end).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'flutter_shell/**'
+      - '.github/workflows/shell-tests.yml'
+  pull_request:
+    paths:
+      - 'flutter_shell/**'
+      - '.github/workflows/shell-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.41.5
+
+jobs:
+  dart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Flutter SDK (Linux, official infra)
+        run: |
+          set -euo pipefail
+          curl -sSLo /tmp/flutter.zip \
+            "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+          mkdir -p "$HOME/sdk"
+          tar -xJf /tmp/flutter.zip -C "$HOME/sdk"
+          echo "$HOME/sdk/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Flutter version pin assertion
+        run: |
+          flutter --version
+          flutter --version | grep -q "$FLUTTER_VERSION" || { echo "SDK drift"; exit 1; }
+
+      - name: Analyze + test (headless)
+        working-directory: flutter_shell
+        run: |
+          flutter pub get
+          dart analyze --fatal-infos
+          flutter test
