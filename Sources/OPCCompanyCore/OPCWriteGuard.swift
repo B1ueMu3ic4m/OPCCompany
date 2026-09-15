@@ -33,19 +33,13 @@ public enum OPCWriteGuard {
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) throws {
         if environment["OPC_ALLOW_CONCURRENT_WRITE"] == "1" { return }
-        let pgrep = Process()
-        pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-        pgrep.arguments = ["-x", "OPCCompany"]
-        pgrep.standardOutput = FileHandle.nullDevice
-        pgrep.standardError = FileHandle.nullDevice
-        let appRunning: Bool
-        do {
-            try pgrep.run()
-            pgrep.waitUntilExit()
-            appRunning = pgrep.terminationStatus == 0
-        } catch {
-            appRunning = false  // no pgrep → no detection available
-        }
+        // #9 seam: the launch lives in OPCProcessRunner (pgrep is absent on
+        // Windows → runQuietly returns nil → "no detection available", which
+        // matches the documented no-op contract and the old throw-to-false).
+        let status = OPCProcessRunner.runQuietly(
+            executable: "/usr/bin/pgrep",
+            arguments: ["-x", "OPCCompany"])
+        let appRunning = status == 0
         if appRunning {
             throw OPCConcurrentWriterError(message:
                 "OPCCompany.app is running — the desktop app shares this snapshot "

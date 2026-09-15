@@ -3884,23 +3884,10 @@ static func isPath(_ path: String, insideAnyOf roots: Set<String>) -> Bool {
 
 
     func runLocalProcess(executable: String, arguments: [String], workingDirectory: URL) -> (exitCode: Int32, output: String) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        process.currentDirectoryURL = workingDirectory
-        let outputPipe = Pipe()
-        let errorPipe = Pipe()
-        process.standardOutput = outputPipe
-        process.standardError = errorPipe
-        do {
-            try process.run()
-            process.waitUntilExit()
-            let output = String(data: outputPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            let error = String(data: errorPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            return (process.terminationStatus, [output, error].filter { !$0.isEmpty }.joined(separator: "\n"))
-        } catch {
-            return (127, error.localizedDescription)
-        }
+        // #9 seam: launches go through OPCProcessRunner (the only Process()
+        // site in core); tuple return kept for call-site compatibility.
+        let result = OPCProcessRunner.runAndWait(executable: executable, arguments: arguments, workingDirectory: workingDirectory)
+        return (result.exitCode, result.output)
     }
 
     struct PersistentTerminalTarget {
@@ -4002,23 +3989,10 @@ static func isPath(_ path: String, insideAnyOf roots: Set<String>) -> Bool {
         }
 
         private nonisolated func runLocalProcess(executable: String, arguments: [String], workingDirectory: URL) -> PersistentTerminalProcessResult {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: executable)
-            process.arguments = arguments
-            process.currentDirectoryURL = workingDirectory
-            let outputPipe = Pipe()
-            let errorPipe = Pipe()
-            process.standardOutput = outputPipe
-            process.standardError = errorPipe
-            do {
-                try process.run()
-                process.waitUntilExit()
-                let output = String(data: outputPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                let error = String(data: errorPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                return PersistentTerminalProcessResult(exitCode: process.terminationStatus, output: [output, error].filter { !$0.isEmpty }.joined(separator: "\n"))
-            } catch {
-                return PersistentTerminalProcessResult(exitCode: 127, output: error.localizedDescription)
-            }
+            // #9 seam (tmux plumbing). On Windows tmux does not resolve —
+            // the guards upstream already disable the persistent path.
+            let r = OPCProcessRunner.runAndWait(executable: executable, arguments: arguments, workingDirectory: workingDirectory)
+            return PersistentTerminalProcessResult(exitCode: r.exitCode, output: r.output)
         }
 
         private nonisolated func runLocalProcessWithStdin(
@@ -4027,29 +4001,9 @@ static func isPath(_ path: String, insideAnyOf roots: Set<String>) -> Bool {
             workingDirectory: URL,
             stdinText: String
         ) -> PersistentTerminalProcessResult {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: executable)
-            process.arguments = arguments
-            process.currentDirectoryURL = workingDirectory
-            let inputPipe = Pipe()
-            let outputPipe = Pipe()
-            let errorPipe = Pipe()
-            process.standardInput = inputPipe
-            process.standardOutput = outputPipe
-            process.standardError = errorPipe
-            do {
-                try process.run()
-                if let data = stdinText.data(using: .utf8), !data.isEmpty {
-                    inputPipe.fileHandleForWriting.write(data)
-                }
-                try? inputPipe.fileHandleForWriting.close()
-                process.waitUntilExit()
-                let output = String(data: outputPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                let error = String(data: errorPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                return PersistentTerminalProcessResult(exitCode: process.terminationStatus, output: [output, error].filter { !$0.isEmpty }.joined(separator: "\n"))
-            } catch {
-                return PersistentTerminalProcessResult(exitCode: 127, output: error.localizedDescription)
-            }
+            // #9 seam: stdin-write ordering lives in OPCProcessRunner.
+            let r = OPCProcessRunner.runAndWaitWithStdin(executable: executable, arguments: arguments, workingDirectory: workingDirectory, stdinText: stdinText)
+            return PersistentTerminalProcessResult(exitCode: r.exitCode, output: r.output)
         }
     }
 
