@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **Process-launch seam (`OPCProcessRunner`, closes #9)**: all five
+  scattered `Process()` sites in the portable core now construct through one
+  file. Windows translation lands there once: PATHEXT probing (npm ships
+  `claude.cmd`/`codex.cmd` shims CreateProcess can't exec), `cmd /d /s /c`
+  wrapping with CommandLineToArgvW-compatible quoting, `NUL` vs `/dev/null`,
+  launchability probes via existence (batch files have no POSIX bit). macOS
+  behavior byte-compatible (same error strings, drain order, 127/124 codes).
+  Sealed by three guard tests incl. the grep-the-tree acceptance criterion
+  from the issue; the quoting/translation rules are pure string logic unit-
+  tested on any OS.
+
 ## [0.3.0] - 2026-09-14
 
 ### Added

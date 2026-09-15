@@ -16609,8 +16609,10 @@ private actor AutoLoopInputQueue {
 
 @Test func processOutputBufferUncheckedSendableCarriesLockProtectionMarker() async throws {
     // R30：ProcessOutputBuffer 用 NSLock 同步是**正确的** @unchecked Sendable 声明（不是技术债）。
-    // 守门：CLIAgentRunner.swift 必须保留 LIMITATION marker + lock 保护说明 + 候选 ω-sendable Swift 6 升级指针。
-    let source = try loadOPCCompanyCoreSource("CLIAgentRunner.swift")
+    // 守门：OPCProcessRunner.swift 必须保留 LIMITATION marker + lock 保护说明 + 候选 ω-sendable Swift 6 升级指针。
+    //（#9 迁移：buffer 类随进程启动 seam 从 CLIAgentRunner.swift 搬入 OPCProcessRunner.swift，
+    //  守门文件指针同步搬家——marker 与 seam 必须同文件共存。）
+    let source = try loadOPCCompanyCoreSource("OPCProcessRunner.swift")
     #expect(source.contains("LIMITATION-UNCHECKED-SENDABLE-LOCK-PROTECTED-BUFFER"),
             "ProcessOutputBuffer 上方必须保留 LIMITATION-UNCHECKED-SENDABLE-LOCK-PROTECTED-BUFFER 标记")
     #expect(source.contains("不是技术债"),
@@ -16625,7 +16627,8 @@ private actor AutoLoopInputQueue {
 
 @Test func processTimeoutStateUncheckedSendableCarriesLockProtectionMarker() async throws {
     // R30：ProcessTimeoutState 同 ProcessOutputBuffer，NSLock 保护单 Bool 标志位。
-    let source = try loadOPCCompanyCoreSource("CLIAgentRunner.swift")
+    //（#9 迁移：marker 随类住在 OPCProcessRunner.swift,守门指针同步。）
+    let source = try loadOPCCompanyCoreSource("OPCProcessRunner.swift")
     #expect(source.contains("LIMITATION-UNCHECKED-SENDABLE-LOCK-PROTECTED-FLAG"),
             "ProcessTimeoutState 上方必须保留 LIMITATION-UNCHECKED-SENDABLE-LOCK-PROTECTED-FLAG 标记")
     #expect(source.contains("processTimeoutStateUncheckedSendableCarriesLockProtectionMarker"),
@@ -16634,6 +16637,77 @@ private actor AutoLoopInputQueue {
             "ProcessTimeoutState LIMITATION marker 必须指明 Swift 6 Mutex<Bool> 升级路径")
 }
 
+// MARK: - #9 ProcessRunner seam (Windows port M0 close-out)
+//
+// One launch seam, sealed three ways: (1) no Process() construction outside
+// OPCProcessRunner.swift, (2) the Windows cmd.exe quoting/translation is
+// pure string logic — unit-testable on any OS, (3) the AgentProcessRunner
+// facade keeps its published behavior (existing runStreaming/SIGKILL/drain
+// tests already pin it).
+
+@Test func processConstructionIsSealedToTheRunnerFile() throws {
+    // Acceptance criterion from issue #9: `grep 'Process()'
+    // Sources/OPCCompanyCore` outside the runner impl = 0.
+    let files = try loadOPCCompanyCoreSwiftFileURLs()
+    var offenders: [String] = []
+    for url in files where url.lastPathComponent != "OPCProcessRunner.swift" {
+        let source = try String(contentsOf: url, encoding: .utf8)
+        if source.contains("= Process()") {
+            offenders.append(url.lastPathComponent)
+        }
+    }
+    #expect(offenders.isEmpty,
+            "Process() escaped the seam — construct launches only in OPCProcessRunner.swift; offenders: \(offenders)")
+    // and the seam itself exists with its documented surface
+    let runner = try loadOPCCompanyCoreSource("OPCProcessRunner.swift")
+    for api in ["runStreaming", "runAndWait", "runAndWaitWithStdin",
+                "runQuietly", "resolvedExecutablePath"] {
+        #expect(runner.contains("func \(api)"),
+                "OPCProcessRunner must expose \(api)")
+    }
+}
+
+@Test func windowsArgvQuotingMatchesCommandLineToArgvRules() {
+    // The crux of #9 in testable form: cmd.exe re-parses everything after
+    // `/c`, so each argument is quoted CommandLineToArgvW-style — embedded
+    // quotes escape as \", and backslash runs before a quote or the closing
+    // quote double up. Pure logic: verified here on macOS, identical on
+    // Windows CI.
+    func q(_ s: String) -> String { OPCProcessRunner.windowsQuoteArgument(s) }
+    #expect(q("plain") == "\"plain\"")
+    #expect(q("") == "\"\"")
+    #expect(q("has space") == "\"has space\"")
+    #expect(q("say \"hi\"") == "\"say \\\"hi\\\"\"")          // quote escapes
+    #expect(q("path\\to") == "\"path\\to\"")                  // mid backslash passes
+    #expect(q("ends\\") == "\"ends\\\\\"")                    // trailing doubles before closing quote
+    // the combined rule (backslash-run + quote) built explicitly to avoid
+    // escape-counting ambiguity: input x + 2×"\" + a quote + y  →
+    // output: outer quote, x, 2*2 doubled + 1 escape = 5 backslashes, quote, y
+    let bsInput = "x" + String(repeating: "\\", count: 2) + "\u{0022}" + "y"
+    let bsWant = "\u{0022}" + "x" + String(repeating: "\\", count: 5) + "\u{0022}" + "y" + "\u{0022}"
+    #expect(q(bsInput) == bsWant)
+}
+
+@Test func windowsBatchTranslationWrapsOnceThroughCmd() {
+    // claude.cmd must launch as cmd.exe /d /s /c with the whole command
+    // line quoted ONCE; COMSPEC honored; plain .exe never wrapped.
+    #expect(OPCProcessRunner.isWindowsBatchScript("C:\\npm\\claude.cmd"))
+    #expect(OPCProcessRunner.isWindowsBatchScript("legacy.BAT"))
+    #expect(!OPCProcessRunner.isWindowsBatchScript("C:\\tools\\codex.exe"))
+
+    let wrapped = OPCProcessRunner.windowsBatchLaunch(
+        scriptPath: #"C:\Program Files\nodejs\claude.cmd"#,
+        arguments: ["-p", "prompt with \"quotes\""],
+        environment: ["COMSPEC": #"C:\Windows\System32\cmd.exe"#])
+    #expect(wrapped.executable == #"C:\Windows\System32\cmd.exe"#)
+    #expect(wrapped.arguments.prefix(2).elementsEqual(["/d", "/s"]))
+    #expect(wrapped.arguments[2] == "/c")
+    // /c payload is ONE token: outer quotes present, inner quotes escaped
+    let inner = wrapped.arguments[3]
+    #expect(inner.hasPrefix("\"") && inner.hasSuffix("\""))
+    #expect(inner.contains(#""C:\Program Files\nodejs\claude.cmd""#))
+    #expect(inner.contains("\"prompt with \\\"quotes\\\"\""))
+}
 // MARK: - R31 LIMITATION 自洽性条件断言推广（角色继承期轮 31）
 //
 // R15 引入「LIMITATION 自洽性条件断言」模式（在 commandCenterViewHeader... 测试 line 12867-12870）：
