@@ -108,8 +108,12 @@ snapshot JSON the core owns, every button is one bridge verb.
 What CI proves on every push:
 
 - `OPCCompanyBridge.dll` builds on Windows and `dumpbin` verifies all six exports
-- the Windows shell package is assembled (Flutter SDK pinned to the official release) and **launched in CI** — its 10-check behavioral smoke must print `"ok":true` (`opc-shell-windows-x86_64` artifact = the runnable package)
+- the Windows shell package is assembled (Flutter SDK pinned to the official release) and **launched in CI** — its 10-check behavioral smoke must print `"ok":true`
 - `scripts/build-shell-macos.sh` bundles the bridge dylib into a standalone .app and the packaged app self-checks ALL PASS
+
+Want to try it? Grab `OPCCompanyShell-windows-x64-*-preview.zip` from the
+[latest release](https://github.com/B1ueMu3ic4m/OPCCompany/releases) — unpack and run `opc_flutter_shell.exe`
+(unsigned preview: Windows may warn on first launch; no installer needed).
 
 ```bash
 cd flutter_shell && flutter run -d macos     # dev loop
