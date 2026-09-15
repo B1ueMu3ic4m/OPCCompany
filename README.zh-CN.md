@@ -36,6 +36,7 @@ AI 编程智能体很强大,但是**看不见**。任务丢进终端,然后就�
 - 🔒 **本地优先** —— SQLite 历史索引,钥匙串存密钥,核心链路不依赖云
 - 🌐 **中英双语** —— 应用内一键切换 简体中文 / English
 - ⌨️ **无头 CLI(`opc`,v0.2.0)** —— 终端里 status / goal / advance / report,与 GUI 共用同一份本司快照
+- 🧬 **可嵌入核心 + Flutter 桌面壳(v0.3.0)** —— 公司引擎导出 6 符号 C ABI;dart:ffi 薄壳在 macOS **与 Windows** 镜像同一家公司(技术预览),两端包均在 CI 构建并真实启动验证
 
 ## 快速开始
 
@@ -72,11 +73,31 @@ swift build -c release --product opc
 `opc` 只链接可移植核心层——它也是 Windows 移植路径上的第一个产物:逻辑层自
 2026-09-08 起在真实 Windows 上零错误编译;v0.2.1 起每次 push 都在 CI 里构建
 **`opc.exe`**(Windows Build workflow → `opc-windows-x86_64` artifact),
-API 密钥由 DPAPI 加密保护。GUI 在 M3 Flutter 外壳落地前仍仅限 macOS;
-无头 CLI 已具备 Windows 可用性。完整英文说明见 [README.md](README.md#headless-cli-opc)。
+API 密钥由 DPAPI 加密保护。v0.3.0 起 GUI 也有跨平台路径——见下文 Flutter 壳。
 
 > 写命令(`goal`、`advance`)在桌面 App 打开时会被拒绝——两者共用同一份快照,后写者胜。
 > 先退出 App,或确认无其他写入方时设 `OPC_ALLOW_CONCURRENT_WRITE=1`。
+
+## 可嵌入核心 + Flutter 壳(v0.3.0)
+
+公司引擎(`OPCCompanyCore`)导出冻结的 **6 符号 C ABI**(`include/opc_bridge.h`:
+create/destroy/lastError/snapshotJson/command/free)——任何能 `dlopen` 的语言
+都能运行整家公司。参考宿主是 **`flutter_shell/`**:一个 dart:ffi 薄壳,Dart
+侧零业务逻辑;目标栏、审批队列、任务板全部镜像核心持有的快照 JSON,每个按钮
+就是一次桥动词调用。
+
+> **技术预览**:壳端到端证明了跨平台路径;它的 UI 有意保持最简,不是 SwiftUI 的体验。
+
+每次 push CI 证明的事:
+
+- `OPCCompanyBridge.dll` 在 Windows 构建成功,`dumpbin` 验证全部 6 个导出符号
+- Windows 壳包被组装(Flutter SDK 钉官方版本)并**在 CI 里真实启动**——10 项行为冒烟必须输出 `"ok":true`(`opc-shell-windows-x86_64` artifact 即可运行包)
+- `scripts/build-shell-macos.sh` 把桥 dylib 捆进独立 .app,打包后的 app 自检全绿才算构建完成
+
+```bash
+cd flutter_shell && flutter run -d macos     # 开发循环
+bash scripts/ffi-e2e.sh                      # ABI + 行为冒烟,隔离快照
+```
 
 完整英文文档见 [README.md](README.md)。
 
