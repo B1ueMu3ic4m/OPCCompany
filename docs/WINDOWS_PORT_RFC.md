@@ -1,6 +1,8 @@
 # Windows Port RFC
 
-Status: **Route A = GO** (2026-09-08, see [WINDOWS_COMPILE_REPORT.md](WINDOWS_COMPILE_REPORT.md)) · Started: 2026-09-07 · Owner: @B1ueMu3ic4m
+Status: **Route A = SHIPPED** (bridge + Flutter shell live since v0.3.0,
+2026-09-14) · Started: 2026-09-07 · Owner: @B1ueMu3ic4m
+Progress log: [WINDOWS_COMPILE_REPORT.md](WINDOWS_COMPILE_REPORT.md)
 
 ## Why
 
@@ -38,23 +40,26 @@ Windows target.
 ## Decision tree (data-driven, not faith-based)
 
 ```
-M0  Platform-abstraction refactor (on macOS, no-regret)      ← IN PROGRESS
+M0  Platform-abstraction refactor (on macOS, no-regret)      ✅ CLOSED 2026-09-12
      ├─ SecretStore protocol + OPCAppPaths                    ✅ PR #7
-     ├─ ProcessRunner wrapper (path/arg quoting on Windows)
-     ├─ i18n: replace Bundle.main swizzle with a portable lookup
-     └─ Split core into OPCCompanyCore (no UI) + OPCCompanyUI (SwiftUI)
+     ├─ ProcessRunner wrapper (path/arg quoting on Windows)   ← open, #9
+     ├─ i18n: replace Bundle.main swizzle with a portable lookup ← open, #10
+     └─ Split core into OPCCompanyCore (no UI) + OPCCompanyUI (SwiftUI) ✅
+        (shim chain proven layer-by-layer on real Windows CI:
+         CryptoKit 60→0 · SwiftUI observation 76→0 · SQLite vendored 62→0 ·
+         Security→DPAPI 62→0 · ObjC swizzle gated 62→0 · cross-layer 420→0)
 
-M1  Windows compile spike (on a real Windows box)            ← GUIDE READY
-     Build OPCCompanyCore with the Swift Windows toolchain;
-     collect the error census.
+M1  Windows compile spike                                      ✅ CLOSED (automated)
+     spike #6: logic package builds with ZERO errors (496/496 jobs);
+     spike #9: DPAPI live 4-step probe green. The one-off guide became
+     standing CI (windows.yml + windows-shell.yml run on every push).
 
-M2  Route decision from M1 data:
-     ├─ A) Swift core reused via FFI + Flutter UI   — only if core compiles
-     │                                                with < ~20 blocking errors
-     ├─ B) Full Flutter port (logic rewritten in Dart,
-     │    578 tests re-expressed as the acceptance spec) — default if A is painful
-     └─ C) Community-driven port — RFC + good-first-issues below; if a
-          contributor picks it up, cost to us ≈ 0
+M2  Route decision from M1 data:                               ✅ A = GO, executed
+     ├─ A) Swift core reused via FFI + Flutter UI  ← SHIPPED: OPCBridge
+     │                                                (6 C symbols) + flutter_shell
+     ├─ B) Full Flutter port — not needed; A's census was 2 modules, both
+     │    with official replacements (swift-crypto, observation shim)
+     └─ C) Community-driven — still open for #9 / #10 (good-first-issue)
 ```
 
 Routes A and B are **not** mutually exclusive over time: B's Dart core can
@@ -66,23 +71,26 @@ later back a SwiftUI macOS rewrite too, converging on one cross-platform stack.
 - No half-broken "works under Wine" claims.
 - No promise on dates until M1 data exists.
 
-## Asking for help (route C)
+## Asking for help (still open)
 
-If you have shipped a Swift-on-Windows or Flutter-desktop project:
+The core compiles and the shell runs on Windows — but parity work remains.
+If you have shipped Swift-on-Windows or Flutter-desktop projects:
 
-- **Review this RFC** — comment on the decision tree; what did we miss?
-- **Run the M1 spike** on your Windows machine and post the error census
-  (`docs/WINDOWS_SPIKE_GUIDE.zh-CN.md`, English version coming).
-- **Claim a good-first-issue** from the `windows-port` label.
+- **#9 ProcessRunner** — the one abstraction M0 deferred: CLI agents launch
+  via `Process` in ~8 places; Windows needs `.cmd` resolution + quoting.
+- **#10 portable i18n** — replace the ObjC bundle swizzle with a protocol.
+- **Windows terminal hall** — the shell today is boss-operations only
+  (goal/board/approvals); employee terminal seats need a cross-platform
+  story (xterm.js embed is the candidate). Design discussion welcome.
 
-We will credit every merged contribution in release notes and the changelog.
+We credit every merged contribution in release notes and the changelog.
 
-## Milestones (draft)
+## Milestones
 
-| Milestone | Deliverable | Exit criteria |
-|---|---|---|
-| M0 | Abstraction layer | 578+ tests green on macOS; core/UI split builds |
-| M1 | Compile spike | Error census published in this repo |
-| M2 | Route decision | A/B/C chosen with data, recorded here |
-| M3 | MVP | Boss→CTO→employee→terminal loop runs on Windows |
-| M4 | Parity + distribution | Test suite ported; winget/MSIX install |
+| Milestone | Deliverable | Exit criteria | Status |
+|---|---|---|---|
+| M0 | Abstraction layer | 578+ tests green on macOS; core/UI split builds | ✅ closed (shim chain CI-proven layer by layer) |
+| M1 | Compile spike | Error census published in this repo | ✅ closed — census in WINDOWS_COMPILE_REPORT.md; spike became standing CI |
+| M2 | Route decision | A/B/C chosen with data, recorded here | ✅ Route A, executed |
+| M3 | MVP | Boss→CTO→employee→terminal loop runs on Windows | 🟡 **partially** — boss→CTO loop verified on Windows CI (goal→task chain→advance→save, 10/10 smoke); employee *terminal seats* are still macOS-GUI-only (see #9 + terminal-hall discussion) |
+| M4 | Parity + distribution | Test suite ported; winget/MSIX install | 🔭 open — tests run on Windows CI for the logic package (compile); behavioral suite port + signing/MSIX next |
