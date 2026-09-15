@@ -39,6 +39,7 @@ Not a chat wrapper. Not a dashboard. A **company metaphor with real authority bo
 - 🔒 **Local-first** — SQLite-backed history, Keychain for API keys, no cloud dependency for the core loop
 - 🌐 **Bilingual UI** — in-app switch between 简体中文 and English
 - ⌨️ **Headless CLI (`opc`, v0.2.0)** — status / goal / advance / report from the terminal, driving the same local company snapshot as the GUI
+- 🧬 **Embeddable core + Flutter desktop shell (v0.3.0)** — the company engine exports a 6-symbol C ABI; a dart:ffi shell mirrors it on macOS **and Windows** (technical preview), both packaged and launched in CI
 
 ## Quick Start
 
@@ -85,12 +86,35 @@ swift build -c release --product opc
 [Windows port](docs/WINDOWS_PORT_RFC.md) path: the logic package has built on
 real Windows with zero errors since 2026-09-08, and since v0.2.1 every push
 builds **`opc.exe` in CI** (Windows Build workflow → `opc-windows-x86_64`
-artifact) with API keys protected by DPAPI. GUI is macOS-only until the M3
-Flutter shell lands; the headless CLI is already Windows-ready.
+artifact) with API keys protected by DPAPI. Since v0.3.0 there's also a
+cross-platform GUI path — see [the shell](#embeddable-core--flutter-shell-v030).
 
 > Write commands (`goal`, `advance`) refuse to run while the desktop app is
 > open — both share one snapshot and last writer wins. Quit the app, or set
 > `OPC_ALLOW_CONCURRENT_WRITE=1` if you're sure nothing else writes.
+
+## Embeddable Core + Flutter Shell (v0.3.0)
+
+The company engine (`OPCCompanyCore`) exports a frozen **6-symbol C ABI**
+(`include/opc_bridge.h`: create/destroy/lastError/snapshotJson/command/free)
+— any language that can `dlopen` can run the whole company. The reference
+host is **`flutter_shell/`**, a thin dart:ffi desktop shell: zero business
+logic in Dart; the goal bar, approvals queue and task board all mirror the
+snapshot JSON the core owns, every button is one bridge verb.
+
+> **Technical preview**: the shell proves the cross-platform path end to end;
+> its UI is intentionally minimal, not the SwiftUI experience.
+
+What CI proves on every push:
+
+- `OPCCompanyBridge.dll` builds on Windows and `dumpbin` verifies all six exports
+- the Windows shell package is assembled (Flutter SDK pinned to the official release) and **launched in CI** — its 10-check behavioral smoke must print `"ok":true` (`opc-shell-windows-x86_64` artifact = the runnable package)
+- `scripts/build-shell-macos.sh` bundles the bridge dylib into a standalone .app and the packaged app self-checks ALL PASS
+
+```bash
+cd flutter_shell && flutter run -d macos     # dev loop
+bash scripts/ffi-e2e.sh                      # ABI + behavioral smoke, isolated snapshot
+```
 
 ## The Workflow
 
@@ -132,8 +156,10 @@ The UI ships in 简体中文 and English. Switch anytime: menu bar → **界面�
 
 ## Roadmap
 
-- [ ] Developer ID signing & notarization (drop the `xattr` step)
-- [ ] Windows/Linux companion for cross-platform teams
+- [ ] Developer ID signing & notarization (drop the `xattr` step) + MSIX for the Windows shell
+- [x] ~~Windows companion~~ — shipped v0.3.0: `opc.exe` + Flutter shell package, both built & run in CI
+- [ ] Flutter shell → feature parity with the SwiftUI app (its UI is a preview)
+- [ ] Linux companion (core already compiles portable-first; needs a CI matrix row)
 - [ ] MCP tool marketplace per employee
 - [ ] Replay & time-travel debugging for the task graph
 
