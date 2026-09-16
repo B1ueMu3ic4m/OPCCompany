@@ -12,6 +12,12 @@ xcuserdata/
 *.xcuserstate
 *.xcodeproj
 
+# Flutter shells track their generated runner projects (that's the official
+# Flutter convention — `flutter build macos/windows` needs them and there is
+# no generator to re-create them from a bare clone).
+!flutter_shell/macos/Runner.xcodeproj/
+!flutter_shell/macos/Runner.xcodeproj/**
+
 # ===== Local agent state — NEVER publish =====
 .claude/
 .ccb/

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-16
+
 ### Added
 - **Shell UI behavior, widget-tested + CI-pinned**: `FakeOpcBridge` scripts
   the six C entry points (with the malloc/free contract checked pointer-by-
@@ -243,6 +245,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Homebrew tap installation (`brew install --cask B1ueMu3ic4m/tap/opc-company`)
 - 568 tests, MIT license, issue templates, contributing guide
 
+[0.3.1]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.1
 [0.3.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.0
 [0.1.1]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.1.0
 [0.1.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.1.0
