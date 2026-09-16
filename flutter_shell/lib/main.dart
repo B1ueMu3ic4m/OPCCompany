@@ -48,6 +48,7 @@ class _CompanyHomeState extends State<CompanyHome> {
   final Map<String, int> _cursors = {}; // lowercased agentID -> byte offset
   final Map<String, String> _transcripts = {}; // agentID -> accumulated text
   String? _selectedAgentID;
+  String? _transcriptProductID;
   final ScrollController _transcriptScroll = ScrollController();
   bool _followTail = true;
 
@@ -90,17 +91,29 @@ class _CompanyHomeState extends State<CompanyHome> {
   /// (shrank => clear the local copy and restart at 0 — truncation/
   /// cleared log must not leave stale text in the viewer).
   void _syncTranscripts() {
+    final productID = _snap?.raw['selectedProductID'] as String?;
+    if (productID != _transcriptProductID) {
+      // Employee IDs can be shared by products. Invalidate before querying,
+      // including on failure, so old product text cannot remain visible.
+      _cursors.clear();
+      _transcripts.clear();
+      _transcriptProductID = productID;
+      _followTail = true;
+    }
+    if (productID == null) return;
     final digest = _bridge.terminalDigest();
     if (digest == null) {
       return; // digest failure: transcripts simply don't update this cycle
     }
+    _cursors.removeWhere((key, _) => !digest.containsKey(key));
+    _transcripts.removeWhere((key, _) => !digest.containsKey(key));
     digest.forEach((agentKey, length) {
       final had = _cursors[agentKey] ?? 0;
       if (length < had) {
         _cursors.remove(agentKey);
         _transcripts.remove(agentKey);
       }
-      while (( _cursors[agentKey] ?? 0) < length) {
+      while ((_cursors[agentKey] ?? 0) < length) {
         final tail = _bridge.terminalTail(agentKey,
             afterOffset: _cursors[agentKey] ?? 0, maxBytes: 65536);
         if (tail == null || tail.nextOffset <= (_cursors[agentKey] ?? 0)) {
@@ -213,8 +226,9 @@ class _CompanyHomeState extends State<CompanyHome> {
                         style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     if (byStatus.isEmpty)
-                      const Card(child: ListTile(
-                          title: Text('No tasks yet — send a goal above.')))
+                      const Card(
+                          child: ListTile(
+                              title: Text('No tasks yet — send a goal above.')))
                     else
                       for (final entry in byStatus.entries) ...[
                         Padding(
@@ -338,7 +352,8 @@ class _CompanyHomeState extends State<CompanyHome> {
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
             child: Row(
               children: [
-                Icon(Icons.terminal, size: 16,
+                Icon(Icons.terminal,
+                    size: 16,
                     color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Expanded(
@@ -372,7 +387,8 @@ class _CompanyHomeState extends State<CompanyHome> {
                   SelectableText(
                     text ?? '',
                     style: const TextStyle(
-                        fontFamily: 'Menlo, monospace', fontSize: 11,
+                        fontFamily: 'Menlo, monospace',
+                        fontSize: 11,
                         height: 1.35),
                   ),
                 ],

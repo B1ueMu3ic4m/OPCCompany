@@ -23,8 +23,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   of showing stale bytes. Incremental-poll timers are deferred to the
   interactive phase (option B era).
 
-## [0.3.1] - 2026-09-16
-
 ### Fixed
 - **Windows command-line injection at the launch seam (audit 2026-09-16)**:
   the batch-file `cmd /c` quoting escaped only `"` — a boss prompt

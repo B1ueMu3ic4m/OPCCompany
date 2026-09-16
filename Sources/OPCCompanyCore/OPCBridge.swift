@@ -192,9 +192,7 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // what the shell's roster rows actually index by).
                     // Prefix-filtered on the selected product, so a
                     // cross-product leak is structurally impossible.
-                    let prefix = store.terminalLogStorageKey(
-                        productID: store.selectedProductID,
-                        agentID: UUID()).components(separatedBy: ":").first! + ":"
+                    let prefix = store.selectedProductID.uuidString.lowercased() + ":"
                     var digest: [String: Int] = [:]
                     for (key, log) in store.productTerminalLogs where key.hasPrefix(prefix) {
                         digest[String(key.dropFirst(prefix.count))] = log.utf8.count
@@ -256,23 +254,27 @@ enum OPCBridgeWindow {
     }
 
     static func read(log: String, afterOffset: Int, maxBytes: Int) -> Result {
-        let bytes = Array(log.utf8)
+        let bytes = log.utf8
         let length = bytes.count
-        let start = min(max(0, afterOffset), length)
-        var end = min(start + max(1, maxBytes), length)
-        // Trim trailing continuation bytes (0b10xxxxxx), then a BARE leading
-        // byte (≥0xC0) that lost its continuations — window [0,4) of "中文"
-        // ends on 0xE6 and trimming only continuations there decodes U+FFFD
-        // (caught while writing the exact-window test, 2026-09-16).
-        while end > start && (bytes[end - 1] & 0xC0) == 0x80 { end -= 1 }
-        if end > start && bytes[end - 1] >= 0xC0 { end -= 1 }
-        if end == start && start < length {
-            // progress guarantee: take one whole character even if it
-            // overshoots maxBytes by up to 3 bytes
-            end = start + 1
-            while end < length && (bytes[end] & 0xC0) == 0x80 { end += 1 }
+        var start = min(max(0, afterOffset), length)
+        func isContinuation(_ offset: Int) -> Bool {
+            (bytes[bytes.index(bytes.startIndex, offsetBy: offset)] & 0xC0) == 0x80
         }
-        let slice = Array(bytes[start..<end])
+        // Arbitrary interior cursors rewind to the containing codepoint.
+        // Cursors returned by this helper are already aligned.
+        while start > 0 && start < length && isContinuation(start) { start -= 1 }
+        // Bound before adding: even Int.max must not overflow start + size.
+        var end = start + min(max(1, maxBytes), length - start)
+        // end is EXCLUSIVE. A continuation byte AT end means this boundary
+        // splits a codepoint; a continuation byte BEFORE end can be complete.
+        while end > start && end < length && isContinuation(end) { end -= 1 }
+        if end == start && start < length {
+            end = start + 1
+            while end < length && isContinuation(end) { end += 1 }
+        }
+        let lower = bytes.index(bytes.startIndex, offsetBy: start)
+        let upper = bytes.index(bytes.startIndex, offsetBy: end)
+        let slice = bytes[lower..<upper]
         return Result(text: String(decoding: slice, as: UTF8.self),
                       nextOffset: end, length: length)
     }

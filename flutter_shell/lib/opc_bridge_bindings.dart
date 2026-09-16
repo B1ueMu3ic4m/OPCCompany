@@ -94,9 +94,11 @@ class OpcSnapshot {
   /// snapshot UUID strings; terminal digests key them lowercased.
   List<(String, String, String)> get roster => [
         for (final a in agents.whereType<Map<String, dynamic>>())
-          (a['id'] as String? ?? '?',
-              a['displayName'] as String? ?? '?',
-              a['status'] as String? ?? '?'),
+          (
+            a['id'] as String? ?? '?',
+            a['displayName'] as String? ?? '?',
+            a['status'] as String? ?? '?'
+          ),
       ];
 }
 
@@ -105,11 +107,17 @@ class OpcSnapshot {
 class OpcBridge {
   OpcBridge([DynamicLibrary? lib]) {
     final resolved = lib ?? openOpcBridge();
-    create = resolved.lookupFunction<CreateNative, CreateDart>('opc_bridge_create');
-    _destroy = resolved.lookupFunction<DestroyNative, DestroyDart>('opc_bridge_destroy');
-    _lastError = resolved.lookupFunction<LastErrorNative, LastErrorDart>('opc_bridge_last_error');
-    _snapshotJson = resolved.lookupFunction<SnapshotJsonNative, SnapshotJsonDart>('opc_bridge_snapshot_json');
-    _command = resolved.lookupFunction<CommandNative, CommandDart>('opc_bridge_command');
+    create =
+        resolved.lookupFunction<CreateNative, CreateDart>('opc_bridge_create');
+    _destroy = resolved
+        .lookupFunction<DestroyNative, DestroyDart>('opc_bridge_destroy');
+    _lastError = resolved.lookupFunction<LastErrorNative, LastErrorDart>(
+        'opc_bridge_last_error');
+    _snapshotJson =
+        resolved.lookupFunction<SnapshotJsonNative, SnapshotJsonDart>(
+            'opc_bridge_snapshot_json');
+    _command = resolved
+        .lookupFunction<CommandNative, CommandDart>('opc_bridge_command');
     _free = resolved.lookupFunction<FreeNative, FreeDart>('opc_bridge_free');
   }
 
@@ -210,12 +218,18 @@ class OpcBridge {
   // Success returns ok AND fills lastError with the JSON payload — callers
   // must branch on rc, never on emptiness (documented in opc_bridge.h).
 
-  /// {storageKey: byteLength} of the selected product's agent logs.
+  /// {agentID: byteLength} of the selected product's agent logs.
   Map<String, int>? terminalDigest() {
     if (command('terminal_digest') != ok) return null;
     final raw = _json(lastError());
     if (raw == null) return null;
-    return raw.map((k, v) => MapEntry(k, (v as num).toInt()));
+    final result = <String, int>{};
+    for (final entry in raw.entries) {
+      final length = entry.value;
+      if (length is! int || length < 0) return null;
+      result[entry.key] = length;
+    }
+    return result;
   }
 
   /// Window of one agent's transcript from [afterOffset].
@@ -231,11 +245,17 @@ class OpcBridge {
     }
     final raw = _json(lastError());
     if (raw == null) return null;
-    return TerminalTail(
-      text: raw['text'] as String? ?? '',
-      nextOffset: (raw['nextOffset'] as num?)?.toInt() ?? afterOffset,
-      length: (raw['length'] as num?)?.toInt() ?? 0,
-    );
+    final text = raw['text'];
+    final nextOffset = raw['nextOffset'];
+    final length = raw['length'];
+    if (text is! String ||
+        nextOffset is! int ||
+        length is! int ||
+        nextOffset < 0 ||
+        length < nextOffset) {
+      return null;
+    }
+    return TerminalTail(text: text, nextOffset: nextOffset, length: length);
   }
 
   Map<String, dynamic>? _json(String source) {

@@ -50,6 +50,10 @@ char *opc_bridge_snapshot_json(void);
  *       {"text": "...", "nextOffset": N, "length": L}. nextOffset is
  *       character-aligned (a window never splits a UTF-8 glyph; tiny
  *       maxBytes may overshoot by at most 3 bytes to guarantee progress).
+ *       afterOffset is clamped to [0,L]; an interior-codepoint offset is
+ *       rewound to that codepoint's start. Resume with nextOffset for exact
+ *       concatenation. A length-only digest detects growth/shrink, not a
+ *       same-length replacement; full snapshots still include the logs.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a
