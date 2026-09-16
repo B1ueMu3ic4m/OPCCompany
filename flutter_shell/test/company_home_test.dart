@@ -53,7 +53,9 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('bridge create failed'), findsOneWidget);
-    // dispose() must not double-destroy a bridge that never came alive
+    // a bridge that never came alive must never be destroyed (C singleton
+    // misuse; the wrapper's _alive guard is the seal)
+    expect(fake.destroyCalls, 0);
     expect(tester.takeException(), isNull);
   });
 

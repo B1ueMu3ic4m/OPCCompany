@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- **Windows command-line injection at the launch seam (audit 2026-09-16)**:
+  the batch-file `cmd /c` quoting escaped only `"` — a boss prompt
+  containing cmd metacharacters (`& calc.exe`, `|`, `>`, `%VAR%`) reached
+  cmd.exe's second parser live when the agent's CLI resolved to an npm
+  `.cmd` shim. Reimplemented to cross-spawn@7.0.6's decade-proven
+  algorithm (quote rules + `^` meta-escape + the `node_modules\.bin`
+  double-escape heuristic), byte-verified against a reference port; new
+  adversarial test proves every metacharacter leaves the wrapper escaped.
+- Shell wrapper lifecycle: `stop()` now honors the bridge's `_alive` state
+  (a create-failed dispose no longer calls destroy — C-singleton misuse
+  the ABI had to silently absorb; regression-pinned via destroy counting).
+
 ## [0.3.1] - 2026-09-16
 
 ### Added

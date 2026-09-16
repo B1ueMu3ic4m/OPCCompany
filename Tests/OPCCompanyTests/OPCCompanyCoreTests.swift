@@ -16689,8 +16689,10 @@ private actor AutoLoopInputQueue {
 }
 
 @Test func windowsBatchTranslationWrapsOnceThroughCmd() {
-    // claude.cmd must launch as cmd.exe /d /s /c with the whole command
-    // line quoted ONCE; COMSPEC honored; plain .exe never wrapped.
+    // claude.cmd must launch as cmd.exe /d /s /c; COMSPEC honored; plain
+    // .exe never wrapped. Escaping follows cross-spawn@7.0.6 (verified
+    // against a faithful reference port — see audit 2026-09-16: the
+    // earlier quote-only version leaked cmd metacharacters).
     #expect(OPCProcessRunner.isWindowsBatchScript("C:\\npm\\claude.cmd"))
     #expect(OPCProcessRunner.isWindowsBatchScript("legacy.BAT"))
     #expect(!OPCProcessRunner.isWindowsBatchScript("C:\\tools\\codex.exe"))
@@ -16700,13 +16702,35 @@ private actor AutoLoopInputQueue {
         arguments: ["-p", "prompt with \"quotes\""],
         environment: ["COMSPEC": #"C:\Windows\System32\cmd.exe"#])
     #expect(wrapped.executable == #"C:\Windows\System32\cmd.exe"#)
-    #expect(wrapped.arguments.prefix(2).elementsEqual(["/d", "/s"]))
-    #expect(wrapped.arguments[2] == "/c")
-    // /c payload is ONE token: outer quotes present, inner quotes escaped
-    let inner = wrapped.arguments[3]
-    #expect(inner.hasPrefix("\"") && inner.hasSuffix("\""))
-    #expect(inner.contains(#""C:\Program Files\nodejs\claude.cmd""#))
-    #expect(inner.contains("\"prompt with \\\"quotes\\\"\""))
+    #expect(wrapped.arguments.prefix(3).elementsEqual(["/d", "/s", "/c"]))
+    // exact string from the reference port (command token ^-escaped, no
+    // outer quotes; args quoted + ^-escaped):
+    #expect(wrapped.arguments[3] ==
+        #"C:\Program^ Files\nodejs\claude.cmd ^"-p^" ^"prompt^ with^ \^"quotes\^"^""#)
+}
+
+@Test func windowsBatchEscapeNeutralizesCmdInjection() {
+    // THE security property of the seam: a boss prompt containing cmd
+    // metacharacters must not be able to append commands to the line.
+    let hostile = OPCProcessRunner.windowsBatchLaunch(
+        scriptPath: #"C:\npm\claude.cmd"#,
+        arguments: ["& calc.exe", "| type secret", "a>b", "%VAR%"],
+        environment: [:])
+    let inner = hostile.arguments[3]
+    for metachar in ["&", "|", ">", "%"] {
+        // every occurrence inside is caret-escaped: no bare metachar can
+        // reach cmd.exe's parser unescaped (scan token interiors)
+        for (i, ch) in inner.enumerated() where ch.description == metachar {
+            #expect(i > 0 && inner[inner.index(inner.startIndex, offsetBy: i - 1)] == "^",
+                    "unescaped '\(metachar)' at \(i): \(inner)")
+        }
+    }
+    // .bin shim: double meta-escape so escapes survive the shim's own
+    // re-parse (pattern matches cross-spawn's documented ^^^& output)
+    let shim = OPCProcessRunner.windowsBatchLaunch(
+        scriptPath: #"C:\app\node_modules\.bin\claude.cmd"#,
+        arguments: ["a&b"], environment: [:])
+    #expect(shim.arguments[3].contains("^^^&"))
 }
 // MARK: - R31 LIMITATION 自洽性条件断言推广（角色继承期轮 31）
 //
