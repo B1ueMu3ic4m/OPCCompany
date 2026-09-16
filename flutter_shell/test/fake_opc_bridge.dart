@@ -45,7 +45,8 @@ class FakeOpcBridge {
 
   int create() => createResult;
 
-  void destroy() {}
+  int destroyCalls = 0;
+  void destroy() { destroyCalls++; }
 
   Pointer<Utf8> lastError() => _dup(nextError);
 

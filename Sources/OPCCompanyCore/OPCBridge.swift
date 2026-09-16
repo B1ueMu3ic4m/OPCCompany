@@ -89,6 +89,8 @@ public func opc_bridge_create() -> Int32 {
 /// Drop the store (idempotent; returned buffers are unaffected until freed).
 @_cdecl("opc_bridge_destroy")
 public func opc_bridge_destroy() {
+    // Idempotent at the ABI level (no trap even on misuse); the wrapper's
+    // _alive guard is what normally prevents this call.
     withBridgeLock { $0.store = nil }
 }
 

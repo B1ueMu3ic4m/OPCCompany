@@ -183,13 +183,46 @@ enum OPCProcessRunner {
         return out
     }
 
+    /// cmd.exe meta-characters (the SECOND parser that runs after
+    /// CommandLineToArgvW has built the argv the cmd.exe process receives —
+    /// for batch targets the whole command line gets re-parsed once per
+    /// batch invocation level, and cross-spawn's decade of npm production
+    /// use says ^-escaping is mandatory; our earlier quote-only version let
+    /// `& calc.exe` inside an agent prompt through — audit 2026-09-16).
+    /// Set = same class list as cross-spawn/lib/util/escape.js.
+    private static let cmdMetaChars: Set<Character> = [
+        "(", ")", "[", "]", "%", "!", "^", "`", "\u{22}", "<", ">", "&", "|",
+        ";", ",", " ", "*", "?",
+    ]
+
+    /// ^-escape every cmd meta character; `double` runs the pass twice
+    /// (needed when the target is itself a cmd-shim forwarding %* — the
+    /// escapes survive one extra re-parse level).
+    static func windowsEscapeCmdMetas(_ argument: String, double: Bool = false) -> String {
+        var out = ""
+        for ch in argument {
+            if cmdMetaChars.contains(ch) { out.append("^") }
+            out.append(ch)
+        }
+        if double { return windowsEscapeCmdMetas(out) }
+        return out
+    }
+
     /// Wrap a batch launch as `cmd /d /s /c "<target> <quoted args…>"`.
     /// /d disables AutoRun, /s keeps cmd from stripping the outer quotes.
+    /// Port of cross-spawn's escapeArgument + needsDoubleEscapeMetaChars
+    /// heuristic (moxystudio/node-cross-spawn, MIT — algorithm, not code
+    /// dependency).
     static func windowsBatchLaunch(scriptPath: String, arguments: [String], environment: [String: String]) -> (executable: String, arguments: [String]) {
         let cmdExe = environment["COMSPEC"] ?? "C:\\Windows\\System32\\cmd.exe"
-        var inner = windowsQuoteArgument(scriptPath)
+        // shim-forwarding shims in a .bin directory re-parse once more
+        let lower = scriptPath.lowercased()
+        let isShimForwarder = lower.contains("\\.bin\\") && lower.hasSuffix(".cmd")
+        // cross-spawn: the command token uses escapeCommand (meta-escape,
+        // NO outer quotes); arguments use escapeArgument (quote + meta).
+        var inner = windowsEscapeCmdMetas(scriptPath)
         for arg in arguments {
-            inner += " " + windowsQuoteArgument(arg)
+            inner += " " + windowsEscapeCmdMetas(windowsQuoteArgument(arg), double: isShimForwarder)
         }
         return (cmdExe, ["/d", "/s", "/c", inner])
     }

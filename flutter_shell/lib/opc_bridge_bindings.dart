@@ -150,6 +150,10 @@ class OpcBridge {
   }
 
   void stop() {
+    // The C singleton contract refuses double-destroy; wrapper state must
+    // mirror it (create-failure paths leave _alive=false — a destroy there
+    // is misuse AND noise; the widget-test seam hits exactly this).
+    if (!_alive) return;
     _destroy();
     _alive = false;
   }
