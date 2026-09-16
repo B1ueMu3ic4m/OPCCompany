@@ -37,6 +37,20 @@ class FakeOpcBridge {
   int nextCommandResult = OpcBridge.ok;
   String nextError = '';
 
+  /// scripted query payloads: set before terminal_digest()/terminalTail()
+  Map<String, dynamic>? digestResult;
+  Map<String, dynamic>? tailResult;
+
+  /// Fake default: query verbs ALWAYS answer with a JSON object (rc=0 +
+  /// payload) — the wrapper contract (result-or-reason by rc) needs the
+  /// fake structurally truthful even when a test scripts nothing. Tail
+  /// echoes afterOffset so cursor math is exercisable.
+  static const Map<String, dynamic> _defaultTail = {
+    'text': '',
+    'nextOffset': 0,
+    'length': 0,
+  };
+
   int _snapshotCalls = 0;
   final Set<int> _live = {};
 
@@ -61,6 +75,21 @@ class FakeOpcBridge {
     final payload = (jsonDecode(payloadPtr.toDartString()) as Map)
         .cast<String, dynamic>();
     commands.add((verb, payload));
+    // query verbs carry results through nextError exactly like the bridge
+    // does (rc=0 + last_error = payload) — the wrapper's contract test
+    final carried = switch (verb) {
+      'terminal_digest' => digestResult ?? const <String, dynamic>{},
+      'terminal_tail' => tailResult ??
+          {
+            ..._defaultTail,
+            'nextOffset': payload['afterOffset'] ?? 0,
+            'length': payload['afterOffset'] ?? 0,
+          },
+      _ => null,
+    };
+    if (carried != null) {
+      nextError = jsonEncode(carried);
+    }
     final rc = nextCommandResult;
     nextCommandResult = OpcBridge.ok;
     return rc;

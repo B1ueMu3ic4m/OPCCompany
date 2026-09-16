@@ -40,6 +40,17 @@ class _CompanyHomeState extends State<CompanyHome> {
   OpcSnapshot? _snap;
   String? _lastAction;
 
+  // ── transcript surface (#70 option A) ─────────────────────────────
+  // Deliberately event-driven (no timer): every snapshot refresh — manual
+  // button or post-verb — pulls a byte digest and only fetches windows that
+  // grew. A poll loop is M5 polish; the cursor protocol is already
+  // increment-friendly either way.
+  final Map<String, int> _cursors = {}; // lowercased agentID -> byte offset
+  final Map<String, String> _transcripts = {}; // agentID -> accumulated text
+  String? _selectedAgentID;
+  final ScrollController _transcriptScroll = ScrollController();
+  bool _followTail = true;
+
   @override
   void initState() {
     super.initState();
@@ -63,11 +74,50 @@ class _CompanyHomeState extends State<CompanyHome> {
   void dispose() {
     _goalController.dispose();
     _goalFocus.dispose();
+    _transcriptScroll.dispose();
     _bridge.stop();
     super.dispose();
   }
 
-  void _refresh() => setState(() => _snap = _bridge.snapshot());
+  void _refresh() {
+    setState(() {
+      _snap = _bridge.snapshot();
+      _syncTranscripts();
+    });
+  }
+
+  /// Pull the byte digest and advance windows ONLY where logs grew
+  /// (shrank => clear the local copy and restart at 0 — truncation/
+  /// cleared log must not leave stale text in the viewer).
+  void _syncTranscripts() {
+    final digest = _bridge.terminalDigest();
+    if (digest == null) {
+      return; // digest failure: transcripts simply don't update this cycle
+    }
+    digest.forEach((agentKey, length) {
+      final had = _cursors[agentKey] ?? 0;
+      if (length < had) {
+        _cursors.remove(agentKey);
+        _transcripts.remove(agentKey);
+      }
+      while (( _cursors[agentKey] ?? 0) < length) {
+        final tail = _bridge.terminalTail(agentKey,
+            afterOffset: _cursors[agentKey] ?? 0, maxBytes: 65536);
+        if (tail == null || tail.nextOffset <= (_cursors[agentKey] ?? 0)) {
+          break; // cursor stalled (bridge guarantees progress; belt & braces)
+        }
+        _transcripts[agentKey] = (_transcripts[agentKey] ?? '') + tail.text;
+        _cursors[agentKey] = tail.nextOffset;
+      }
+    });
+    if (_followTail && _transcriptScroll.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_transcriptScroll.hasClients) {
+          _transcriptScroll.jumpTo(_transcriptScroll.position.maxScrollExtent);
+        }
+      });
+    }
+  }
 
   /// One action pipeline: run a bridge verb, surface refusal verbatim,
   /// reload the snapshot. The core is the only source of truth.
@@ -78,6 +128,7 @@ class _CompanyHomeState extends State<CompanyHome> {
           ? '$label: ok'
           : '$label: refused — ${_bridge.lastError()}';
       _snap = _bridge.snapshot();
+      _syncTranscripts();
     });
   }
 
@@ -151,47 +202,60 @@ class _CompanyHomeState extends State<CompanyHome> {
         // left: task board grouped by status
         Expanded(
           flex: 3,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Tasks (${snap.tasks.length})',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              if (byStatus.isEmpty)
-                const Card(child: ListTile(
-                    title: Text('No tasks yet — send a goal above.')))
-              else
-                for (final entry in byStatus.entries) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 4),
-                    child: Text('${entry.key} · ${entry.value.length}',
-                        style: Theme.of(context).textTheme.labelLarge),
-                  ),
-                  for (final t in entry.value)
-                    Card(
-                      child: ListTile(
-                        dense: true,
-                        leading: Icon(_taskIcon(entry.key)),
-                        title: Text(t['title'] as String? ?? '?',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text('Tasks (${snap.tasks.length})',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    if (byStatus.isEmpty)
+                      const Card(child: ListTile(
+                          title: Text('No tasks yet — send a goal above.')))
+                    else
+                      for (final entry in byStatus.entries) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 4),
+                          child: Text('${entry.key} · ${entry.value.length}',
+                              style: Theme.of(context).textTheme.labelLarge),
+                        ),
+                        for (final t in entry.value)
+                          Card(
+                            child: ListTile(
+                              dense: true,
+                              leading: Icon(_taskIcon(entry.key)),
+                              title: Text(t['title'] as String? ?? '?',
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                            ),
+                          ),
+                      ],
+                    const SizedBox(height: 12),
+                    Text('Employees — tap to watch the transcript',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final (id, name, status) in snap.roster)
+                          ChoiceChip(
+                            avatar: Icon(_agentIcon(status), size: 16),
+                            selected: _selectedAgentID == id.toLowerCase(),
+                            label: Text('$name · $status'),
+                            onSelected: (_) => setState(() {
+                              _selectedAgentID = id.toLowerCase();
+                              _syncTranscripts();
+                            }),
+                          ),
+                      ],
                     ),
-                ],
-              const SizedBox(height: 12),
-              Text('Employees (${snap.roster.length})',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final (name, status) in snap.roster)
-                    Chip(
-                      avatar: Icon(_agentIcon(status), size: 16),
-                      label: Text('$name · $status'),
-                    ),
-                ],
+                  ],
+                ),
               ),
+              _transcriptPanel(),
             ],
           ),
         ),
@@ -253,6 +317,70 @@ class _CompanyHomeState extends State<CompanyHome> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Bottom transcript surface for the tapped employee: monospace, auto-
+  /// follows the tail unless the boss scrolled up (classic log-viewer UX —
+  /// reading history must not fight the stream).
+  Widget _transcriptPanel() {
+    final agentID = _selectedAgentID;
+    final text = agentID == null ? null : _transcripts[agentID];
+    return Container(
+      height: 160,
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(width: 1, color: Colors.black26)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+            child: Row(
+              children: [
+                Icon(Icons.terminal, size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    agentID == null
+                        ? 'Tap an employee chip to watch their terminal.'
+                        : 'Transcript · ${text == null || text.isEmpty ? '(no output yet)' : '${text.split('\n').length} lines'}',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+                if (agentID != null)
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _followTail = !_followTail;
+                      if (_followTail) _syncTranscripts();
+                    }),
+                    child: Text(_followTail ? 'following' : 'paused'),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onPanDown: (_) {
+                if (_followTail) setState(() => _followTail = false);
+              },
+              child: ListView(
+                controller: _transcriptScroll,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                children: [
+                  SelectableText(
+                    text ?? '',
+                    style: const TextStyle(
+                        fontFamily: 'Menlo, monospace', fontSize: 11,
+                        height: 1.35),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -36,6 +36,9 @@ can prove: dlopen, symbol resolution, and the malloc/free allocator contract.
 - [x] behavioral cycle green (10/10: create/snapshot/goal→+4 chain/advance/save/refusals/durability)
 - [x] snapshot dashboard skeleton
 - [x] goal text field + approvals list UI (decide wired)
+- [x] **transcript panel** — tap an employee chip to watch their terminal
+      below the board; `terminal_digest`/`terminal_tail` query verbs feed it
+      event-driven (digest-diff cursor, growth-window fetch, shrink reset)
 - [x] **standalone macOS .app** — `scripts/build-shell-macos.sh` bundles the bridge dylib into Frameworks and PROVES it: the packaged release app self-checks ALL PASS with no env tricks (`dist/OPCCompanyShell.app`)
 - [x] **Windows package assembled + run in CI** — `windows-shell.yml`: bridge DLL (release) + `flutter build windows --release` (official pinned SDK) + DLL beside the exe + the assembled `opc_flutter_shell.exe` LAUNCHED against a fresh support dir → `verdict.json "ok":true` (10/10, same cycle as macOS). Artifact `opc-shell-windows-x86_64` is the user-runnable package.
 - [ ] code signing + notarization / MSIX installers (release polish, not gating)

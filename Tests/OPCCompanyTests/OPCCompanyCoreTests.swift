@@ -17101,6 +17101,98 @@ private func makeStoreWithAPIAgent(
     #expect(opc_bridge_command(verb, payload) == -1, "destroy 后命令必须拒绝")
 }
 
+@Test func bridgeWindowCursorNeverSplitsCodepointsAndAlwaysProgresses() throws {
+    // terminal_tail 的字节窗口数学(纯逻辑,任何平台可测):
+    // 1) 窗口绝不切断 UTF-8 序列(否则 UI 收到 U+FFFD);
+    // 2) 游标严格在日志内时必定前进(否则壳的轮询死锁);
+    // 3) 从 nextOffset 续读可精确拼回原文(无损游标语义)。
+    let cjk = "中文字符测试"          // 每字 3 字节，共 18 字节
+    let mixed = "ascii 中文 tail ✓"
+
+    func stitch(_ s: String, chunk: Int) -> String {
+        var out = ""
+        var off = 0
+        while off < s.utf8.count {   // caught-up => done; never spins on empty
+            let w = OPCBridgeWindow.read(log: s, afterOffset: off, maxBytes: chunk)
+            #expect(w.length == s.utf8.count, "length 必须是全日志字节数")
+            if w.nextOffset == off {
+                Issue.record("游标未前进 at \(off) (chunk=\(chunk))")
+                return out
+            }
+            out += w.text
+            off = w.nextOffset
+        }
+        return out
+    }
+
+    // 逐字节 chunk(最坏情况:每个窗口都可能落在多字节序列中间)
+    #expect(stitch(cjk, chunk: 1) == cjk, "1 字节窗口拼回必须无损")
+    #expect(stitch(cjk, chunk: 2) == cjk)
+    #expect(stitch(mixed, chunk: 1) == mixed)
+    #expect(stitch(mixed, chunk: 4) == mixed)
+    #expect(stitch(cjk, chunk: 1000) == cjk, "大于全文的窗口一次读尽")
+    #expect(stitch("", chunk: 10).isEmpty, "空日志必须返回空文本(且不得死循环:off==len 立即退出)")
+
+    // 显式边界:窗口 [0,4) of cjk 落在 中(3B) 与 文 的 0xE6 前导之间
+    let w = OPCBridgeWindow.read(log: cjk, afterOffset: 0, maxBytes: 4)
+    #expect(w.text == "中", "4 字节窗口必须收进 3 字节的完整字而非半个字")
+    #expect(w.nextOffset == 3)
+    #expect(!w.text.unicodeScalars.contains(UnicodeScalar(0xFFFD)!), "绝不外泄替换符")
+
+    // 进度保证:maxBytes 小于一个字形时也要吐出完整字符(≤3 字节溢出)
+    let tight = OPCBridgeWindow.read(log: cjk, afterOffset: 0, maxBytes: 1)
+    #expect(tight.nextOffset > 0, "maxBytes=1 也必须前进")
+    #expect(tight.text == "中")
+
+    // 越界/负偏移一律钳制(宿主游标被截断日志回退时不得崩)
+    let over = OPCBridgeWindow.read(log: cjk, afterOffset: 999, maxBytes: 100)
+    #expect(over.text.isEmpty && over.nextOffset == 18 && over.length == 18)
+    let negative = OPCBridgeWindow.read(log: cjk, afterOffset: -5, maxBytes: 3)
+    #expect(negative.text == "中" && negative.nextOffset == 3)
+}
+
+@Test @MainActor func bridgeQueryVerbsCarryResultsThroughLastError() throws {
+    // #70 option A 的 ABI 契约:查询动词 rc=0 且结果走 last_error(6 符号冻结
+    // 的代价,opc_bridge.h 已写明)。这里用桥真实存储验证结构;窗口/对齐数学
+    // 在上一条纯逻辑测试里已钉死。
+    #expect(opc_bridge_create() == 0)
+    defer { opc_bridge_destroy() }
+
+    // digest:必须是合法 JSON 对象(新快照下可能为空 {})
+    let dVerb = strdup("terminal_digest"), dPay = strdup("{}")
+    defer { free(dVerb); free(dPay) }
+    #expect(opc_bridge_command(dVerb, dPay) == 0, "查询动词成功必须返回 0")
+    if let p = opc_bridge_last_error() {
+        let text = String(cString: p)
+        opc_bridge_free(p)
+        let obj = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any]
+        #expect(obj != nil, "digest 必须是 JSON 对象，got: \(text.prefix(40))")
+    } else {
+        Issue.record("查询结果不得为空指针")
+    }
+
+    // tail:结构键必须齐(text/nextOffset/length),类型正确
+    let tVerb = strdup("terminal_tail"), tPay = strdup(#"{"agentID":"00000000-0000-0000-0000-000000000000"}"#)
+    defer { free(tVerb); free(tPay) }
+    #expect(opc_bridge_command(tVerb, tPay) == 0)
+    if let p = opc_bridge_last_error() {
+        let text = String(cString: p)
+        opc_bridge_free(p)
+        let obj = (try? JSONSerialization.jsonObject(with: Data(text.utf8))) as? [String: Any]
+        #expect(obj?["text"] is String, "text 必须是字符串")
+        #expect(obj?["nextOffset"] is Int, "nextOffset 必须是整数")
+        #expect(obj?["length"] is Int, "length 必须是整数")
+    } else {
+        Issue.record("tail 结果不得为空指针")
+    }
+
+    // 契约另一面:坏 agentID 类型必须拒绝(-1)而非返回空窗口(0)——
+    // 静默空成功是宿主与核心漂移的开始
+    let badVerb = strdup("terminal_tail"), badPay = strdup(#"{"agentID":42}"#)
+    defer { free(badVerb); free(badPay) }
+    #expect(opc_bridge_command(badVerb, badPay) == -1, "非 UUID agentID 必须拒绝")
+}
+
 @Test func m3BridgeCHeaderMatchesSwiftExports() throws {
     // include 头与 @_cdecl 导出名同步:漏一个符号 = 宿主 dlsym 时才炸,
     // 这比编译期发现晚得多。source-gate 逐符号双向核对。

@@ -123,6 +123,16 @@ public func opc_bridge_snapshot_json() -> UnsafeMutablePointer<CChar>? {
 
 /// Execute a boss-level command. Payload JSON contract (see opc_bridge.h):
 ///   goal {"text"} | advance {} | decide {"approvalID","approved"} | save {}
+/// Query verbs (stateless, snapshot-cheap — #70 proposal option A):
+///   terminal_digest {} -> rc=0 and last_error = JSON {key: byteLen} of the
+///     selected product's agent logs (digest-diff detects growth; append-only
+///     logs make byte length a valid cursor; shrink => restart tail at 0)
+///   terminal_tail {"agentID","afterOffset","maxBytes"} -> rc=0 and
+///     last_error = JSON {"text","nextOffset","length"} window of the log.
+///     Query results ride last_error DELIBERATELY: the ABI is frozen at six
+///     symbols; a query channel is a header-contract change, not a symbol
+///     change. Success sets last_error then returns 0 — callers must treat
+///     last_error as result-or-reason by rc, never by emptiness.
 /// Write verbs honor the core's cross-process writer guard
 /// (OPC_ALLOW_CONCURRENT_WRITE=1 override). Unknown verbs return -1 —
 /// never a silent no-op: that is how shells and cores drift apart.
@@ -176,6 +186,40 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                 case "save":
                     try OPCWriteGuard.ensureExclusiveAccess()
                     store.saveSnapshot()
+                case "terminal_digest":
+                    // Query: byte lengths per agent log of the selected
+                    // product, keyed by agentID (the storage key's suffix —
+                    // what the shell's roster rows actually index by).
+                    // Prefix-filtered on the selected product, so a
+                    // cross-product leak is structurally impossible.
+                    let prefix = store.terminalLogStorageKey(
+                        productID: store.selectedProductID,
+                        agentID: UUID()).components(separatedBy: ":").first! + ":"
+                    var digest: [String: Int] = [:]
+                    for (key, log) in store.productTerminalLogs where key.hasPrefix(prefix) {
+                        digest[String(key.dropFirst(prefix.count))] = log.utf8.count
+                    }
+                    let data = try JSONSerialization.data(withJSONObject: digest)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
+                case "terminal_tail":
+                    guard let idString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "terminal_tail requires a UUID agentID")
+                    }
+                    let after = max(0, (payload["afterOffset"] as? Int) ?? 0)
+                    let want = min(max(1, (payload["maxBytes"] as? Int) ?? 16_384), 262_144)
+                    let log = store.terminalLog(agentID: agentID,
+                                                productID: store.selectedProductID)
+                    let window = OPCBridgeWindow.read(log: log, afterOffset: after, maxBytes: want)
+                    let envelope: [String: Any] = [
+                        "text": window.text,
+                        "nextOffset": window.nextOffset,
+                        "length": window.length,
+                    ]
+                    let data = try JSONSerialization.data(withJSONObject: envelope)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 default:
                     throw OPCBridgeRefusal(message: "unknown bridge verb '\(verbString)'")
                 }
@@ -196,6 +240,43 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
 }
 
 public struct OPCBridgeRefusal: Error { let message: String }
+
+/// Byte-window cursor for terminal_tail, factored out so the alignment math
+/// is unit-testable without a live store. Guarantees:
+///  - the window never ends mid-codepoint (no U+FFFD leaks to the UI);
+///  - forward progress: a cursor strictly inside the log always advances,
+///    even when maxBytes is smaller than one glyph (≤3-byte overshoot);
+///  - text+nextOffset are consistent: re-reading from nextOffset resumes
+///    exactly where this window ended, character-aligned.
+enum OPCBridgeWindow {
+    struct Result: Sendable {
+        var text: String
+        var nextOffset: Int
+        var length: Int
+    }
+
+    static func read(log: String, afterOffset: Int, maxBytes: Int) -> Result {
+        let bytes = Array(log.utf8)
+        let length = bytes.count
+        let start = min(max(0, afterOffset), length)
+        var end = min(start + max(1, maxBytes), length)
+        // Trim trailing continuation bytes (0b10xxxxxx), then a BARE leading
+        // byte (≥0xC0) that lost its continuations — window [0,4) of "中文"
+        // ends on 0xE6 and trimming only continuations there decodes U+FFFD
+        // (caught while writing the exact-window test, 2026-09-16).
+        while end > start && (bytes[end - 1] & 0xC0) == 0x80 { end -= 1 }
+        if end > start && bytes[end - 1] >= 0xC0 { end -= 1 }
+        if end == start && start < length {
+            // progress guarantee: take one whole character even if it
+            // overshoots maxBytes by up to 3 bytes
+            end = start + 1
+            while end < length && (bytes[end] & 0xC0) == 0x80 { end += 1 }
+        }
+        let slice = Array(bytes[start..<end])
+        return Result(text: String(decoding: slice, as: UTF8.self),
+                      nextOffset: end, length: length)
+    }
+}
 
 /// strdup-shaped copy from the C allocator, so hosts free() / malloc.free()
 /// it without allocator mismatch (Swift .allocate on Windows is

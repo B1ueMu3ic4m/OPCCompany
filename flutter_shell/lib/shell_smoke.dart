@@ -55,6 +55,21 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       bridge.command('bogus') == OpcBridge.refused &&
           bridge.lastError().contains('unknown bridge verb'));
 
+  // Query verbs (#70 option A): results ride last_error through the REAL
+  // ABI — the widget tests cover the wrapper, this proves the C-string
+  // smuggling round-trips on the host platform (Windows CI included).
+  final digest = bridge.terminalDigest();
+  add('terminal_digest answers', digest != null);
+  final rosterIDs = snap?.roster ?? const [];
+  if (digest != null && rosterIDs.isNotEmpty) {
+    final agentID = rosterIDs.first.$1;
+    final tail = bridge.terminalTail(agentID);
+    add('terminal_tail cursor shape',
+        tail != null &&
+            tail.length == (digest[agentID.toLowerCase()] ?? 0),
+        tail == null ? 'null' : 'len=${tail.length}');
+  }
+
   bridge.stop();
   final reopened = OpcBridge();
   reopened.start();

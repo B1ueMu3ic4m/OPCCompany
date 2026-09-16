@@ -90,10 +90,13 @@ class OpcSnapshot {
     return grouped;
   }
 
-  /// employees (name + working state) of the snapshot.
-  List<(String, String)> get roster => [
+  /// employees (id, name, working state) of the snapshot. IDs are the raw
+  /// snapshot UUID strings; terminal digests key them lowercased.
+  List<(String, String, String)> get roster => [
         for (final a in agents.whereType<Map<String, dynamic>>())
-          (a['displayName'] as String? ?? '?', a['status'] as String? ?? '?'),
+          (a['id'] as String? ?? '?',
+              a['displayName'] as String? ?? '?',
+              a['status'] as String? ?? '?'),
       ];
 }
 
@@ -202,4 +205,61 @@ class OpcBridge {
   int save() => command('save');
   int decide(String approvalID, {bool approved = true}) =>
       command('decide', {'approvalID': approvalID, 'approved': approved});
+
+  // ---- query verbs (#70 option A): results ride lastError by contract ----
+  // Success returns ok AND fills lastError with the JSON payload — callers
+  // must branch on rc, never on emptiness (documented in opc_bridge.h).
+
+  /// {storageKey: byteLength} of the selected product's agent logs.
+  Map<String, int>? terminalDigest() {
+    if (command('terminal_digest') != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    return raw.map((k, v) => MapEntry(k, (v as num).toInt()));
+  }
+
+  /// Window of one agent's transcript from [afterOffset].
+  TerminalTail? terminalTail(String agentID,
+      {int afterOffset = 0, int maxBytes = 16384}) {
+    final rc = command('terminal_tail', {
+      'agentID': agentID,
+      'afterOffset': afterOffset,
+      'maxBytes': maxBytes,
+    });
+    if (rc != ok) {
+      return null;
+    }
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    return TerminalTail(
+      text: raw['text'] as String? ?? '',
+      nextOffset: (raw['nextOffset'] as num?)?.toInt() ?? afterOffset,
+      length: (raw['length'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic>? _json(String source) {
+    if (source.isEmpty) return null;
+    try {
+      final d = jsonDecode(source);
+      return d is Map<String, dynamic> ? d : null;
+    } on FormatException {
+      return null;
+    }
+  }
+}
+
+/// One terminal_tail window (see OpcBridge.terminalTail).
+class TerminalTail {
+  TerminalTail({
+    required this.text,
+    required this.nextOffset,
+    required this.length,
+  });
+  final String text;
+  final int nextOffset;
+  final int length;
+
+  /// True when the caller is caught up (offset at/after end of log).
+  bool get atEnd => nextOffset >= length;
 }
