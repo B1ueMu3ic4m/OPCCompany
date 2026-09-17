@@ -39,6 +39,10 @@ private func usage() -> String {
       opc goal "TEXT"            send a boss goal to the CTO (creates the chain)
       opc advance                let the CTO advance every open goal one step
       opc report                 boss-readable progress report (current product)
+      opc approvals              list pending approvals with their ids
+      opc decide <id> approve|reject
+                                 resolve one pending approval (same store path
+                                 as the GUI; refuses stale/double taps loudly)
 
     All commands read and write the same local company snapshot the desktop app
     uses, so CLI and GUI stay in sync. State lives under the OPC app-support
@@ -89,6 +93,10 @@ struct OPC {
                 try advance()
             case "report":
                 try report()
+            case "approvals":
+                try approvals()
+            case "decide":
+                try decide(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -193,6 +201,46 @@ struct OPC {
                 print("recent collaboration:")
                 for m in recent { print("  · \(m.subject)") }
             }
+        }
+    }
+
+    @MainActor
+    static func approvals() throws {
+        try withStore { store in
+            let pending = store.approvals.filter {
+                $0.productID == store.selectedProductID && $0.status == .pending
+            }
+            if pending.isEmpty {
+                print("No pending approvals for \(store.selectedProduct?.name ?? "the selected product").")
+                return
+            }
+            print("Pending approvals (\(pending.count)) — decide with: opc decide <id> approve|reject")
+            for a in pending {
+                print("  \(a.id.uuidString)")
+                print("    \(a.title) — \(a.reason)")
+            }
+        }
+    }
+
+    @MainActor
+    static func decide(_ rest: [String]) throws {
+        guard rest.count == 2,
+              let approvalID = UUID(uuidString: rest[0]),
+              let approved = ["approve": true, "reject": false][rest[1]] else {
+            throw CLIError(message: "usage: opc decide <approval-id> approve|reject  (ids from: opc approvals)")
+        }
+        try guardNoConcurrentWriter()
+        try withStore { store in
+            do {
+                // Same checked facade the bridge verb uses: an unknown or
+                // already-decided id refuses loudly instead of exiting 0
+                // having done nothing.
+                try store.decideApprovalChecked(approvalID, approved: approved)
+            } catch let e as ApprovalDecisionError {
+                throw CLIError(message: e.bridgeReason(idString: approvalID.uuidString))
+            }
+            store.saveSnapshot()
+            print(approved ? "Approved." : "Rejected.")
         }
     }
 }

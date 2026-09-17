@@ -17289,6 +17289,11 @@ private func makeStoreWithAPIAgent(
     let againPay = strdup(#"{"approvalID":"\#(approval.id.uuidString)","approved":false}"#)
     defer { free(againPay) }
     #expect(opc_bridge_command(verb, againPay) == -1, "已决审批必须显式拒绝")
+    if let p = opc_bridge_last_error() {
+        #expect(String(cString: p).contains("already decided"),
+                "双击的拒绝原因必须可辨(与 CLI 共享文案)")
+        opc_bridge_free(p)
+    }
 
     // 负路径 2:未知 ID 必须拒绝且原因非空
     let ghostPay = strdup(#"{"approvalID":"00000000-0000-0000-0000-00000000beef","approved":true}"#)
@@ -17300,6 +17305,43 @@ private func makeStoreWithAPIAgent(
         #expect(!reason.isEmpty)
     } else {
         Issue.record("拒绝原因不得为空指针")
+    }
+}
+
+@Test @MainActor func decideApprovalCheckedSurfacesTheSilentPreconditions() throws {
+    // R2 收口点:桥和 CLI 都要"拒绝静默无操作"的审批决定。若校验写在各自
+    // 入口层,同一条规则就有两份实现——漂移只差一次改动。校验下沉为 store
+    // 的抛出式门面,decideApproval 保持既有静默语义(内部/自动批复路径依赖
+    // 它),两个宿主面各只留一行调用。
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    let engineer = try #require(store.agents.first { $0.role == .codeEngineer })
+    store.createTask(title: "门面任务", ownerID: engineer.id,
+                     status: .needsApproval, successCriteria: "门面测试。")
+    let task = try #require(store.selectedProductTasks.first { $0.title == "门面任务" })
+    store.requestApproval(taskID: task.id, title: "门面审批", reason: "测试",
+                          requesterID: engineer.id)
+    let approval = try #require(store.selectedProductPendingApprovals
+        .first { $0.title == "门面审批" })
+
+    // 未知 ID → 抛 unknown
+    do {
+        try store.decideApprovalChecked(UUID(), approved: true)
+        Issue.record("未知审批 ID 必须抛出")
+    } catch let ApprovalDecisionError.unknown(id) {
+        #expect(id != approval.id)
+    }
+
+    // pending → 成功,状态迁移
+    try store.decideApprovalChecked(approval.id, approved: true)
+    #expect(store.approvals.first { $0.id == approval.id }?.status == .approved)
+
+    // 已决 → 抛 alreadyDecided(双击/过期列表场景)
+    do {
+        try store.decideApprovalChecked(approval.id, approved: false)
+        Issue.record("已决审批再次决定必须抛出")
+    } catch ApprovalDecisionError.alreadyDecided {
+        // 且第二次决定不得翻转结果
+        #expect(store.approvals.first { $0.id == approval.id }?.status == .approved)
     }
 }
 

@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **`opc approvals` / `opc decide <id> approve|reject`**: the CLI gains the
+  boss approval surface — list what waits for you, resolve it from a
+  terminal, through the SAME checked store path as the bridge verb (one
+  shared rule, one shared refusal wording — duplicated preconditions at
+  each entry point are how drift restarts). Regression-pinned by a
+  subprocess test that drives the real `opc` binary against an isolated
+  snapshot copy: list→approve→double-decide→ghost-id→junk-args, asserting
+  state actually moved on disk, not just on stdout.
+
 ### Fixed
 - **`decide` verb refused silent no-ops (night audit R1)**: the store's
   `decideApproval` returns quietly for unknown ids AND already-decided

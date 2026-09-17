@@ -1351,6 +1351,22 @@ static func byteCountText(_ bytes: Int64) -> String {
 
 
 
+    /// Boss-facing hosts (bridge verbs, `opc decide`) must not accept the
+    /// store's silent guard-returns as success — see decideApprovalChecked.
+    /// The bare decideApproval keeps its no-op semantics on purpose: the
+    /// auto-approve path (CompanyStore+Agents) and the SwiftUI buttons call
+    /// it where "nothing matched" is a legitimate race outcome, and they
+    /// re-render from observable state, not from a return code.
+    public func decideApprovalChecked(_ approvalID: UUID, approved: Bool) throws {
+        guard let approval = approvals.first(where: { $0.id == approvalID }) else {
+            throw ApprovalDecisionError.unknown(id: approvalID)
+        }
+        guard approval.status == .pending else {
+            throw ApprovalDecisionError.alreadyDecided(id: approvalID)
+        }
+        decideApproval(approvalID, approved: approved)
+    }
+
     public func decideApproval(_ approvalID: UUID, approved: Bool) {
         guard let index = approvals.firstIndex(where: { $0.id == approvalID }) else { return }
         guard approvals[index].status == .pending else { return }
