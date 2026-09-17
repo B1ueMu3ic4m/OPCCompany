@@ -68,6 +68,8 @@ swift build -c release --product opc
 .build/release/opc goal "重构 X 模块"      # 把老板目标交给 CTO
 .build/release/opc advance                # CTO 推进所有在途目标一步
 .build/release/opc report                 # 老板视角进度报告
+.build/release/opc approvals              # 待批审批,带各自 id
+.build/release/opc decide <id> approve    # 批复一条——过期/双击会被明确拒绝
 ```
 
 `opc` 只链接可移植核心层——它也是 Windows 移植路径上的第一个产物:逻辑层自

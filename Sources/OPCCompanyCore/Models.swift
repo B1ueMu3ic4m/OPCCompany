@@ -1720,6 +1720,27 @@ public struct MultiAgentClosureTrace: Identifiable, Hashable, Sendable {
     }
 }
 
+/// A boss-host decision (bridge verb, `opc decide`) that the store could
+/// not carry out. The bare decideApproval() stays a silent no-op for the
+/// paths where "nothing matched" is legitimate; host surfaces translate
+/// these into visible refusals instead of a false rc=0.
+public enum ApprovalDecisionError: Error, Equatable {
+    case unknown(id: UUID)
+    case alreadyDecided(id: UUID)
+
+    /// One shared refusal wording for every boss host (bridge verb and
+    /// `opc decide`), so the user sees the same sentence no matter which
+    /// surface refused them.
+    public func bridgeReason(idString: String) -> String {
+        switch self {
+        case .unknown:
+            return "no approval with id \(idString) — the list may be stale"
+        case .alreadyDecided:
+            return "approval \(idString) already decided"
+        }
+    }
+}
+
 public enum ApprovalStatus: String, Codable, CaseIterable, Identifiable, Sendable {
     case pending
     case approved

@@ -192,23 +192,17 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                           let approvalID = UUID(uuidString: idString) else {
                         throw OPCBridgeRefusal(message: "decide requires a UUID approvalID")
                     }
-                    // decideApproval() is a silent no-op for unknown ids and
-                    // already-decided approvals (two bare guard-returns). A
-                    // boss double-tapping an approval row, or working from a
-                    // stale list, would get rc=0 while nothing changed — the
-                    // same shell/core drift product_select just closed. The
-                    // bridge checks the precondition and refuses explicitly.
-                    guard let approval = store.approvals.first(where: { $0.id == approvalID })
-                    else {
-                        throw OPCBridgeRefusal(
-                            message: "no approval with id \(idString) — the list may be stale")
+                    // The silent-no-op check lives in the store facade
+                    // (decideApprovalChecked) so bridge and `opc decide`
+                    // share ONE rule — duplicated preconditions at each
+                    // entry point are exactly how drift restarts.
+                    do {
+                        try store.decideApprovalChecked(
+                            approvalID,
+                            approved: (payload["approved"] as? Bool) ?? false)
+                    } catch let e as ApprovalDecisionError {
+                        throw OPCBridgeRefusal(message: e.bridgeReason(idString: idString))
                     }
-                    guard approval.status == .pending else {
-                        throw OPCBridgeRefusal(
-                            message: "approval \(idString) already decided")
-                    }
-                    store.decideApproval(approvalID,
-                                         approved: (payload["approved"] as? Bool) ?? false)
                     store.saveSnapshot()
                 case "save":
                     try OPCWriteGuard.ensureExclusiveAccess()

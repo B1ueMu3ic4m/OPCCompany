@@ -80,6 +80,8 @@ swift build -c release --product opc
 .build/release/opc goal "refactor X"      # hand a boss goal to the CTO
 .build/release/opc advance                # CTO pushes every open loop one step
 .build/release/opc report                 # boss-readable progress report
+.build/release/opc approvals              # pending approvals, with their ids
+.build/release/opc decide <id> approve    # resolve one — refuses stale/double taps
 ```
 
 `opc` links only the portable core — it's also the first artifact on the
