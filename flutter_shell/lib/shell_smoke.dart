@@ -15,7 +15,8 @@ class SmokeResult {
   final String name;
   final bool pass;
   final String detail;
-  Map<String, dynamic> toJson() => {'name': name, 'pass': pass, 'detail': detail};
+  Map<String, dynamic> toJson() =>
+      {'name': name, 'pass': pass, 'detail': detail};
 }
 
 Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
@@ -27,7 +28,8 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
   // it worked is that a second create is refused with the exact "already"
   // message (both facts in one call).
   final rcAgain = bridge.start();
-  add('create active + double-create refused',
+  add(
+      'create active + double-create refused',
       rcAgain == OpcBridge.refused && bridge.lastError().contains('already'),
       'rc=$rcAgain');
 
@@ -43,22 +45,73 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
   add('goal accepted', bridge.sendGoal(goal) == OpcBridge.ok);
   final after = bridge.snapshot()?.tasks.length ?? 0;
   add('supervisor chain +4', after == before + 4, '$before -> $after');
-  add('goal text round-trips',
-      jsonEncode(bridge.snapshot()?.raw['tasks'] ?? []).contains('Flutter shell smoke'));
+  add(
+      'goal text round-trips',
+      jsonEncode(bridge.snapshot()?.raw['tasks'] ?? [])
+          .contains('Flutter shell smoke'));
 
   final advanceRc = bridge.advance(); // 0 or -1; both are real executions
-  add('advance executed', advanceRc == OpcBridge.ok || advanceRc == OpcBridge.refused,
+  add(
+      'advance executed',
+      advanceRc == OpcBridge.ok || advanceRc == OpcBridge.refused,
       'rc=$advanceRc');
   add('save persists', bridge.save() == OpcBridge.ok);
 
-  add('unknown verb refused',
+  add(
+      'unknown verb refused',
       bridge.command('bogus') == OpcBridge.refused &&
           bridge.lastError().contains('unknown bridge verb'));
+
+  // Query verbs (#70 option A): results ride last_error through the REAL
+  // ABI — the widget tests cover the wrapper, this proves the C-string
+  // smuggling round-trips on the host platform (Windows CI included).
+  final digest = bridge.terminalDigest();
+  add('terminal_digest answers', digest != null);
+  final rosterIDs = snap?.roster ?? const [];
+  if (digest != null && rosterIDs.isNotEmpty) {
+    final agentID = rosterIDs.first.$1;
+    final tail = bridge.terminalTail(agentID);
+    add(
+        'terminal_tail cursor shape',
+        tail != null && tail.length == (digest[agentID.toLowerCase()] ?? 0),
+        tail == null ? 'null' : 'len=${tail.length}');
+  }
+
+  // Nonempty fixture coverage: rebuild each scoped log through tiny windows
+  // across the real ABI. Compare with the original snapshot, not the wrapper.
+  final scopedLogs = snap?.raw['productTerminalLogs'];
+  final productID = snap?.raw['selectedProductID'];
+  if (digest != null && scopedLogs is Map && productID is String) {
+    for (final entry in digest.entries.where((entry) => entry.value > 0)) {
+      var offset = 0;
+      var valid = true;
+      final rebuilt = StringBuffer();
+      while (offset < entry.value) {
+        final tail =
+            bridge.terminalTail(entry.key, afterOffset: offset, maxBytes: 7);
+        if (tail == null ||
+            tail.nextOffset <= offset ||
+            tail.length != entry.value ||
+            utf8.encode(tail.text).length != tail.nextOffset - offset) {
+          valid = false;
+          break;
+        }
+        rebuilt.write(tail.text);
+        offset = tail.nextOffset;
+      }
+      final expected = scopedLogs['${productID.toLowerCase()}:${entry.key}'];
+      add(
+          'nonempty terminal UTF-8 round-trip',
+          valid && expected is String && rebuilt.toString() == expected,
+          'bytes=$offset');
+    }
+  }
 
   bridge.stop();
   final reopened = OpcBridge();
   reopened.start();
-  add('durability after recreate', (reopened.snapshot()?.tasks.length ?? -1) == after);
+  add('durability after recreate',
+      (reopened.snapshot()?.tasks.length ?? -1) == after);
   reopened.stop();
   return results;
 }

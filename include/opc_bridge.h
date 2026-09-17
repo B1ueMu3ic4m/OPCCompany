@@ -37,6 +37,27 @@ char *opc_bridge_snapshot_json(void);
  *   "advance" {}
  *   "decide"  {"approvalID": "<uuid>", "approved": true}
  *   "save"    {}
+ * Query verbs (#70 option A — transcripts are pulled, not pushed; the full
+ * snapshot already carries logs, these verbs exist to avoid re-fetching it
+ * on a poll loop):
+ *   "terminal_digest" {}
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON object
+ *       {"<agentID>": byteLength, ...} of the selected product's agent
+ *       logs (keys are the storage key's agentID suffix — what roster
+ *       rows index by; the product scope is implicit and filter-locked).
+ *   "terminal_tail" {"agentID": "<uuid>", "afterOffset": 0, "maxBytes": 16384}
+ *       rc=0; the RESULT rides opc_bridge_last_error as JSON
+ *       {"text": "...", "nextOffset": N, "length": L}. nextOffset is
+ *       character-aligned (a window never splits a UTF-8 glyph; tiny
+ *       maxBytes may overshoot by at most 3 bytes to guarantee progress).
+ *       afterOffset is clamped to [0,L]; an interior-codepoint offset is
+ *       rewound to that codepoint's start. Resume with nextOffset for exact
+ *       concatenation. A length-only digest detects growth/shrink, not a
+ *       same-length replacement; full snapshots still include the logs.
+ * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
+ * payload — branch on rc, never on whether last_error is empty. The ABI is
+ * frozen at six symbols; a query result channel is a contract choice, not a
+ * symbol change.
  * Unknown verbs return -1 (never a silent no-op). Write verbs honor the
  * core's cross-process writer guard (OPC_ALLOW_CONCURRENT_WRITE=1 overrides).
  * Returns 0 on success, -1 on refusal — read opc_bridge_last_error. */

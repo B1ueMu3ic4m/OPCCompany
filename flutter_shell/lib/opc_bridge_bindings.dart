@@ -90,10 +90,15 @@ class OpcSnapshot {
     return grouped;
   }
 
-  /// employees (name + working state) of the snapshot.
-  List<(String, String)> get roster => [
+  /// employees (id, name, working state) of the snapshot. IDs are the raw
+  /// snapshot UUID strings; terminal digests key them lowercased.
+  List<(String, String, String)> get roster => [
         for (final a in agents.whereType<Map<String, dynamic>>())
-          (a['displayName'] as String? ?? '?', a['status'] as String? ?? '?'),
+          (
+            a['id'] as String? ?? '?',
+            a['displayName'] as String? ?? '?',
+            a['status'] as String? ?? '?'
+          ),
       ];
 }
 
@@ -102,11 +107,17 @@ class OpcSnapshot {
 class OpcBridge {
   OpcBridge([DynamicLibrary? lib]) {
     final resolved = lib ?? openOpcBridge();
-    create = resolved.lookupFunction<CreateNative, CreateDart>('opc_bridge_create');
-    _destroy = resolved.lookupFunction<DestroyNative, DestroyDart>('opc_bridge_destroy');
-    _lastError = resolved.lookupFunction<LastErrorNative, LastErrorDart>('opc_bridge_last_error');
-    _snapshotJson = resolved.lookupFunction<SnapshotJsonNative, SnapshotJsonDart>('opc_bridge_snapshot_json');
-    _command = resolved.lookupFunction<CommandNative, CommandDart>('opc_bridge_command');
+    create =
+        resolved.lookupFunction<CreateNative, CreateDart>('opc_bridge_create');
+    _destroy = resolved
+        .lookupFunction<DestroyNative, DestroyDart>('opc_bridge_destroy');
+    _lastError = resolved.lookupFunction<LastErrorNative, LastErrorDart>(
+        'opc_bridge_last_error');
+    _snapshotJson =
+        resolved.lookupFunction<SnapshotJsonNative, SnapshotJsonDart>(
+            'opc_bridge_snapshot_json');
+    _command = resolved
+        .lookupFunction<CommandNative, CommandDart>('opc_bridge_command');
     _free = resolved.lookupFunction<FreeNative, FreeDart>('opc_bridge_free');
   }
 
@@ -202,4 +213,73 @@ class OpcBridge {
   int save() => command('save');
   int decide(String approvalID, {bool approved = true}) =>
       command('decide', {'approvalID': approvalID, 'approved': approved});
+
+  // ---- query verbs (#70 option A): results ride lastError by contract ----
+  // Success returns ok AND fills lastError with the JSON payload — callers
+  // must branch on rc, never on emptiness (documented in opc_bridge.h).
+
+  /// {agentID: byteLength} of the selected product's agent logs.
+  Map<String, int>? terminalDigest() {
+    if (command('terminal_digest') != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    final result = <String, int>{};
+    for (final entry in raw.entries) {
+      final length = entry.value;
+      if (length is! int || length < 0) return null;
+      result[entry.key] = length;
+    }
+    return result;
+  }
+
+  /// Window of one agent's transcript from [afterOffset].
+  TerminalTail? terminalTail(String agentID,
+      {int afterOffset = 0, int maxBytes = 16384}) {
+    final rc = command('terminal_tail', {
+      'agentID': agentID,
+      'afterOffset': afterOffset,
+      'maxBytes': maxBytes,
+    });
+    if (rc != ok) {
+      return null;
+    }
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    final text = raw['text'];
+    final nextOffset = raw['nextOffset'];
+    final length = raw['length'];
+    if (text is! String ||
+        nextOffset is! int ||
+        length is! int ||
+        nextOffset < 0 ||
+        length < nextOffset) {
+      return null;
+    }
+    return TerminalTail(text: text, nextOffset: nextOffset, length: length);
+  }
+
+  Map<String, dynamic>? _json(String source) {
+    if (source.isEmpty) return null;
+    try {
+      final d = jsonDecode(source);
+      return d is Map<String, dynamic> ? d : null;
+    } on FormatException {
+      return null;
+    }
+  }
+}
+
+/// One terminal_tail window (see OpcBridge.terminalTail).
+class TerminalTail {
+  TerminalTail({
+    required this.text,
+    required this.nextOffset,
+    required this.length,
+  });
+  final String text;
+  final int nextOffset;
+  final int length;
+
+  /// True when the caller is caught up (offset at/after end of log).
+  bool get atEnd => nextOffset >= length;
 }

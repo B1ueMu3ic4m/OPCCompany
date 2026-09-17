@@ -31,8 +31,25 @@ Map<String, dynamic> _snap({
 
 Widget _app(OpcBridge bridge) => MaterialApp(home: CompanyHome(bridge: bridge));
 
+/// The employee roster lives below the task board in a lazily-built
+/// ListView; the default 800x600 test viewport never realizes it (chips
+/// simply don't exist until scrolled into view). Roomy virtual screen so
+/// structural assertions test content, not scroll mechanics.
+void _useBigViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(2000, 4000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+/// write-verb commands only (post-#70 the UI also fires query verbs).
+List<(String, Map<String, dynamic>)> writeCmds(FakeOpcBridge f) =>
+    f.commands.where((c) =>
+        !c.$1.startsWith('terminal_')).toList();
+
 void main() {
   testWidgets('renders the snapshot the bridge provides', (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap(taskCount: 3));
     await tester.pumpWidget(_app(fake.asBridge()));
     await tester.pumpAndSettle();
@@ -47,6 +64,7 @@ void main() {
 
   testWidgets('create failure surfaces the reason and stops the loop',
       (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(createResult: OpcBridge.refused)
       ..nextError = 'bridge already created';
     await tester.pumpWidget(_app(fake.asBridge()));
@@ -60,6 +78,7 @@ void main() {
   });
 
   testWidgets('sending a goal calls sendGoal and reloads', (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap(taskCount: 3));
     await tester.pumpWidget(_app(fake.asBridge()));
     await tester.pumpAndSettle();
@@ -70,9 +89,9 @@ void main() {
 
     // NOTE: compare fields, not tuples — record == uses Map identity for the
     // payload field, so a tuple literal NEVER equals a decoded map.
-    expect(fake.commands, hasLength(1));
-    expect(fake.commands.single.$1, 'goal');
-    expect(fake.commands.single.$2, {'text': 'ship v1'});
+    expect(writeCmds(fake), hasLength(1));
+    expect(writeCmds(fake).single.$1, 'goal');
+    expect(writeCmds(fake).single.$2, {'text': 'ship v1'});
     expect(find.textContaining('goal "ship v1": ok'), findsOneWidget);
     // the input clears after a successful send (read the controller itself:
     // typed text is not findable as a Text widget)
@@ -83,6 +102,7 @@ void main() {
 
   testWidgets('empty goal is refused locally — zero bridge traffic',
       (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap());
     await tester.pumpWidget(_app(fake.asBridge()));
     await tester.pumpAndSettle();
@@ -95,6 +115,7 @@ void main() {
   });
 
   testWidgets('goal refusal prints the core reason verbatim', (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap())
       ..nextCommandResult = OpcBridge.refused
       ..nextError = 'snapshot is shared with the desktop app';
@@ -110,6 +131,7 @@ void main() {
 
   testWidgets('approve button decides with the row\'s id and approved=true',
       (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap(approvals: [
       {'id': 'AP1', 'productID': 'P1', 'title': 'Spend budget', 'reason': 'costs 100', 'status': 'pending'},
     ]));
@@ -120,13 +142,14 @@ void main() {
     await tester.tap(find.byTooltip('approve'));
     await tester.pumpAndSettle();
 
-    expect(fake.commands, hasLength(1));
-    expect(fake.commands.single.$1, 'decide');
-    expect(fake.commands.single.$2, {'approvalID': 'AP1', 'approved': true});
+    expect(writeCmds(fake), hasLength(1));
+    expect(writeCmds(fake).single.$1, 'decide');
+    expect(writeCmds(fake).single.$2, {'approvalID': 'AP1', 'approved': true});
     expect(fake.unfreed, isEmpty);
   });
 
   testWidgets('reject button sends approved=false', (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap(approvals: [
       {'id': 'AP9', 'productID': 'P1', 'title': 'Risky', 'status': 'pending'},
     ]));
@@ -136,11 +159,12 @@ void main() {
     await tester.tap(find.byTooltip('reject'));
     await tester.pumpAndSettle();
 
-    expect(fake.commands.single.$2['approved'], false);
-    expect(fake.commands.single.$2['approvalID'], 'AP9');
+    expect(writeCmds(fake).single.$2['approved'], false);
+    expect(writeCmds(fake).single.$2['approvalID'], 'AP9');
   });
 
   testWidgets('advance button hits the advance verb', (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap());
     await tester.pumpWidget(_app(fake.asBridge()));
     await tester.pumpAndSettle();
@@ -148,14 +172,15 @@ void main() {
     await tester.tap(find.text('Let the CTO advance'));
     await tester.pumpAndSettle();
 
-    expect(fake.commands, hasLength(1));
-    expect(fake.commands.single.$1, 'advance');
-    expect(fake.commands.single.$2, isEmpty);
+    expect(writeCmds(fake), hasLength(1));
+    expect(writeCmds(fake).single.$1, 'advance');
+    expect(writeCmds(fake).single.$2, isEmpty);
     expect(find.textContaining('advance: ok'), findsOneWidget);
   });
 
   testWidgets('approval of another product stays out of the queue',
       (tester) async {
+    _useBigViewport(tester);
     final fake = FakeOpcBridge(initialSnapshot: _snap(approvals: [
       {'id': 'OTHER', 'productID': 'P2', 'title': 'Not ours', 'status': 'pending'},
     ]));
@@ -164,5 +189,61 @@ void main() {
 
     expect(find.text('Not ours'), findsNothing);
     expect(find.textContaining('Nothing needs your decision'), findsOneWidget);
+  });
+
+  testWidgets('transcript flow: digest → tail → render for tapped employee',
+      (tester) async {
+    _useBigViewport(tester);
+    final fake = FakeOpcBridge(initialSnapshot: _snap())
+      ..digestResult = {'a1': 11};
+    // scripted tail: one window covers the whole log
+    fake.tailResult = {'text': 'hello from seat', 'nextOffset': 11, 'length': 11};
+    await tester.pumpWidget(_app(fake.asBridge()));
+    await tester.pumpAndSettle();
+
+    // roster ids are raw snapshot strings; the UI lowercases them for digest
+    // keys — _snap uses 'A1', so the cursor key is 'a1'
+    await tester.tap(find.text('Eve · coding'));
+    await tester.pumpAndSettle();
+
+    final tails = fake.commands.where((c) => c.$1 == 'terminal_tail').toList();
+    expect(tails, isNotEmpty);
+    expect(tails.first.$2['agentID'], 'a1');
+    expect(find.textContaining('hello from seat'), findsOneWidget);
+
+    // cursor protocol: unchanged digest must NOT refetch
+    fake.digestResult = {'a1': 11}; // same length => no growth
+    final beforeTails = tails.length;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    final afterTails = fake.commands
+        .where((c) => c.$1 == 'terminal_tail' && c.$2['agentID'] == 'a1')
+        .length;
+    expect(afterTails, beforeTails, reason: 'unchanged digest must not refetch');
+  });
+
+  testWidgets('log shrink resets the viewer instead of showing stale text',
+      (tester) async {
+    _useBigViewport(tester);
+    final fake = FakeOpcBridge(initialSnapshot: _snap())
+      ..digestResult = {'a1': 11};
+    fake.tailResult = {'text': 'OLD CONTENT', 'nextOffset': 11, 'length': 11};
+    await tester.pumpWidget(_app(fake.asBridge()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Eve · coding'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('OLD CONTENT'), findsOneWidget);
+
+    // core cleared/truncated the log: digest drops to 3
+    fake.digestResult = {'a1': 3};
+    fake.tailResult = {'text': 'new', 'nextOffset': 3, 'length': 3};
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('OLD CONTENT'), findsNothing);
+    expect(find.textContaining('new'), findsOneWidget);
+    // and the refetch started from 0, not the stale cursor
+    final lastTail = fake.commands.lastWhere((c) => c.$1 == 'terminal_tail');
+    expect(lastTail.$2['afterOffset'], 0);
   });
 }

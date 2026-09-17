@@ -5,6 +5,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **Terminal transcript windowing (issue #70, option A v1)**: two stateless
+  query verbs on the C-ABI bridge — `terminal_digest` (byte length per agent
+  log of the selected product, keyed by agentID) and `terminal_tail` (a
+  byte window `{text, nextOffset, length}` from any offset). Results ride
+  the existing `opc_bridge_last_error` channel, so the 6-symbol ABI stays
+  frozen; the header documents the contract. Window math lives in a testable
+  helper (`OPCBridgeWindow`) that never splits a UTF-8 sequence and always
+  makes progress when the cursor is inside the log (a 1-byte window still
+  yields a full codepoint — log-watcher poll loops cannot stall).
+- **Shell transcript panel**: tapping an employee chip now streams their
+  terminal below the board — monospace, follows the tail unless the boss
+  scrolls up (reading history never fights the stream), monospace-diffable
+  and event-driven: refresh diffs the digest against the local cursor and
+  fetches only the growth window; a shrunken log resets the viewer instead
+  of showing stale bytes. Incremental-poll timers are deferred to the
+  interactive phase (option B era).
+
 ### Fixed
 - **Windows command-line injection at the launch seam (audit 2026-09-16)**:
   the batch-file `cmd /c` quoting escaped only `"` — a boss prompt

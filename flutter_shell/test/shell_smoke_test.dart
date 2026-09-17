@@ -60,7 +60,7 @@ void main() {
     expect(junk.pendingApprovals.length, 1);
     expect(junk.tasksByStatus['running']?.length, 1);
     expect(junk.tasksByStatus['done'], isNull); // wrong-product excluded
-    final names = junk.roster.map((r) => r.$1).toList();
+    final names = junk.roster.map((r) => r.$2).toList();
     expect(names, ['Eve', '?']); // null displayName maps to '?'
   });
 
