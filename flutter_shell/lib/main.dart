@@ -15,10 +15,39 @@ void main() => runApp(const OpcShellApp());
 
 class OpcShellApp extends StatelessWidget {
   const OpcShellApp({super.key});
+
+  /// Dark identity aligned with the macOS app's palette (ContentView
+  /// Palette constants — same hexes, so shell and app read as one product):
+  /// deep slate background, warm gold accent, muted steels for secondary.
+  static final ThemeData _theme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFFD8C79A),
+      secondary: Color(0xFF63C7D4),
+      surface: Color(0xFF121821),
+      onSurface: Color(0xFFEEF2F6),
+      onSurfaceVariant: Color(0xFFB7C0CC),
+    ),
+    scaffoldBackgroundColor: const Color(0xFF06080B),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF0A0F14),
+      surfaceTintColor: Colors.transparent,
+    ),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF11151C),
+      surfaceTintColor: Colors.transparent,
+    ),
+    inputDecorationTheme: const InputDecorationTheme(
+      filled: true,
+      fillColor: Color(0xFF070A0E),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'OPC Company',
-        theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
+        theme: _theme,
         home: const CompanyHome(),
       );
 }
@@ -165,6 +194,7 @@ class _CompanyHomeState extends State<CompanyHome> {
             ? 'OPC Company — shell (no snapshot)'
             : 'OPC Company — shell · schema v${snap.schemaVersion}'),
         actions: [
+          if (snap != null) _productMenu(snap),
           IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
         ],
       ),
@@ -175,6 +205,42 @@ class _CompanyHomeState extends State<CompanyHome> {
               Expanded(child: _body(snap)),
               _statusBar(),
             ]),
+    );
+  }
+
+  /// AppBar product switcher. Shows the selected workspace's name; the menu
+  /// offers every other product. A tap rides the bridge's product_select
+  /// verb — never a local optimistic flip: if the core refuses (unknown id,
+  /// writer guard), the refusal must show in the status bar instead of a
+  /// UI that prettied over a store that didn't move.
+  Widget _productMenu(OpcSnapshot snap) {
+    final selectedID = snap.raw['selectedProductID'] as String?;
+    final products = snap.productList;
+    final current = products.where((p) => p.$1 == selectedID);
+    final label = current.isEmpty ? 'Products' : current.first.$2;
+    return PopupMenuButton<String>(
+      tooltip: 'Switch product',
+      initialValue: label,
+      onSelected: (productID) =>
+          _run('switch product', () => _bridge.selectProduct(productID)),
+      itemBuilder: (_) => [
+        for (final (id, name) in products)
+          if (id != selectedID) PopupMenuItem(value: id, child: Text(name)),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.apps, size: 18),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Text(label,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall),
+          ),
+          const Icon(Icons.arrow_drop_down, size: 20),
+        ]),
+      ),
     );
   }
 

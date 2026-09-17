@@ -100,6 +100,16 @@ class OpcSnapshot {
             a['status'] as String? ?? '?'
           ),
       ];
+
+  /// (id, name) pairs of every product workspace, in core order (the raw
+  /// list lives in [products]). The id strings are exactly what
+  /// product_select and selectedProductID carry — the snapshot's Swift
+  /// encoder is the single formatting authority.
+  List<(String, String)> get productList => [
+        for (final p in (raw['products'] as List? ?? const []))
+          if (p is Map<String, dynamic>)
+            (p['id'] as String? ?? '?', p['name'] as String? ?? '?'),
+      ];
 }
 
 /// Thin object wrapper over the six C entry points. All calls are synchronous
@@ -207,10 +217,12 @@ class OpcBridge {
     }
   }
 
-  // ---- ergonomic wrappers over the four documented verbs ----
+  // ---- ergonomic wrappers over the five documented verbs ----
   int sendGoal(String text) => command('goal', {'text': text});
   int advance() => command('advance');
   int save() => command('save');
+  int selectProduct(String productID) =>
+      command('product_select', {'productID': productID});
   int decide(String approvalID, {bool approved = true}) =>
       command('decide', {'approvalID': approvalID, 'approved': approved});
 

@@ -123,6 +123,10 @@ public func opc_bridge_snapshot_json() -> UnsafeMutablePointer<CChar>? {
 
 /// Execute a boss-level command. Payload JSON contract (see opc_bridge.h):
 ///   goal {"text"} | advance {} | decide {"approvalID","approved"} | save {}
+///   | product_select {"productID"} (boss-level: switches the selected
+///     product via the same store path the SwiftUI sidebar uses; unknown
+///     IDs are refused explicitly — selectProduct() alone would be a
+///     silent no-op, which is how shell/core drift starts)
 /// Query verbs (stateless, snapshot-cheap — #70 proposal option A):
 ///   terminal_digest {} -> rc=0 and last_error = JSON {key: byteLen} of the
 ///     selected product's agent logs (digest-diff detects growth; append-only
@@ -186,6 +190,22 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                 case "save":
                     try OPCWriteGuard.ensureExclusiveAccess()
                     store.saveSnapshot()
+                case "product_select":
+                    // Boss-level: switch the selected product through the
+                    // SAME path the SwiftUI sidebar uses (restarts the agent
+                    // team, saves). selectProduct() fails silently on an
+                    // unknown ID — the bridge upgrades that to an explicit
+                    // refusal so a shell can never mistake a no-op for a
+                    // switch (shell/core drift starts exactly there).
+                    guard let idString = payload["productID"] as? String,
+                          let productID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "product_select requires a UUID productID")
+                    }
+                    guard store.products.contains(where: { $0.id == productID }) else {
+                        throw OPCBridgeRefusal(message: "product_select: no product with id \(idString)")
+                    }
+                    try OPCWriteGuard.ensureExclusiveAccess()
+                    store.selectProduct(productID)
                 case "terminal_digest":
                     // Query: byte lengths per agent log of the selected
                     // product, keyed by agentID (the storage key's suffix —

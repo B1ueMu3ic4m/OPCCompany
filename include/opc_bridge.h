@@ -37,6 +37,11 @@ char *opc_bridge_snapshot_json(void);
  *   "advance" {}
  *   "decide"  {"approvalID": "<uuid>", "approved": true}
  *   "save"    {}
+ *   "product_select" {"productID": "<uuid>"}
+ *       Switches the selected product through the same store path the
+ *       SwiftUI sidebar uses (agent team restart + save). Unknown IDs
+ *       return -1 with a reason: the bare store call is a silent no-op,
+ *       and a shell must never mistake one for a switch.
  * Query verbs (#70 option A — transcripts are pulled, not pushed; the full
  * snapshot already carries logs, these verbs exist to avoid re-fetching it
  * on a poll loop):
