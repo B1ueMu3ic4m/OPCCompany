@@ -62,6 +62,17 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       bridge.command('bogus') == OpcBridge.refused &&
           bridge.lastError().contains('unknown bridge verb'));
 
+  // product_select refusal path: an unknown id MUST be refused with a
+  // reason (the bare store call is a silent no-op). Refusals mutate
+  // nothing, so this is state-free and safe on the live snapshot — the
+  // success path is covered by real store tests on both sides of the ABI.
+  add(
+      'product_select refuses unknown id',
+      bridge.selectProduct('00000000-0000-0000-0000-00000000dead') ==
+              OpcBridge.refused &&
+          bridge.lastError().contains('no product with id'),
+      bridge.lastError());
+
   // Query verbs (#70 option A): results ride last_error through the REAL
   // ABI — the widget tests cover the wrapper, this proves the C-string
   // smuggling round-trips on the host platform (Windows CI included).

@@ -29,6 +29,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   fetches only the growth window; a shrunken log resets the viewer instead
   of showing stale bytes. Incremental-poll timers are deferred to the
   interactive phase (option B era).
+- **Product switcher on the bridge (`product_select`)**: the shell can now
+  move between product workspaces through the same store path the SwiftUI
+  sidebar uses (agent-team restart + save), so a boss on Windows/Linux
+  changes context without touching a macOS app. The bridge upgrades the
+  bare store call's silent guard-return into an explicit refusal for
+  unknown ids — a shell must never mistake a no-op for a switch. Refusal
+  path is behavior-verified across the real ABI (shell smoke) and type-
+  discipline-tested on both sides of the boundary.
+- **Shell dark identity**: the Flutter shell now carries the macOS app's
+  palette (deep slate + warm gold accent, same hex constants), so shell and
+  app read as one product instead of two.
 
 ### Fixed
 - **Windows command-line injection at the launch seam (audit 2026-09-16)**:

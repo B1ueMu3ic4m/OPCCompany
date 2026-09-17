@@ -17223,6 +17223,42 @@ private func makeStoreWithAPIAgent(
     #expect(opc_bridge_command(badVerb, badPay) == -1, "非 UUID agentID 必须拒绝")
 }
 
+@Test @MainActor func bridgeProductSelectVerbContract() throws {
+    // product_select（壳体验线）：老板用桥切换选中产品。selectProduct 对未知
+    // ID 是静默 guard-return——桥层必须把「无变化」升级为显式拒绝，否则宿主
+    // 以为成功而核心纹丝不动，正是 shell/core 漂移的开始。
+    #expect(opc_bridge_create() == 0)
+    defer { opc_bridge_destroy() }
+
+    let snapPtr = try #require(opc_bridge_snapshot_json())
+    let snapText = String(cString: snapPtr)
+    opc_bridge_free(snapPtr)
+    let obj = try #require(try? JSONSerialization.jsonObject(with: Data(snapText.utf8)) as? [String: Any])
+    let selected = try #require(obj["selectedProductID"] as? String, "快照必须暴露 selectedProductID")
+
+    // 正路径：选择当前产品 = 幂等成功
+    let okVerb = strdup("product_select"), okPay = strdup(#"{"productID":"\#(selected)"}"#)
+    defer { free(okVerb); free(okPay) }
+    #expect(opc_bridge_command(okVerb, okPay) == 0, "合法 productID 必须成功")
+
+    // 负路径：未知产品必须 -1 + 非空拒绝原因
+    let badVerb = strdup("product_select"), badPay = strdup(#"{"productID":"00000000-0000-0000-0000-00000000dead"}"#)
+    defer { free(badVerb); free(badPay) }
+    #expect(opc_bridge_command(badVerb, badPay) == -1, "未知产品必须拒绝而非静默无操作")
+    if let p = opc_bridge_last_error() {
+        let reason = String(cString: p)
+        opc_bridge_free(p)
+        #expect(!reason.isEmpty, "拒绝必须给出原因")
+    } else {
+        Issue.record("拒绝原因不得为空指针")
+    }
+
+    // 畸形类型同样拒绝（与 terminal_tail 的类型纪律一致）
+    let mVerb = strdup("product_select"), mPay = strdup(#"{"productID":42}"#)
+    defer { free(mVerb); free(mPay) }
+    #expect(opc_bridge_command(mVerb, mPay) == -1)
+}
+
 @Test func m3BridgeCHeaderMatchesSwiftExports() throws {
     // include 头与 @_cdecl 导出名同步:漏一个符号 = 宿主 dlsym 时才炸,
     // 这比编译期发现晚得多。source-gate 逐符号双向核对。
