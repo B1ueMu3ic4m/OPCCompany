@@ -1,6 +1,7 @@
-# Cross-Platform Terminal Hall Proposal (#70 · discussion wanted)
+# Cross-Platform Terminal Hall: Proposal and As-Built (#70)
 
-Status: **proposal, comments welcome** · 2026-09-16 · Companion to
+Status: **option A v1 shipped** (PR #77 bridge verbs + shell surface;
+PR #78 snapshot slimming) · 2026-09-16 · Companion to
 [WINDOWS_PORT_RFC.md](WINDOWS_PORT_RFC.md) (M3's 🟡 remainder is exactly this).
 Continues [TERMINAL_HALL_DESIGN.en.md](TERMINAL_HALL_DESIGN.en.md) (the macOS
 design as built); the Chinese original is
@@ -14,8 +15,12 @@ The macOS hall is **not a terminal emulator**. The pipeline is:
    `gemini -p …`) — the prompt is a single argv, output streams back through
    `Process` **pipes** (no PTY anywhere in `OPCCompanyCore`; the #9 launch seam
    kept pipes);
-2. every stdout/stderr chunk → `appendTerminalLog` → `terminalLogs: [UUID: String]`,
-   plain text, `@Published`, **already part of the persisted snapshot**;
+2. every stdout/stderr chunk → `appendTerminalLog` → `productTerminalLogs:
+   [String: String]` (key = `productUUID:agentUUID`), plain text,
+   `@Published`, **already part of the persisted snapshot**. The legacy
+   `terminalLogs: [UUID: String]` mirror field survives for schema
+   compatibility but — since PR #78 — no longer double-grows: migration is
+   now loss-free pruning, and divergent text is kept on BOTH sides;
 3. the bridge's `opc_bridge_snapshot_json` encodes `currentSnapshot()` →
    **the shell already receives terminal transcripts today** (inside the same
    payload the boss board renders from);
@@ -30,18 +35,27 @@ transport miracle.
 
 ## Options
 
-### A. Transcript mirror (recommended v1)
-Render `terminalLogs` in the Flutter shell — one tab/row per agent,
-auto-follow the tail, monospace `SelectableText`. Zero native code, zero new
-plugins; the data is in every snapshot pull the shell already does.
+### A. Transcript mirror (v1 shipped — PRs #77/#78)
+The shell renders per-agent transcripts directly: tap an employee chip →
+monospace `SelectableText` panel at the bottom, auto-follow the tail,
+scroll-up pauses follow (`flutter_shell/lib/main.dart`). Zero native code,
+zero new plugins. Fetching is incremental: the shell pulls the digest,
+compares cursors, and only requests byte windows that grew; a log that
+SHRANKS (cleared/truncated) resets that agent's panel; switching product
+invalidates the whole cache.
 
-Two small bridge verbs keep it from being janky:
-- `terminal_tail {agentID, maxBytes, afterOffset}` → `{text, nextOffset}` at
-  O(window) cost (no re-shipping megabyte logs on every snapshot refresh; the
-  snapshot keeps only a `terminalLogSizes` digest);
-- `stream_tick {since}` as a cheap liveness probe so the shell knows WHEN to
-  pull tails (or: the existing Published changes can drive a `logRevision: Int`
-  counter the shell diffs).
+The two bridge verbs that shipped (6-symbol C ABI stayed frozen; queries
+return rc=0 with the JSON payload riding `opc_bridge_last_error`):
+- `terminal_digest {}` → `{agentID: byteLength}` for the selected product,
+  prefix-filtered so a cross-product leak is structurally impossible;
+- `terminal_tail {agentID, afterOffset, maxBytes}` → `{text, nextOffset,
+  length}` via the pure helper `OPCBridgeWindow.read` (never splits a
+  UTF-8 codepoint, cursor always advances, out-of-range offsets clamp,
+  a cursor inside a codepoint rewinds to its start).
+
+Updates are event-driven (digest after each verb); the originally sketched
+`stream_tick` probe / `logRevision` counter turned out unnecessary — the
+digest itself is the liveness signal. Periodic polling is deferred to M5.
 
 Honesty property: what you see is exactly what the macOS non-tmux path shows —
 no second-class experience claim, it's the SAME experience.
@@ -60,23 +74,39 @@ The `terminal_tail` contract doesn't change if a PTY arrives later; the shell
 UI can swap the renderer without a bridge ABI break (verbs are additive).
 
 ## Recommendation
-**C**: ship A as v1 of the Windows-visible hall (small, honest, reuses the
-snapshot the shell already holds), keep B as an M5 option gated on a real
-interactive-mode need (which is itself a product question: `-p` print agents
-have no stdin story on ANY platform).
+**C** — shipped as such: A landed as v1 of the Windows-visible hall
+(PR #77/#78); B stays an M5 option gated on a real interactive-mode need
+(which is itself a product question: `-p` print agents have no stdin story
+on ANY platform).
 
-## Help wanted (concrete)
-1. **`terminal_tail` verb + revision counter in the bridge** — ~100 lines
-   Swift + 3 tests; start at `OPCBridge.swift`'s `command` dispatch (next to
-   the `goal/advance/decide/save` handlers) + `CompanyStore+Runtime.swift`
-   `appendTerminalLog` for the revision hook. Good-first-issue sized.
-2. **Flutter render**: scrollable per-agent transcript with follow-bottom +
-   manual-scroll-pause (classic log-viewer UX). `company_home_test.dart`
-   shows the widget-test seam (FakeOpcBridge) — UI tests expected.
-3. Opinions on the snapshot-digest idea (keep `terminalLogs` out of the
-   full-snapshot payload and behind the tail verb? breaks the GUI? probably
-   not — the GUI reads in-memory state, snapshot consumers are CLI/bridge —
-   VERIFY before implementing, `opc report` reads transcript-adjacent fields).
+## Status of the concrete asks (as of PR #78)
+1. ~~`terminal_tail` verb + revision counter in the bridge~~ — **DONE
+   (PR #77)**: `terminal_digest` + `terminal_tail` live in `OPCBridge.swift`'s
+   `command` dispatch; the window math is a pure helper
+   (`OPCBridgeWindow.read`) pinned by behavior tests. The revision counter
+   was not needed — the digest doubles as the liveness signal.
+2. ~~Flutter render~~ — **DONE (PR #77)**: employee chips → bottom
+   transcript panel with follow-bottom + scroll-up-pause in
+   `flutter_shell/lib/main.dart`; widget tests drive the real FFI seam
+   through `FakeOpcBridge` (malloc'd strings tracked by address, every one
+   asserted freed).
+3. ~~Snapshot digesting~~ —— **DONE (PR #78, issue #70 task 3)**: the
+   double-write stopped; the legacy `terminalLogs` field stays in the schema
+   (never deleted) and migration became loss-free pruning at load (exact
+   duplicates and emptied entries drop, divergent text is kept on BOTH
+   sides). The more aggressive idea — moving logs out of the full-snapshot
+   payload entirely — was NOT adopted: measured, the macOS hall reads
+   in-memory state through `terminalLogForCurrentProduct` and the snapshot
+   remains the cross-process sync channel, so removal would break existing
+   consumers while the pruning already reclaimed the duplicated bytes.
+
+Still open (claim by replying):
+- **Boss-hall wiring**: transcript entry points on the employee seats in
+  the macOS SpriteKit scene (separate from the Flutter shell).
+- **Periodic polling** (M5): updates are event-driven today, so a log that
+  grows outside a bridge call is not noticed until the next event.
+- **Option B**: xterm.js + native PTY/ConPTY, gated on interactive mode
+  becoming a real product question.
 
 Comments welcome; claim by replying. Merged contributions get release-notes
 credit (see CONTRIBUTING.md).
