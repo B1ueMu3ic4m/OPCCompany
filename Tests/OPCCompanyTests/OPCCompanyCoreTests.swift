@@ -772,10 +772,10 @@ private func writeCLIJobArchive(
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let employee = try #require(store.agents.first { $0.role == .codeEngineer })
 
-    store.terminalLogs[employee.id] = "old output"
+    store.setTerminalLog("old output", for: employee.id)
     store.clearTerminalLog(for: employee.id)
 
-    #expect(store.terminalLogs[employee.id] == "")
+    #expect(store.currentProductTerminalLog(for: employee.id) == "")
     #expect(store.events.contains { $0.title == "终端日志已清空" && $0.agentID == employee.id })
 }
 
@@ -1115,7 +1115,7 @@ private func writeCLIJobArchive(
     #expect(store.selectedProductVerifications.contains { $0.title == "命令行链路压测预检" })
     #expect(store.events.contains { $0.title == "命令行链路压测预检完成" })
     #expect(store.runningAgentIDs.isEmpty)
-    #expect(store.terminalLogs[store.ctoID, default: ""].contains("[OPC 命令行链路压测预检]"))
+    #expect(store.currentProductTerminalLog(for: store.ctoID).contains("[OPC 命令行链路压测预检]"))
 
     let isolationReport = store.cliRuntimeIsolationAuditText()
     #expect(isolationReport.contains("命令行与工作区隔离体检"))
@@ -1251,7 +1251,7 @@ private func writeCLIJobArchive(
     defer { cleanupTmuxSession(tmuxPath, sessionName) }
 
     store.startTerminalWorkspaceForSelectedProduct()
-    let firstLogs = store.terminalLogs
+    let firstLogs = store.productTerminalLogs
     store.startTerminalWorkspaceForSelectedProduct()
     let ctoPlanMessageCount = store.messages(for: store.ctoID)
         .filter { $0.text.contains("真实终端工作区计划") }
@@ -1260,7 +1260,7 @@ private func writeCLIJobArchive(
         .filter { $0.title == "真实终端工作区已启动" }
         .count
 
-    #expect(store.terminalLogs == firstLogs)
+    #expect(store.productTerminalLogs == firstLogs)
     #expect(ctoPlanMessageCount <= 2)
     #expect(workspaceStartedEventCount <= 2)
     #expect(store.runningAgentIDs.isEmpty)
@@ -1390,7 +1390,7 @@ private func writeCLIJobArchive(
     store.runAgent(agentID: engineer.id, prompt: "persistent smoke")
     #expect(try await waitForAgentRunToFinish(store, attempts: 120))
 
-    let terminalLog = store.terminalLogs[engineer.id, default: ""]
+    let terminalLog = store.currentProductTerminalLog(for: engineer.id)
     #expect(terminalLog.contains("OPC 长期席位执行"))
     #expect(!terminalLog.contains("OPC 常驻终端执行"))
     #expect(terminalLog.contains("persistent smoke"))
@@ -1407,7 +1407,7 @@ private func writeCLIJobArchive(
     store.runAgent(agentID: engineer.id, prompt: "persistent smoke again")
     #expect(try await waitForAgentRunToFinish(store, attempts: 120))
     #expect(store.persistentTerminalSessionCacheCountForTesting() == 1)
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("persistent smoke again"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("persistent smoke again"))
 
     store.clearSelectedProductRunData()
     #expect(store.persistentTerminalSessionCacheCountForTesting() == 0)
@@ -1454,7 +1454,7 @@ private func writeCLIJobArchive(
     store.runAgent(agentID: engineer.id, prompt: "long-output-smoke")
     #expect(try await waitForAgentRunToFinish(store, agentID: engineer.id, attempts: 160))
 
-    let terminalLog = store.terminalLogs[engineer.id, default: ""]
+    let terminalLog = store.currentProductTerminalLog(for: engineer.id)
     #expect(terminalLog.contains("命令退出码 0"))
     #expect(!terminalLog.contains("命令超时"))
     let jobsRoot = root.appendingPathComponent(".opc/jobs", isDirectory: true)
@@ -1925,7 +1925,7 @@ private func writeCLIJobArchive(
     #expect(turn.output.contains("codex>"))
     #expect(!turn.output.contains("OPC 员工终端"))
     #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .ready)
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("OPC 手动交互轮次"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
 }
 
 @MainActor
@@ -1965,7 +1965,7 @@ private func writeCLIJobArchive(
 
     let capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
     #expect(!capture.contains("不要发到普通终端"))
-    #expect(!store.terminalLogs[engineer.id, default: ""].contains("OPC 手动交互轮次"))
+    #expect(!store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
 }
 
 @MainActor
@@ -2316,7 +2316,7 @@ private func writeCLIJobArchive(
     #expect(!bossText.contains("waitAndRetryLater"))
 
     // 不会向命令行自动追加新一轮输入：sendInputLine 写入会出现在 terminalLogs 的"输入"标记里——验证不存在
-    let log = store.terminalLogs[engineer.id, default: ""]
+    let log = store.currentProductTerminalLog(for: engineer.id)
     #expect(!log.contains("OPC 手动交互轮次"))
     #expect(!log.contains("OPC 手动 REPL 轮次"))
     // 事件流仅写入"会话重开"风格的中文事件，不含英文 raw value
@@ -2487,7 +2487,7 @@ private func writeCLIJobArchive(
     #expect(turn.output.contains("reply:claude 第一轮"))
     #expect(turn.output.contains("claude>"))
     #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .ready)
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("OPC 手动交互轮次"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
 }
 
 @MainActor
@@ -2561,7 +2561,7 @@ private func writeCLIJobArchive(
     #expect(turn.output.contains("working:慢响应"))
     let windows = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
     #expect(windows.contains(windowName))
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("未中断终端席位"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("未中断终端席位"))
 }
 
 @MainActor
@@ -2598,7 +2598,7 @@ private func writeCLIJobArchive(
         try await Task.sleep(nanoseconds: 100_000_000)
     }
 
-    let terminalLog = store.terminalLogs[engineer.id, default: ""]
+    let terminalLog = store.currentProductTerminalLog(for: engineer.id)
     #expect(terminalLog.contains("仍有未完成的 OPC 命令行任务"))
     #expect(terminalLog.contains("命令退出码 125"))
     #expect(store.runtimeSessions[engineer.id]?.state == .failed)
@@ -2752,7 +2752,7 @@ private func writeCLIJobArchive(
     #expect(!transcript.contains("Library/Application Support"))
     #expect(!transcript.contains("/Users/"))
     #expect(store.selectedProductArtifacts.contains { $0.title.contains("命令行作业档案") && $0.path.hasPrefix(jobsRoot.path) })
-    let terminalLog = store.terminalLogs[engineerID, default: ""]
+    let terminalLog = store.currentProductTerminalLog(for: engineerID)
     #expect(terminalLog.contains("OPC 命令行任务"))
     #expect(terminalLog.contains("运行方式"))
     #expect(!terminalLog.contains("$ "))
@@ -3015,7 +3015,7 @@ private func writeCLIJobArchive(
 
     #expect(store.agents.contains { $0.role == .productArchitect })
     #expect(store.products.count > 1)
-    #expect(!store.terminalLogs.isEmpty)
+    #expect(!store.currentProductTerminalLog(for: store.ctoID).isEmpty)
 
     store.resetToDefaultCompanyState()
 
@@ -3024,6 +3024,7 @@ private func writeCLIJobArchive(
     #expect(!store.agents.contains { $0.role == .productArchitect || $0.role == .tester || $0.role == .researcher })
     #expect(store.selectedAgentID == store.ctoID)
     #expect(store.terminalLogs.isEmpty)
+    #expect(store.productTerminalLogs.isEmpty)
     #expect(store.selectedProductTasks.count == 3)
     #expect(store.events.first?.title == "公司已恢复默认状态")
 }
@@ -3356,13 +3357,13 @@ private func writeCLIJobArchive(
 @Test func visibleTerminalLogHidesLegacyCommandPathsAndRawFlags() async throws {
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let cto = try #require(store.agents.first { $0.role == .cto })
-    store.terminalLogs[cto.id] = """
+    store.setTerminalLog("""
     [OPC 会话预热]
     原因：App 启动后预热当前产品团队
     本地命令已就绪：/Users/demo/.npm-global/bin/codex
     $ /Users/demo/.npm-global/bin/codex exec --skip-git-repo-check --cd . -m gpt-5.5 -c model_reasoning_effort="high" 默认任务
     普通输出保持可见
-    """
+    """, for: cto.id)
 
     let log = store.visibleTerminalLog(for: cto.id)
 
@@ -3444,7 +3445,7 @@ private func writeCLIJobArchive(
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let cto = try #require(store.agents.first { $0.role == .cto })
 
-    store.terminalLogs[cto.id] = """
+    store.setTerminalLog("""
 
     [OPC 命令行任务]
     执行位置：主工作区
@@ -3464,9 +3465,9 @@ private func writeCLIJobArchive(
     [OPC 交互状态]
     状态：可继续交互。
 
-    """
+    """, for: cto.id)
 
-    let raw = store.terminalLogs[cto.id, default: ""]
+    let raw = store.currentProductTerminalLog(for: cto.id)
     let log = store.visibleTerminalLog(for: cto.id)
 
     #expect(raw.contains("OpenAI Codex"))
@@ -3491,7 +3492,7 @@ private func writeCLIJobArchive(
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let cto = try #require(store.agents.first { $0.role == .cto })
 
-    store.terminalLogs[cto.id] = """
+    store.setTerminalLog("""
 
     [OPC 真实终端工作区]
     员工终端席位已创建。
@@ -3506,9 +3507,9 @@ private func writeCLIJobArchive(
     任务摘要：汇报当前状态。
     [命令退出码 0]
 
-    """
+    """, for: cto.id)
 
-    let raw = store.terminalLogs[cto.id, default: ""]
+    let raw = store.currentProductTerminalLog(for: cto.id)
     let log = store.visibleTerminalLog(for: cto.id)
 
     #expect(raw.contains("printf %b"))
@@ -3544,12 +3545,12 @@ private func writeCLIJobArchive(
 
     """
     // 故意写 3 次完全相同的预热块（Computer Use 实测里就是这种模式）。
-    store.terminalLogs[cto.id] = warmupBlock + warmupBlock + warmupBlock
+    store.setTerminalLog(warmupBlock + warmupBlock + warmupBlock, for: cto.id)
 
     let log = store.visibleTerminalLog(for: cto.id)
 
     // 1. 原始存储未被改动：3 段 [OPC 会话预热] 仍在 terminalLogs 中。
-    let raw = store.terminalLogs[cto.id, default: ""]
+    let raw = store.currentProductTerminalLog(for: cto.id)
     let rawWarmupCount = raw.components(separatedBy: "[OPC 会话预热]").count - 1
     #expect(rawWarmupCount == 3,
             "原始 terminalLogs 不应被可见层减噪改动；当前出现 \(rawWarmupCount) 次（应为 3 次）。")
@@ -3595,7 +3596,7 @@ private func writeCLIJobArchive(
     """
     // 顺序：warmup, preflight, warmup, warmup → 3 个 warmup 汇总为最近 1 份；
     // 中间 preflight 块必须继续保留。
-    store.terminalLogs[cto.id] = warmup + preflight + warmup + warmup
+    store.setTerminalLog(warmup + preflight + warmup + warmup, for: cto.id)
 
     let log = store.visibleTerminalLog(for: cto.id)
 
@@ -3628,7 +3629,7 @@ private func writeCLIJobArchive(
     常驻能力：长期会话。
 
     """
-    store.terminalLogs[cto.id] = warmupA + warmupB
+    store.setTerminalLog(warmupA + warmupB, for: cto.id)
 
     let log = store.visibleTerminalLog(for: cto.id)
 
@@ -3657,7 +3658,7 @@ private func writeCLIJobArchive(
     结论：B
 
     """
-    store.terminalLogs[cto.id] = blockA + blockB
+    store.setTerminalLog(blockA + blockB, for: cto.id)
 
     let log = store.visibleTerminalLog(for: cto.id)
 
@@ -3671,12 +3672,12 @@ private func writeCLIJobArchive(
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let cto = try #require(store.agents.first { $0.role == .cto })
 
-    store.terminalLogs[cto.id] = """
+    store.setTerminalLog("""
     模型输出第一段。
     模型输出第二段。
     模型输出第一段。
     模型输出第二段。
-    """
+    """, for: cto.id)
 
     let log = store.visibleTerminalLog(for: cto.id)
 
@@ -3694,23 +3695,23 @@ private func writeCLIJobArchive(
     let cto = try #require(store.agents.first { $0.role == .cto })
 
     // zh-generated log: XCTest forces Chinese session, so the zh log renders unchanged.
-    store.terminalLogs[cto.id] = """
+    store.setTerminalLog("""
     [OPC 会话预热]
     原因：应用启动后预热当前产品团队
     本地命令已就绪：Codex
     持续协作：可继续接收任务。
-    """
+    """, for: cto.id)
     let zhRendered = store.visibleTerminalLog(for: cto.id)
     #expect(zhRendered.contains("[OPC 会话预热]"))
     #expect(zhRendered.contains("本地命令已就绪：Codex"))
 
     // en-generated log must be re-rendered in Chinese under the zh session.
-    store.terminalLogs[cto.id] = """
+    store.setTerminalLog("""
     [OPC Session Warmup]
     Reason: Warm up the current product team after launch
     Local command ready: Codex
     Continuous collaboration: Can accept more tasks.
-    """
+    """, for: cto.id)
     let enLogRendered = store.visibleTerminalLog(for: cto.id)
     #expect(enLogRendered.contains("[OPC 会话预热]"))
     #expect(enLogRendered.contains("本地命令已就绪：Codex"))
@@ -3899,7 +3900,7 @@ private func writeCLIJobArchive(
     store.runAgent(agentID: engineer.id, prompt: "不应运行")
 
     #expect(store.selectedProductWorkQueue.isEmpty)
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("未加入"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("未加入"))
     #expect(store.events.contains { $0.title == "已阻止非团队员工入队" })
     #expect(store.events.contains { $0.title == "已阻止非团队员工运行" })
 }
@@ -4545,7 +4546,7 @@ private func writeCLIJobArchive(
     #expect(!preflight.contains("--skip-git-repo-check"))
 
     store.recordCLIPreflight(agentID: engineer.id, prompt: "检查当前状态")
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("OPC 运行前预检"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 运行前预检"))
     #expect(store.events.contains { $0.title == "命令行运行前预检" })
 }
 
@@ -4947,7 +4948,7 @@ private func writeCLIJobArchive(
     #expect(!brief.text.contains("needsReview"))
     #expect(!brief.text.contains("needsApproval"))
     #expect(store.messages(for: engineer.id).contains { $0.text.contains("已生成公司状态简报并同步给技术负责人") })
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("已生成公司状态简报并同步给技术负责人"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("已生成公司状态简报并同步给技术负责人"))
 }
 
 @MainActor
@@ -5570,7 +5571,7 @@ private func writeCLIJobArchive(
     #expect(store.selectedProductDeliveryVerifications.allSatisfy { $0.title != stopAuditTitle })
     #expect(store.selectedProductRecentDeliveryVerifications.allSatisfy { $0.title != stopAuditTitle })
     // 终端日志写入维护审计标记
-    let log = store.terminalLogs[engineer.id, default: ""]
+    let log = store.currentProductTerminalLog(for: engineer.id)
     #expect(log.contains("[OPC 自动循环停止审计]"))
     #expect(log.contains("授权异常"))
     #expect(log.contains("命令行仍在忙碌"))
@@ -6129,7 +6130,7 @@ private actor CLIAutoInteractionLoopTestProbe {
     #expect(session.cliInteractionRecoveryHint == nil)
     #expect(session.cliInteractionOperatorHint == nil)
     #expect(session.cliInteractionObservedAt != nil)
-    let log = store.terminalLogs[cto.id, default: ""]
+    let log = store.currentProductTerminalLog(for: cto.id)
     #expect(log.contains("OPC 交互状态"))
     #expect(log.contains("状态：可继续交互。"))
     #expect(!log.contains("session_id"))
@@ -6159,7 +6160,7 @@ private actor CLIAutoInteractionLoopTestProbe {
     #expect(session.cliInteractionRecoveryActionTitle == CLIInteractionRecoveryAction.checkAuthentication.title)
     #expect(session.cliInteractionRecoveryHint == CLIInteractionRecoveryAction.checkAuthentication.operatorHint)
     #expect(session.cliInteractionOperatorHint == CLIInteractionRecoveryAction.checkAuthentication.operatorHint)
-    let log = store.terminalLogs[cto.id, default: ""]
+    let log = store.currentProductTerminalLog(for: cto.id)
     #expect(log.contains("建议：检查登录授权。"))
     #expect(log.contains("请在对应工具中确认登录授权"))
 }
@@ -6175,7 +6176,7 @@ private actor CLIAutoInteractionLoopTestProbe {
     store.recordCLIInteractionObservationIfNeeded(agent: cto, result: result)
 
     #expect(store.verifications.count == verificationCount)
-    let log = store.terminalLogs[cto.id, default: ""]
+    let log = store.currentProductTerminalLog(for: cto.id)
     #expect(log.components(separatedBy: "OPC 交互状态").count == 2)
     #expect(!log.contains("authenticationBlocked"))
     #expect(!log.contains("sessionID"))
@@ -6252,7 +6253,7 @@ private actor CLIAutoInteractionLoopTestProbe {
     let cto = try #require(store.agents.first { $0.role == .cto })
     let result = CommandExecutionResult(exitCode: 1, standardOutput: "", standardError: "Please log in to continue.")
     store.recordCLIInteractionObservationIfNeeded(agent: cto, result: result)
-    let log = store.terminalLogs[cto.id, default: ""]
+    let log = store.currentProductTerminalLog(for: cto.id)
 
     for action in CLIInteractionRecoveryAction.allCases {
         #expect(!log.contains(action.rawValue))
@@ -6439,7 +6440,7 @@ private actor CLIAutoInteractionLoopTestProbe {
     #expect(!eventText.contains("续跑"))
     #expect(!eventText.contains("resume"))
     #expect(!eventText.contains("sessionID"))
-    let terminalLog = store.terminalLogs[cto.id, default: ""]
+    let terminalLog = store.currentProductTerminalLog(for: cto.id)
     #expect(terminalLog.contains("OPC 上下文复用失败"))
     #expect(terminalLog.contains("OPC 上下文已重置"))
     #expect(!terminalLog.contains("命令行会话"))
@@ -8367,7 +8368,7 @@ private func containsCJK(_ text: String) -> Bool {
     // 不影响非 running 员工：reviewer 没在 runningAgentIDs 里，状态不变。
     #expect(store.runtimeSessions[reviewer.id]?.state == .ready)
 
-    let log = store.terminalLogs[engineer.id, default: ""]
+    let log = store.currentProductTerminalLog(for: engineer.id)
     #expect(log.contains("OPC 运维恢复"))
     #expect(store.events.contains { $0.title == "\(engineer.displayName) 异常占用已恢复" })
     let verification = try #require(store.selectedProductVerifications.first { $0.title == "异常占用会话恢复" })
@@ -10186,8 +10187,8 @@ private actor AutoLoopInputQueue {
     let jobArchivesAfter = store.artifacts.filter { $0.title.contains("命令行作业档案") }.count
     #expect(jobArchivesAfter == jobArchivesBefore)
     #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .completedTurn)
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("OPC 自动交互循环轮次"))
-    #expect(!store.terminalLogs[engineer.id, default: ""].contains("OPC 手动交互轮次"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 自动交互循环轮次"))
+    #expect(!store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
 }
 
 @MainActor
@@ -10429,8 +10430,8 @@ private actor AutoLoopInputQueue {
     let agentMessagesBefore = store.agentMessages.count
     let jobArchivesBefore = store.artifacts.filter { $0.title.contains("命令行作业档案") }.count
     let jobsDirectoryBefore = (try? FileManager.default.contentsOfDirectory(atPath: jobsRoot.path)) ?? []
-    let autoTurnsBefore = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
-    let manualTurnsBefore = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 手动交互轮次]").count - 1
+    let autoTurnsBefore = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
+    let manualTurnsBefore = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 手动交互轮次]").count - 1
 
     let taskContext = "技术负责人闭环演练真实终端"
     let report = await store.runTerminalAutoInteractionLoopForSelectedAgent(
@@ -10469,8 +10470,8 @@ private actor AutoLoopInputQueue {
     #expect(afterCapture.contains("turn complete"))
 
     // 终端日志应记录三次自动循环轮次，并和人工手动轮次区分。
-    let autoTurnsAfter = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
-    let manualTurnsAfter = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 手动交互轮次]").count - 1
+    let autoTurnsAfter = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
+    let manualTurnsAfter = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 手动交互轮次]").count - 1
     #expect(autoTurnsAfter - autoTurnsBefore == 3)
     #expect(manualTurnsAfter == manualTurnsBefore)
     #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .completedTurn)
@@ -10555,7 +10556,7 @@ private actor AutoLoopInputQueue {
     let agentMessagesBefore = store.agentMessages.count
     let jobArchivesBefore = store.artifacts.filter { $0.title.contains("命令行作业档案") }.count
     let jobsDirectoryBefore = (try? FileManager.default.contentsOfDirectory(atPath: jobsRoot.path)) ?? []
-    let autoTurnsBefore = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
+    let autoTurnsBefore = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
 
     let report = await store.runTerminalAutoInteractionLoopForSelectedAgent(
         taskContext: "持续就绪上限收口",
@@ -10588,7 +10589,7 @@ private actor AutoLoopInputQueue {
     #expect(store.artifacts.filter { $0.title.contains("命令行作业档案") }.count == jobArchivesBefore)
     let jobsDirectoryAfter = (try? FileManager.default.contentsOfDirectory(atPath: jobsRoot.path)) ?? []
     #expect(jobsDirectoryAfter.sorted() == jobsDirectoryBefore.sorted())
-    let autoTurnsAfter = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
+    let autoTurnsAfter = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
     #expect(autoTurnsAfter - autoTurnsBefore == 2)
 
     let summary = report.summaryText
@@ -10656,7 +10657,7 @@ private actor AutoLoopInputQueue {
     let bossMessagesBefore = store.messages(for: store.bossID).count
     let agentMessagesBefore = store.agentMessages.count
     let artifactsBefore = store.artifacts.count
-    let autoTurnsBefore = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
+    let autoTurnsBefore = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
 
     let report = await store.runTerminalAutoInteractionLoopForSelectedAgent(
         taskContext: "拒绝旧 prompt scrollback",
@@ -10680,9 +10681,9 @@ private actor AutoLoopInputQueue {
     #expect(!summary.contains("authenticationBlocked"))
 
     let auditMarker = "[OPC 自动循环就绪审计]"
-    let auditCount = store.terminalLogs[engineer.id, default: ""].components(separatedBy: auditMarker).count - 1
+    let auditCount = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: auditMarker).count - 1
     #expect(auditCount >= 1)
-    #expect(store.terminalLogs[engineer.id, default: ""].contains("未确认最近专用就绪提示"))
+    #expect(store.currentProductTerminalLog(for: engineer.id).contains("未确认最近专用就绪提示"))
 
     // 旧 prompt 在 scrollback 里仍然能被 containsREPLReadySignal 命中，新 helper 必须把这种情况拒绝。
     let codex = try #require(CLIInteractionProfileCatalog.profile(forCommand: "codex"))
@@ -10690,7 +10691,7 @@ private actor AutoLoopInputQueue {
     #expect(!codex.endsWithReplReadyPrompt(capture))
 
     // 拒绝路径不能消耗循环轮次、写老板聊天、写员工协作消息或写作业档案。
-    let autoTurnsAfter = store.terminalLogs[engineer.id, default: ""].components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
+    let autoTurnsAfter = store.currentProductTerminalLog(for: engineer.id).components(separatedBy: "[OPC 自动交互循环轮次]").count - 1
     #expect(autoTurnsAfter == autoTurnsBefore)
     #expect(store.messages(for: store.bossID).count == bossMessagesBefore)
     #expect(store.agentMessages.count == agentMessagesBefore)
@@ -10776,7 +10777,7 @@ private actor AutoLoopInputQueue {
     #expect(!summary.contains("model_reasoning_effort"))
     #expect(!summary.contains("opcGenerated"))
 
-    let log = store.terminalLogs[engineer.id, default: ""]
+    let log = store.currentProductTerminalLog(for: engineer.id)
     #expect(log.contains("[OPC 自动循环就绪审计]"))
     #expect(log.contains("就绪校验：最近一行已确认"))
 }
@@ -13242,7 +13243,7 @@ private actor AutoLoopInputQueue {
     #expect(!store.terminalAgentCardHasClearableLog(for: cto.id))
 
     // 2. 注入一段日志 → 不再 idle → active 高度
-    store.terminalLogs[cto.id] = "[OPC 会话预热]\n本地命令已就绪：codex\n"
+    store.setTerminalLog("[OPC 会话预热]\n本地命令已就绪：codex\n", for: cto.id)
     #expect(!store.terminalAgentCardIsIdle(agentID: cto.id))
     #expect(store.terminalAgentCardHasClearableLog(for: cto.id))
     #expect(store.terminalAgentCardLogHeight(for: cto.id) == CompanyStore.terminalAgentCardLogActiveHeight)
@@ -13250,7 +13251,7 @@ private actor AutoLoopInputQueue {
             "非 idle 状态下 placeholder 退回到原 fallback 文案")
 
     // 3. 清空日志后回到 idle → 重新 idle 高度
-    store.terminalLogs[cto.id] = ""
+    store.setTerminalLog("", for: cto.id)
     #expect(store.terminalAgentCardIsIdle(agentID: cto.id))
     #expect(!store.terminalAgentCardHasClearableLog(for: cto.id))
     #expect(store.terminalAgentCardLogHeight(for: cto.id) == CompanyStore.terminalAgentCardLogIdleHeight)

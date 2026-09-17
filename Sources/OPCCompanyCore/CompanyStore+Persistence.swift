@@ -362,6 +362,10 @@ extension CompanyStore {
                 return
             }
             applyRestoredSnapshot(snapshot)
+            // Other load path audited for #70 slimming: an old checkpoint can
+            // carry legacy-only terminal logs. Run the same prune-safe
+            // migration before the saveSnapshot() below persists it back.
+            migrateLegacyTerminalLogsToProductScopedLogs(saveAfterChange: false)
             appendEvent(kind: .statusChanged, title: "已回滚到最近安全检查点".L(), detail: "已恢复最近一份本机安全检查点。".L(), agentID: ctoID)
             messages.append(ChatMessage(productID: selectedProductID, agentID: ctoID, author: .system, text: "已回滚到最近安全检查点：\(checkpointDateText(for: url))。"))
             saveSnapshot()

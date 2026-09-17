@@ -1189,22 +1189,50 @@ extension CompanyStore {
         let scopedProductID = productID ?? selectedProductID
         let key = terminalLogStorageKey(productID: scopedProductID, agentID: agentID)
         productTerminalLogs[key, default: ""].append(text)
-        terminalLogs[agentID, default: ""].append(text)
     }
     func setTerminalLog(_ text: String, for agentID: UUID, productID: UUID? = nil) {
         let scopedProductID = productID ?? selectedProductID
         let key = terminalLogStorageKey(productID: scopedProductID, agentID: agentID)
         productTerminalLogs[key] = text
-        terminalLogs[agentID] = text
     }
+    /// One-time slimming of the unscoped legacy mirror (`terminalLogs`).
+    ///
+    /// Writers no longer double-write, so `terminalLogs` only carries data from
+    /// pre-scoped snapshots. Rules (all pruning is provably loss-free because
+    /// the retained `productTerminalLogs` entry holds the identical text):
+    /// - empty legacy entry: drop (reads use `default: ""`; an explicit clear
+    ///   is indistinguishable from an absent key).
+    /// - scoped key missing/empty: copy, then drop the legacy entry (confirmed
+    ///   copy — the scoped entry now carries the audit trail, including the
+    ///   inferred-product case).
+    /// - scoped key equals the legacy text: drop (exact duplicate from the
+    ///   old double-write era).
+    /// - scoped key differs: conflict. Keep BOTH — never discard divergent
+    ///   audit text automatically; the legacy fallback (test-gated) still
+    ///   surfaces it when no scoped entry exists.
     @discardableResult
     func migrateLegacyTerminalLogsToProductScopedLogs(saveAfterChange: Bool = true) -> Bool {
         var changed = false
-        for (agentID, log) in terminalLogs where !log.isEmpty {
+        var pruned: [UUID] = []
+        for (agentID, log) in terminalLogs {
+            if log.isEmpty {
+                pruned.append(agentID)
+                continue
+            }
             let productID = inferredProductIDForLegacyTerminalLog(log) ?? selectedProductID
             let key = terminalLogStorageKey(productID: productID, agentID: agentID)
-            guard productTerminalLogs[key, default: ""].isEmpty else { continue }
+            if let scoped = productTerminalLogs[key] {
+                if scoped == log {
+                    pruned.append(agentID)
+                }
+                continue
+            }
             productTerminalLogs[key] = log
+            pruned.append(agentID)
+            changed = true
+        }
+        for agentID in pruned {
+            terminalLogs.removeValue(forKey: agentID)
             changed = true
         }
         if changed && saveAfterChange {
