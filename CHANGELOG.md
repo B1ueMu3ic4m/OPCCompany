@@ -15,6 +15,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   helper (`OPCBridgeWindow`) that never splits a UTF-8 sequence and always
   makes progress when the cursor is inside the log (a 1-byte window still
   yields a full codepoint — log-watcher poll loops cannot stall).
+- **Objective-C runtime confinement guard (issue #10)**: a source-scan
+  invariant over `Sources/OPCCompanyCore` + `Sources/OPC` — `import
+  ObjectiveC`, `object_setClass` and `objc_*` may appear only inside the
+  single `#if canImport(ObjectiveC)`-guarded localization shim; a
+  scanned-file floor keeps the guard from silently spinning on a path
+  typo. Negative-verified: injecting an import into another file fails
+  the test with exactly one issue.
 - **Shell transcript panel**: tapping an employee chip now streams their
   terminal below the board — monospace, follows the tail unless the boss
   scrolls up (reading history never fights the stream), monospace-diffable
@@ -35,6 +42,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Shell wrapper lifecycle: `stop()` now honors the bridge's `_alive` state
   (a create-failed dispose no longer calls destroy — C-singleton misuse
   the ABI had to silently absorb; regression-pinned via destroy counting).
+- **Windows release zip is self-contained (follow-up to 0.3.1 asset)**: the
+  bridge DLL imported Swift-toolchain and VC++ runtime DLLs that only the CI
+  machine's PATH happened to provide, so the published preview zip could
+  fail on a clean Windows box. `windows.yml` now walks the full PE import
+  closure (`dumpbin /DEPENDENTS`) and copies every unresolved dependency
+  into the package (fails closed), and the CI smoke runs with PATH stripped
+  to System32 only — the green check itself now proves self-containment.
+  Preview zips built before this fix still need the Swift 6.3.3 toolchain
+  installed (documented in README, EN + zh-CN).
+
+### Changed
+- **Legacy terminal-log mirror pruned (issue #70 snapshot slimming)**:
+  `appendTerminalLog`/`setTerminalLog` now write only the product-scoped
+  logs; the unscoped `terminalLogs` mirror keeps its field for schema
+  compatibility but no longer grows a second copy of every line on every
+  save. The migration was rewritten as loss-free pruning: exact duplicates
+  and emptied entries drop after the scoped copy is confirmed, divergent
+  text is kept on BOTH sides (never auto-discarded), and an explicit-empty
+  scoped log is not resurrected. `restoreSafetyCheckpoint` — the one
+  non-bootstrap load path — runs the same prune before persisting a
+  restored snapshot. 40 legacy-dictionary assertions in the core suite
+  migrated to the real scoped APIs; no test-only double-write backdoor.
 
 ## [0.3.1] - 2026-09-16
 
