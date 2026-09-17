@@ -7,7 +7,7 @@ name: Windows Shell
 #
 # Supply-chain policy (see scripts/scan-secrets.sh rationale): Flutter is
 # fetched from Google's OFFICIAL release infra pinned to the same stable we
-# develop on (3.41.5) — no third-party flutter actions.
+# develop on (3.41.5) - no third-party flutter actions.
 
 on:
   push:
@@ -101,7 +101,7 @@ jobs:
           flutter --version
           flutter config --no-analytics
           if (-not (flutter --version | Select-String -Quiet "$env:FLUTTER_VERSION")) {
-            Write-Host "flutter version drift — expected $env:FLUTTER_VERSION"; exit 1
+            Write-Host "flutter version drift - expected $env:FLUTTER_VERSION"; exit 1
           }
           flutter doctor -v | Select-String -Pattern 'Visual Studio|Windows'
 
@@ -125,19 +125,117 @@ jobs:
             Write-Host "assembly failed"; exit 1
           }
           # fixed staging path for the artifact upload (the build tree layout
-          # varies across Flutter versions — search once, stage once)
+          # varies across Flutter versions - search once, stage once)
           $stage = "$env:RUNNER_TEMP\shell-package"
           Copy-Item $rel.FullName $stage -Recurse
           Write-Host "staged: $stage"
 
+      - name: Bundle Swift runtime dependencies into the package
+        shell: pwsh
+        run: |
+          # SELF-CONTAINMENT FIX (audit 2026-09-17). OPCCompanyBridge.dll links
+          # against the Swift toolchain's runtime DLLs (swiftCore.dll,
+          # Foundation*.dll, swiftCRT.dll, BlocksRuntime.dll, ...). CI smoke
+          # passed earlier ONLY because the toolchain-install step added every
+          # toolchain DLL dir to GITHUB_PATH - the artifact zip never carried
+          # them, so "unpack and run" fails on a clean Windows machine with
+          # 0xC0000135. This step walks the real import closure with dumpbin
+          # and copies everything the package must own, then fails closed on
+          # any dependency that is neither bundled nor a system DLL.
+          $ErrorActionPreference = 'Stop'
+          $stage = "$env:RUNNER_TEMP\shell-package"
+          $root = "C:\Program Files\Swift"
+          if (-not (Test-Path $root)) { $root = "$env:LOCALAPPDATA\Programs\Swift" }
+          $dllDirs = Get-ChildItem $root -Recurse -Filter *.dll -ErrorAction SilentlyContinue |
+                     Select-Object -ExpandProperty DirectoryName -Unique
+          $dumpbin = (Get-ChildItem "C:\Program Files*\Microsoft Visual Studio\*\*\VC\Tools\MSVC\*\bin\Host*\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1)
+          if (-not $dumpbin) { Write-Host "dumpbin NOT FOUND - cannot verify closure"; exit 1 }
+
+          # MSVC runtime: present in System32 on dev boxes with VC++ redist,
+          # absent on clean machines. Microsoft's documented private-deployment
+          # model is to ship it next to the exe, so force-copy from System32.
+          foreach ($m in 'VCRUNTIME140.dll','VCRUNTIME140_1.dll','MSVCP140.dll') {
+            $src = Join-Path "$env:SystemRoot\System32" $m
+            if (-not (Test-Path $src)) { Write-Host "MSVC runtime missing on runner: $m"; exit 1 }
+            Copy-Item $src $stage -Force
+            Write-Host "bundled (private deployment): $m"
+          }
+
+          $systemPattern = '^(api-ms-win-|ext-ms-)'
+          $knownSystem = @('KERNEL32.dll','USER32.dll','GDI32.dll','ADVAPI32.dll','SHELL32.dll',
+            'OLE32.dll','OLEAUT32.dll','CRYPT32.dll','WS2_32.dll','WINMM.dll','DWMAPI.dll',
+            'IMM32.dll','PROPSYS.dll','SHLWAPI.dll','PSAPI.DLL','RPCRT4.dll','OPENGL32.dll',
+            'OLEACC.dll','UIAutomationCore.DLL','UIAutomationCore.dll','IPHLPAPI.DLL',
+            'bcrypt.dll','dwtsapi32.dll','userenv.dll','version.dll','wintrust.dll',
+            'setupapi.dll','cfgmgr32.dll','sechost.dll','msvcrt.dll','ntdll.dll',
+            'comdlg32.dll','gdiplus.dll','wintypes.dll','Bcp47Langs.dll','WindowsApp.dll',
+            'kernel.appcore.dll','powrprof.dll','profapi.dll','cryptbase.dll',
+            'cryptsp.dll','sspicli.dll','WINHTTP.dll','dbghelp.dll','uxtheme.dll',
+            'd3d11.dll','d3d9.dll','dxgi.dll','ncrypt.dll','bcryptprimitives.dll',
+            'dnsapi.dll','iphlpapi.dll','normaliz.dll','qwave.dll','avrt.dll',
+            'mediainfo.dll','mf.dll','mfplat.dll','mfuuid.dll','secur32.dll',
+            'synchronization.dll','textinputframework.dll','twinapi.appcore.dll',
+            'wintestapp.dll','fluttermac.dll')
+          function is-system([string]$name) {
+            if ($name -match $systemPattern) { return $true }
+            if ($knownSystem -contains $name) { return $true }
+            if (Test-Path (Join-Path "$env:SystemRoot\System32" $name)) { return $true }
+            return $false
+          }
+          function in-stage([string]$name) {
+            return [bool](Get-ChildItem $stage -Recurse -Filter $name -ErrorAction SilentlyContinue | Select-Object -First 1)
+          }
+          # Import-closure walk. Seed with every PE in the package.
+          $queue = New-Object System.Collections.Generic.Queue[string]
+          foreach ($f in (Get-ChildItem $stage -Recurse -Include *.dll,*.exe)) { $queue.Enqueue($f.Name) }
+          $seen = @{}
+          $copied = 0
+          while ($queue.Count -gt 0) {
+            $cur = $queue.Dequeue()
+            if ($seen.ContainsKey($cur)) { continue }
+            $seen[$cur] = $true
+            $item = Get-ChildItem $stage -Recurse -Filter $cur -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $item) { continue }
+            $deps = & $dumpbin.FullName /DEPENDENTS $item.FullName | Out-String
+            foreach ($line in $deps -split "`r?`n") {
+              if ($line -match '^\s+(\S+\.dll)$') {
+                $dep = $Matches[1]
+                if ($seen.ContainsKey($dep)) { continue }
+                if (in-stage $dep) { $queue.Enqueue($dep); continue }
+                if (is-system $dep) { Write-Host "system dep ok: $dep"; continue }
+                $src = $null
+                foreach ($d in $dllDirs) {
+                  $cand = Join-Path $d $dep
+                  if (Test-Path $cand) { $src = $cand; break }
+                }
+                if (-not $src) { Write-Host "UNRESOLVED dep: $dep (from $cur) - not system, not toolchain"; exit 1 }
+                Copy-Item $src $stage -Force
+                Write-Host "bundled: $dep <- $src"
+                $copied++
+                $queue.Enqueue($dep)
+              }
+            }
+          }
+          Write-Host "closure done: $($seen.Count) PE analyzed, $copied runtime DLLs bundled"
+          # Fail closed on the exact regressions we audited: swiftCore must be there.
+          if (-not (Test-Path (Join-Path $stage 'swiftCore.dll'))) { Write-Host 'swiftCore.dll NOT bundled'; exit 1 }
+          Get-ChildItem $stage -Filter *.dll | Select-Object Name, Length | Format-Table -AutoSize
+
       - name: Run shell behavioral smoke on the assembled package
         shell: pwsh
         run: |
-          # The same 10-check cycle macOS runs — NOW against the Windows DLL
+          # The same 10-check cycle macOS runs - NOW against the Windows DLL
           # through the Windows exe: dlopen path, cdecl calls, main-thread
           # hop under a real message loop. A fresh support dir bootstraps a
           # factory company (verified on macOS: 3 tasks, goal -> +4), so the
           # relative assertions hold without seeding.
+          #
+          # SELF-CONTAINMENT PROOF: strip PATH to the bare system dirs before
+          # launch. A PE resolves DLLs from the exe's own directory BEFORE any
+          # PATH lookup, so if any runtime DLL were still missing the app would
+          # die with 0xC0000135 right here - the old green runs were env
+          # pollution from the toolchain's GITHUB_PATH entries.
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
           $pkg = "$env:RUNNER_TEMP\shell-package"
           $exe = Get-ChildItem $pkg -Filter *.exe | Select-Object -First 1
           $work = "$env:RUNNER_TEMP\shell-smoke"
