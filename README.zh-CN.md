@@ -96,11 +96,11 @@ create/destroy/lastError/snapshotJson/command/free)——任何能 `dlopen` 的�
 - `scripts/build-shell-macos.sh` 把桥 dylib 捆进独立 .app,打包后的 app 自检全绿才算构建完成
 
 想上手?到 [最新 Release](https://github.com/B1ueMu3ic4m/OPCCompany/releases) 下载
-`OPCCompanyShell-windows-x64-*-preview.zip`,解压即运行 `opc_flutter_shell.exe`
+`OPCCompanyShell-windows-x64-v<版本号>.zip`,解压即运行 `opc_flutter_shell.exe`
 (未签名预览版,首次启动 Windows 可能提示;无需安装器)。
-注意:v0.3.1 及更早的预览包打包于上述自包含修复之前,在未装 Swift 6.3.3
-Windows 工具链的机器上会以缺 DLL(0xC0000135)失败——CI 已修复,
-下一个预览资产会自带运行时。
+自 v0.3.2 起安装包已自包含:Swift/MSVC 运行时 DLL 随包分发,无需工具链。
+(v0.3.1 及更早的预览包打包于该修复之前,在未装 Swift 6.3.3 Windows
+工具链的机器上会以缺 DLL(0xC0000135)失败。)
 
 ```bash
 cd flutter_shell && flutter run -d macos     # 开发循环
