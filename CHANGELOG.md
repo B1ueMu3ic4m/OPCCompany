@@ -64,6 +64,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   non-bootstrap load path — runs the same prune before persisting a
   restored snapshot. 40 legacy-dictionary assertions in the core suite
   migrated to the real scoped APIs; no test-only double-write backdoor.
+- **Docs drift fix**: README/CONTRIBUTING test-count claims updated from the
+  stale 576 to 611 (measured on main CI run 35184567452); the README's
+  "1.9k i18n strings" figure replaced with a non-rotting description
+  (the string table carries ~3.0k zh→en pairs across the whole app).
 
 ## [0.3.1] - 2026-09-16
 
