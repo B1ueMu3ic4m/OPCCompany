@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- **`decide` verb refused silent no-ops (night audit R1)**: the store's
+  `decideApproval` returns quietly for unknown ids AND already-decided
+  approvals, so a boss double-tapping an approval row (or acting on a
+  stale list) got `rc=0` while nothing changed. The bridge now checks the
+  precondition and refuses with a reason — same drift class as
+  `product_select`, closed the same way: contract test red→green on both
+  sides of the ABI plus a state-free behavior check in the shell smoke
+  across the real C boundary.
+
 ## [0.3.2] - 2026-09-17
 
 ### Added

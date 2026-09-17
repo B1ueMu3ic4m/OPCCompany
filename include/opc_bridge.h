@@ -36,6 +36,9 @@ char *opc_bridge_snapshot_json(void);
  *   "goal"    {"text": "..."}
  *   "advance" {}
  *   "decide"  {"approvalID": "<uuid>", "approved": true}
+ *       Unknown IDs and already-decided approvals return -1 with a reason
+ *       (the bare store call is a silent no-op for both — a double-tap or
+ *       a stale approval list must never read as success).
  *   "save"    {}
  *   "product_select" {"productID": "<uuid>"}
  *       Switches the selected product through the same store path the
