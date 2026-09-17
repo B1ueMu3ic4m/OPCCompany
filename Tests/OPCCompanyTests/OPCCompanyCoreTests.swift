@@ -16961,6 +16961,35 @@ private func makeStoreWithAPIAgent(
             "持久化根目录必须经 OPCAppPaths 解析(Windows 走 %APPDATA%)")
 }
 
+@Test func windowsPortObjectiveCSwizzleIsConfinedToL10nBundleOverride() async throws {
+    // #10 M0 不变量:ObjC runtime 依赖(语言切换 swizzle)必须封闭在
+    // L10nBundleOverride.swift 单文件内,且整体被 #if canImport(ObjectiveC)
+    // 罩住——Windows 没有 ObjC runtime,任何泄漏都会在移植编译期直接炸。
+    // 这是 PR #7 Security confinement 的同类 guard(见上一个测试)。
+    // issue #10 的完整验收(抽出 OPCLocalizationProvider、SwiftUI Text(literal)
+    // 迁移)仍未关闭;本测试只固化"封闭在单文件+有 guard"这半条。
+    let root = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let dirs = ["Sources/OPCCompanyCore", "Sources/OPC"]
+    var scanned = 0
+    for dir in dirs {
+        let files = try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent(dir).path)
+        for name in files where name.hasSuffix(".swift") {
+            scanned += 1
+            let content = try String(contentsOf: root.appendingPathComponent("\(dir)/\(name)"), encoding: .utf8)
+            if name == "L10nBundleOverride.swift" {
+                #expect(content.contains("#if canImport(ObjectiveC)"),
+                        "L10nBundleOverride 的 swizzle 必须整体包在 #if canImport(ObjectiveC) 内,否则 Windows 编译失败")
+                continue
+            }
+            #expect(!content.contains("import ObjectiveC"), "\(dir)/\(name) 不得 import ObjectiveC")
+            #expect(!content.contains("object_setClass"), "\(dir)/\(name) 不得使用 ObjC runtime 注入")
+            #expect(!content.contains("objc_"), "\(dir)/\(name) 不得使用 objc_* runtime 函数")
+        }
+    }
+    #expect(scanned >= 40, "扫描目录异常(核心层应有 40+ 个源文件),防止路径写错导致 guard 空转")
+}
+
 @Test func windowsPortM0SecretStatusKeepsOSStatusCodes() {
     // 平台中立码必须与 Apple OSStatus 数值一致,保证跨平台诊断信息等价。
     #expect(OPCSecretStatus.success.rawValue == 0)
