@@ -112,13 +112,13 @@ What CI proves on every push:
 - the package is **self-contained**: CI walks the real import closure with `dumpbin /DEPENDENTS` and bundles the Swift/MSVC runtime DLLs beside the exe, then runs the smoke with `PATH` stripped to the system dirs (proving nothing the app needs lives only in the build environment)
 - `scripts/build-shell-macos.sh` bundles the bridge dylib into a standalone .app and the packaged app self-checks ALL PASS
 
-Want to try it? Grab `OPCCompanyShell-windows-x64-*-preview.zip` from the
+Want to try it? Grab `OPCCompanyShell-windows-x64-v<version>.zip` from the
 [latest release](https://github.com/B1ueMu3ic4m/OPCCompany/releases) — unpack and run `opc_flutter_shell.exe`
 (unsigned preview: Windows may warn on first launch; no installer needed).
-Note: preview zips up to and including v0.3.1 were packaged before the
-self-containment fix above, so on a machine without the Swift 6.3.3 Windows
-toolchain they fail with a missing-DLL error (0xC0000135) — fixed in CI,
-the next shell preview asset carries the runtimes.
+Since v0.3.2 the package is self-contained: the Swift/MSVC runtime DLLs
+travel inside the zip, no toolchain needed. (v0.3.1 and earlier preview
+zips predate the self-containment fix and fail with a missing-DLL error
+(0xC0000135) on machines without the Swift 6.3.3 Windows toolchain.)
 
 ```bash
 cd flutter_shell && flutter run -d macos     # dev loop
