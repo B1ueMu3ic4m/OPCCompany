@@ -47,23 +47,32 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliApprovalsAndDecideRoundTrip() throws {
-    let supportDir = FileManager.default.temporaryDirectory
-        .appendingPathComponent("opc-cli-e2e-\(ProcessInfo.processInfo.processIdentifier)",
-                                isDirectory: true)
-    defer { try? FileManager.default.removeItem(at: supportDir) }
-    try FileManager.default.createDirectory(at: supportDir,
-                                            withIntermediateDirectories: true)
+    // IMPORTANT: use the suite's own resolved supportDirectory. It is a
+    // process-level lazy cache — whichever test touches it FIRST pins it —
+    // so setenv()-ing a private dir here only works when this test happens
+    // to run first (single --filter) and silently desyncs from the seed
+    // write in the full suite. The test-process detection guarantees this
+    // directory is temp-isolated (OPCCompanyTests-<pid>), never the real
+    // user snapshot; passing it to the child via the override env keeps
+    // seed and subprocess pointed at the SAME place with zero timing
+    // assumptions.
+    let supportDir = CompanyPersistence.supportDirectory
+    // State-neutral: remember whatever the suite dir held and restore it
+    // after — a leaked pending approval would be visible to later
+    // bootstrap(loadPersisted: true) tests and bite as a heisenflaky
+    // count assertion at a distance.
+    let stateFile = supportDir.appendingPathComponent("company-state.json")
+    let priorBytes = try? Data(contentsOf: stateFile)
+    defer {
+        if let priorBytes {
+            try? priorBytes.write(to: stateFile)
+        } else {
+            try? FileManager.default.removeItem(at: stateFile)
+        }
+    }
 
     // Seed through the SAME hooks the CLI reads: fresh store, one task in
-    // needsApproval, one pending approval, then persist. bootstrap's
-    // supportDirectory honors OPC_COMPANY_SUPPORT_DIR; set it process-wide
-    // for the seed (suite runs --no-parallel; the defer keeps it clean).
-    let envKey = "OPC_COMPANY_SUPPORT_DIR"
-    let previous = ProcessInfo.processInfo.environment[envKey]
-    setenv(envKey, supportDir.path, 1)
-    defer {
-        if let previous { setenv(envKey, previous, 1) } else { unsetenv(envKey) }
-    }
+    // needsApproval, one pending approval, then persist.
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let engineer = try #require(store.agents.first { $0.role == .codeEngineer })
     store.createTask(title: "CLI 审批回归", ownerID: engineer.id,
