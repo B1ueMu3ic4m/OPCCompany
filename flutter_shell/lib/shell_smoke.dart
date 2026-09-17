@@ -55,7 +55,9 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       'advance executed',
       advanceRc == OpcBridge.ok || advanceRc == OpcBridge.refused,
       'rc=$advanceRc');
-  add('save persists', bridge.save() == OpcBridge.ok);
+  final saveRc = bridge.save();
+  add('save persists', saveRc == OpcBridge.ok,
+      'rc=$saveRc err=${bridge.lastError()}');
 
   add(
       'unknown verb refused',
@@ -71,6 +73,16 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       bridge.selectProduct('00000000-0000-0000-0000-00000000dead') ==
               OpcBridge.refused &&
           bridge.lastError().contains('no product with id'),
+      bridge.lastError());
+
+  // decide refusal path, same discipline: unknown approval id must be
+  // refused with a reason (store.decideApproval is a silent no-op).
+  // State-free — the ghost id can never touch a real approval.
+  add(
+      'decide refuses unknown approval id',
+      bridge.decide('00000000-0000-0000-0000-00000000beef') ==
+              OpcBridge.refused &&
+          bridge.lastError().contains('no approval with id'),
       bridge.lastError());
 
   // Query verbs (#70 option A): results ride last_error through the REAL

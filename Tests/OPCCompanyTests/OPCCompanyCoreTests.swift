@@ -17259,6 +17259,50 @@ private func makeStoreWithAPIAgent(
     #expect(opc_bridge_command(mVerb, mPay) == -1)
 }
 
+@Test @MainActor func bridgeDecideVerbRefusesSilentNoOps() throws {
+    // decide 动词的同款漂移检查(与 product_select 一致):store.decideApproval
+    // 对未知 ID 与已决审批都是静默 guard-return——桥必须升级为显式拒绝,
+    // 否则老板双击/过期列表时壳拿到 rc=0 而核心纹丝不动。
+    #expect(opc_bridge_create() == 0)
+    defer { opc_bridge_destroy() }
+
+    // 造一条真实 pending 审批(store 直改,桥与 store 同一实例)。
+    let store = try #require(opcBridgeStoreForTests())
+    let engineer = try #require(store.agents.first { $0.role == .codeEngineer })
+    store.createTask(title: "桥审批契约", ownerID: engineer.id,
+                     status: .needsApproval, successCriteria: "契约测试。")
+    let task = try #require(store.selectedProductTasks.last { $0.title == "桥审批契约" })
+    store.requestApproval(taskID: task.id, title: "桥审批", reason: "契约",
+                          requesterID: engineer.id)
+    let approval = try #require(store.selectedProductPendingApprovals
+        .last { $0.title == "桥审批" })
+
+    // 正路径:pending 审批 approve 成功
+    let verb = strdup("decide")
+    defer { free(verb) }
+    let okPay = strdup(#"{"approvalID":"\#(approval.id.uuidString)","approved":true}"#)
+    defer { free(okPay) }
+    #expect(opc_bridge_command(verb, okPay) == 0)
+    #expect(store.approvals.first { $0.id == approval.id }?.status == .approved)
+
+    // 负路径 1:同一审批二次决定必须拒绝(双击场景),而非静默成功
+    let againPay = strdup(#"{"approvalID":"\#(approval.id.uuidString)","approved":false}"#)
+    defer { free(againPay) }
+    #expect(opc_bridge_command(verb, againPay) == -1, "已决审批必须显式拒绝")
+
+    // 负路径 2:未知 ID 必须拒绝且原因非空
+    let ghostPay = strdup(#"{"approvalID":"00000000-0000-0000-0000-00000000beef","approved":true}"#)
+    defer { free(ghostPay) }
+    #expect(opc_bridge_command(verb, ghostPay) == -1)
+    if let p = opc_bridge_last_error() {
+        let reason = String(cString: p)
+        opc_bridge_free(p)
+        #expect(!reason.isEmpty)
+    } else {
+        Issue.record("拒绝原因不得为空指针")
+    }
+}
+
 @Test func m3BridgeCHeaderMatchesSwiftExports() throws {
     // include 头与 @_cdecl 导出名同步:漏一个符号 = 宿主 dlsym 时才炸,
     // 这比编译期发现晚得多。source-gate 逐符号双向核对。

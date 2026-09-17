@@ -94,6 +94,14 @@ public func opc_bridge_destroy() {
     withBridgeLock { $0.store = nil }
 }
 
+/// Swift-test seam: the live store behind the C verbs, under the bridge
+/// lock. NOT part of the C ABI (no @_cdecl) — the six exported symbols and
+/// the header stay the single truth for hosts. Lets contract tests observe
+/// the store state that a verb was supposed to move.
+public func opcBridgeStoreForTests() -> CompanyStore? {
+    onMain { withBridgeLock { $0.store } }
+}
+
 /// Verbatim reason of the last refusal; "" when the last call succeeded.
 /// Free the result with opc_bridge_free.
 @_cdecl("opc_bridge_last_error")
@@ -183,6 +191,21 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     guard let idString = payload["approvalID"] as? String,
                           let approvalID = UUID(uuidString: idString) else {
                         throw OPCBridgeRefusal(message: "decide requires a UUID approvalID")
+                    }
+                    // decideApproval() is a silent no-op for unknown ids and
+                    // already-decided approvals (two bare guard-returns). A
+                    // boss double-tapping an approval row, or working from a
+                    // stale list, would get rc=0 while nothing changed — the
+                    // same shell/core drift product_select just closed. The
+                    // bridge checks the precondition and refuses explicitly.
+                    guard let approval = store.approvals.first(where: { $0.id == approvalID })
+                    else {
+                        throw OPCBridgeRefusal(
+                            message: "no approval with id \(idString) — the list may be stale")
+                    }
+                    guard approval.status == .pending else {
+                        throw OPCBridgeRefusal(
+                            message: "approval \(idString) already decided")
                     }
                     store.decideApproval(approvalID,
                                          approved: (payload["approved"] as? Bool) ?? false)
