@@ -73,6 +73,14 @@ let package = Package(
             dependencies: ["OPCCompanyCore"],
             path: "Sources/OPC"
         ),
+        // Release-asset companion: renders the pixel-workforce gallery to
+        // an animated GIF offscreen (no screen-recording TCC needed).
+        // Builds on macOS only (SwiftUI/SpriteKit core is macOS-gated).
+        .executableTarget(
+            name: "OPCDemoGif",
+            dependencies: ["OPCCompanyCore"],
+            path: "Sources/OPCDemoGif"
+        ),
         .testTarget(
             name: "OPCCompanyTests",
             dependencies: ["OPCCompanyCore"]
