@@ -42,7 +42,8 @@ public final class L10nEnvironment: ObservableObject {
     /// them from Picker.onChange instead made the rebuild use the stale bundle
     /// (UI showed the previous language / mixed Chinese and English).
     private static func applySideEffects(_ language: AppLanguage) {
-        L10nBundleOverride.select(language)
+        // v0.6.x / issue #10: both switch halves ride ONE door now.
+        OPCLocalization.select(language)
         AppStrings.sessionLanguage = language.resolving()
     }
 

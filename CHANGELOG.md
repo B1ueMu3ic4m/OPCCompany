@@ -3,6 +3,17 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- **Issue #10 closed — one door for the language switch** (`OPCLocalizationProviding`):
+  the bundle redirect and the session-string table no longer switch by name; every
+  surface speaks through `OPCLocalization`, and a platform without the ObjC runtime
+  drops in a dictionary-backed provider with one `use()` call. The swizzle stays
+  exactly where it was always confined (the guard test now polices the door file
+  too — no new platform coupling slipped in). `Text("中文")` call sites deliberately
+  untouched: the migration verdict is documented in OPCLocalizationProvider.swift.
+
 ## [0.6.0] - 2026-09-19
 
 ### Added

@@ -10,7 +10,7 @@ struct OPCCompanyApp: App {
     private var resolved: AppLanguage { lang.resolving() }
 
     init() {
-        L10nBundleOverride.install()
+        OPCLocalization.install()
     }
 
     var body: some Scene {
