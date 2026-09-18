@@ -5,8 +5,12 @@
  * OPCCompanyBridge dynamic library. Dart: use dart:ffi with these typedefs,
  * and free returned pointers with malloc.free (allocator pairs by contract).
  *
- * Threading (v1.1): safe to call from ANY host thread — the bridge hops to
- * the main queue internally. Avoid calling from a main-thread block that
+ * Threading (v1.2): safe to call from ANY host thread — the bridge hops to
+ * the main queue internally, which REQUIRES the host's main thread to keep
+ * servicing its queue while a worker call is in flight (every GUI does; a
+ * thread blocked in a sync wait does not — worker-thread calls then
+ * deadlock by design, pinned empirically by OPCBridgeThreadStormTests).
+ * Avoid calling from a main-thread block that
  * never drains (classic FFI deadlock hygiene).
  */
 #ifndef OPC_BRIDGE_H
