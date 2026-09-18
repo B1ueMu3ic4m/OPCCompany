@@ -12,7 +12,12 @@
 
 [English](#features) · [中文说明](README.zh-CN.md)
 
-<!-- Demo GIF pending: record the app window only (not full screen) -->
+<!-- Demo GIF: rendered offscreen by `swift run OPCDemoGif` from the
+shipping render code (OPCDemoStudio) — the same pixels the app draws. -->
+
+![The pixel workforce — every agent state visible at a glance](docs/media/pixel-workforce.gif)
+
+*Every employee state is a signal: thinking · typing · coding · blocked · **waiting for your approval** · shipped. All 100% local.*
 
 </div>
 
@@ -25,6 +30,20 @@ AI coding agents are powerful but **invisible**. You fire off tasks into termina
 **OPC Company turns your AI workflow into a company you can watch.** You are the boss. A CTO agent turns your one-line goal into a task graph. Specialist employees — product architect, UI designer, code engineer, reviewer, tester — execute in real terminals (Claude Code, Codex, Gemini CLI, or API models) inside a living 2D office. When something risky happens, it stops and asks you.
 
 Not a chat wrapper. Not a dashboard. A **company metaphor with real authority boundaries**: the boss decides, the CTO dispatches, employees execute, the system safeguards.
+
+## Why OPC Company (vs the others in this space)
+
+The "pixel office / AI workforce" space has a few open-source neighbors. They are genuinely good at *different shapes* of the same idea — here is an honest map so you can pick the right one fast:
+
+| | **OPC Company** | Session viewers (e.g. pixel-agents) | Docker-stack orchestrators (e.g. roboco) |
+|---|---|---|---|
+| What it is | A **company**: goals → CTO task graph → employees → approvals → deliveries, drawn as a living 2D office | Your agent terminals, animated as pixel characters | An enterprise-style org platform with agent cells |
+| Runs | Native macOS app · Windows shell · headless `opc` CLI — `brew install` one line | VS Code panel / `npx` browser tab | Docker + Postgres + Redis + web panel on :3000 |
+| Agents | Claude Code / Codex / Gemini CLI, per-employee backends | Claude Code today (others on roadmap) | Multiple CLIs via official binaries |
+| Boss authority | Approval gates, per-employee permissions, delivery acceptance — **you decide from the terminal or the GUI** | Watch + permission bubbles | Full org workflow (heavier setup) |
+| Install-to-first-employee | ~1 minute, zero servers | marketplace install (editor required) | `make quickstart` + compose stack |
+
+If you want to *watch* one Claude Code session play as pixel characters inside your editor, the viewers are delightful. If you want a **self-contained company that takes orders and ships work** — with you as the boss, on your machine, no infrastructure — that is exactly the niche OPC Company is built for. (And the GIF above is rendered by the app's own code — `swift run OPCDemoGif` — not a mockup.)
 
 ## Features
 
