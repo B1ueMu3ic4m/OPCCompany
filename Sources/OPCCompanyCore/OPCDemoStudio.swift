@@ -1,14 +1,15 @@
-import SwiftUI
-
-// ── Demo studio: the pixel-employee rig as a PURE function of (agent,
-// status, date), so marketing frames can be rendered offscreen (GIF via
-// `swift run OPCDemoGif`) without screen-recording permission and without
-// a running app. This is the same composition AgentDeskView builds around
-// TimelineView — duplicated deliberately (AgentDeskView's frames come
-// from a live clock that offscreen rendering can't drive). If the desk
-// layout changes there, change it here.
-
 #if canImport(SwiftUI)
+// Whole-file UI gate (windows.yml lesson — PR #92 re-proved it: the gate
+// must come BEFORE `import SwiftUI`). Demo studio: the pixel-employee rig
+// as a PURE function of (agent, status, date), so marketing frames can be
+// rendered offscreen (GIF via `swift run OPCDemoGif`) without
+// screen-recording permission and without a running app. This is the same
+// composition AgentDeskView builds around TimelineView — duplicated
+// deliberately (AgentDeskView's frames come from a live clock that
+// offscreen rendering can't drive). If the desk layout changes there,
+// change it here.
+
+import SwiftUI
 
 public enum OPCDemoStudio {
 
