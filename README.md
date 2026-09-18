@@ -101,6 +101,8 @@ swift build -c release --product opc
 .build/release/opc report                 # boss-readable progress report
 .build/release/opc approvals              # pending approvals, with their ids
 .build/release/opc decide <id> approve    # resolve one — refuses stale/double taps
+.build/release/opc products               # list every product workspace (current marked *)
+.build/release/opc use <id>               # select a product — same path as the GUI sidebar
 ```
 
 `opc` links only the portable core — it's also the first artifact on the
