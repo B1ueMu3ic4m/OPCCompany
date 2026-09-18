@@ -43,7 +43,7 @@ Windows target.
 M0  Platform-abstraction refactor (on macOS, no-regret)      ✅ CLOSED 2026-09-12
      ├─ SecretStore protocol + OPCAppPaths                    ✅ PR #7
      ├─ ProcessRunner wrapper (path/arg quoting on Windows)   ← open, #9
-     ├─ i18n: replace Bundle.main swizzle with a portable lookup ← open, #10
+     ├─ i18n: OPCLocalizationProviding door (bundle + table in one write)   ✅ #10 closed
      └─ Split core into OPCCompanyCore (no UI) + OPCCompanyUI (SwiftUI) ✅
         (shim chain proven layer-by-layer on real Windows CI:
          CryptoKit 60→0 · SwiftUI observation 76→0 · SQLite vendored 62→0 ·
@@ -59,7 +59,7 @@ M2  Route decision from M1 data:                               ✅ A = GO, execu
      │                                                (6 C symbols) + flutter_shell
      ├─ B) Full Flutter port — not needed; A's census was 2 modules, both
      │    with official replacements (swift-crypto, observation shim)
-     └─ C) Community-driven — still open for #9 / #10 (good-first-issue)
+     └─ C) Community-driven — still open for #9 (good-first-issue)
 ```
 
 Routes A and B are **not** mutually exclusive over time: B's Dart core can
@@ -78,7 +78,7 @@ If you have shipped Swift-on-Windows or Flutter-desktop projects:
 
 - **#9 ProcessRunner** — the one abstraction M0 deferred: CLI agents launch
   via `Process` in ~8 places; Windows needs `.cmd` resolution + quoting.
-- **#10 portable i18n** — replace the ObjC bundle swizzle with a protocol.
+- **#10 portable i18n** — CLOSED: the switch now rides one OPCLocalizationProviding door (OPCLocalizationProvider.swift); Apple keeps the confined swizzle behind it, any other platform drops in a dictionary provider via one use() call.
 - **Windows terminal hall** — the shell today is boss-operations only
   (goal/board/approvals); employee terminal seats need a cross-platform
   story (xterm.js embed is the candidate). Design discussion welcome.
