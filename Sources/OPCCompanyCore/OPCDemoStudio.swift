@@ -43,6 +43,19 @@ public enum OPCDemoStudio {
                 status: status, color: statusColor(for: status),
                 showsLabel: true, phase: statusPhase
             )
+            // The shipping waitingApproval bubble wears a click-affordance
+            // ring (WaitingApprovalRigHeader); mirror it so the marketing
+            // gallery doesn't show a hand the app can't click.
+            .overlay {
+                if status == .waitingApproval {
+                    PixelStatusCapsule(color: statusColor(for: status), phase: statusPhase)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 2)
+                                .stroke(CompanyTheme.ink.opacity(statusPhase ? 0.55 : 0.2), lineWidth: 1)
+                        )
+                        .allowsHitTesting(false)
+                }
+            }
             .frame(width: rigWidth, height: PixelWorkstationLayout.statusSafeZoneHeight)
             .zIndex(20)
 

@@ -380,6 +380,16 @@ static let agentMessageBodyTextLimit = 2_400
         selectedProductApprovals.filter { $0.status == .pending }
     }
 
+    /// The raised hands belonging to ONE employee in the current product.
+    /// Pure read for the office popover ("raise hand → approve"): the office
+    /// shows what this agent is waiting on, and decisions still flow only
+    /// through decideApprovalChecked — the same guarded door the CLI and the
+    /// Flutter shell use. Empty (not nil-carrying) for agents, ids or
+    /// products with nothing pending; resolved approvals never surface.
+    public func pendingApprovals(forAgent agentID: UUID) -> [ApprovalRequest] {
+        selectedProductPendingApprovals.filter { $0.requesterID == agentID }
+    }
+
     public var selectedProductResolvedApprovals: [ApprovalRequest] {
         selectedProductApprovals
             .filter { $0.status == .approved || $0.status == .rejected }

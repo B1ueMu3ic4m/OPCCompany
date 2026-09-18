@@ -1051,9 +1051,20 @@ struct AgentDeskView: View {
             let statusPhase = statusFrame.isMultiple(of: 2)
 
             VStack(spacing: PixelWorkstationLayout.verticalGap) {
-                PixelStatusHeader(status: agent.status, color: statusColor, showsLabel: showsStatusBubble, phase: statusPhase)
-                    .frame(width: rigWidth, height: PixelWorkstationLayout.statusSafeZoneHeight)
-                    .zIndex(20)
+                if agent.status == .waitingApproval {
+                    // "Raise hand → approve": the raised hand IS the button.
+                    // Same safe-zone frame as the plain header, so the desk
+                    // geometry never shifts across the status transition;
+                    // only the bubble's affordance changes (view keeps its
+                    // identity in the VStack — the bridgeWindow lesson).
+                    WaitingApprovalRigHeader(agent: agent, phase: statusPhase)
+                        .frame(width: rigWidth, height: PixelWorkstationLayout.statusSafeZoneHeight)
+                        .zIndex(20)
+                } else {
+                    PixelStatusHeader(status: agent.status, color: statusColor, showsLabel: showsStatusBubble, phase: statusPhase)
+                        .frame(width: rigWidth, height: PixelWorkstationLayout.statusSafeZoneHeight)
+                        .zIndex(20)
+                }
 
                 PixelWorkstationSprite(
                     agent: agent,
@@ -1170,6 +1181,129 @@ struct PixelStatusHeader: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+// ── "Raise hand → approve" (battle 3): the waitingApproval bubble is a
+// real button. Decisions flow ONLY through decideApprovalChecked — the
+// same guarded door the CLI (`opc decide`) and the Flutter shell use —
+// so a hand approved on another surface first refuses here with the one
+// shared wording, never a silent no-op.
+
+struct WaitingApprovalRigHeader: View {
+    @EnvironmentObject private var store: CompanyStore
+    let agent: CompanyAgent
+    let phase: Bool
+    @State private var showingPanel = false
+
+    var body: some View {
+        ZStack {
+            ActivityMarks(status: .waitingApproval, color: CompanyTheme.warning, phase: phase)
+                .frame(height: 24)
+                .offset(y: -9)
+
+            HStack(spacing: 6) {
+                Rectangle()
+                    .fill(CompanyTheme.warning)
+                    .frame(width: 5, height: 5)
+                Text(AgentStatus.waitingApproval.title)
+                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                    .foregroundStyle(CompanyTheme.ink)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(PixelStatusCapsule(color: CompanyTheme.warning, phase: phase))
+            .overlay(
+                RoundedRectangle(cornerRadius: 2)
+                    .stroke(CompanyTheme.ink.opacity(phase ? 0.55 : 0.2), lineWidth: 1)
+            )
+            .offset(y: 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture { showingPanel = true }
+        .popover(isPresented: $showingPanel, arrowEdge: .bottom) {
+            OfficeApprovalPopover(agent: agent)
+        }
+        .help(agent.status.title)
+    }
+}
+
+struct OfficeApprovalPopover: View {
+    @EnvironmentObject private var store: CompanyStore
+    let agent: CompanyAgent
+    @State private var refusal: String?
+
+    var body: some View {
+        // Read live from the store: if another surface (CLI/shell) decides
+        // first, the list here shrinks or empties on the next render.
+        let pending = store.pendingApprovals(forAgent: agent.id)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "hand.raised.fill")
+                    .foregroundStyle(CompanyTheme.warning)
+                Text(agent.displayName)
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                Spacer(minLength: 0)
+            }
+
+            if pending.isEmpty {
+                EmptyCommandLine(text: "当前没有需要老板批准的风险。".L())
+            } else {
+                ForEach(pending) { approval in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(approval.title)
+                            .font(.system(size: 12, weight: .semibold))
+                            .lineLimit(2)
+                        Text(approval.reason)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(CompanyTheme.muted)
+                            .lineLimit(3)
+                        HStack(spacing: 8) {
+                            Button {
+                                decide(approval.id, approved: true)
+                            } label: {
+                                Label("批准".L(), systemImage: "checkmark.circle.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(CompanyTheme.green)
+
+                            Button {
+                                decide(approval.id, approved: false)
+                            } label: {
+                                Label("驳回".L(), systemImage: "xmark.circle.fill")
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(CompanyTheme.red)
+                        }
+                    }
+                    .padding(10)
+                    .background(CompanyTheme.warning.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+
+            if let refusal {
+                Text(refusal)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(CompanyTheme.red)
+            }
+        }
+        .padding(12)
+        .frame(width: 300)
+        .background(CompanyTheme.panel)
+    }
+
+    private func decide(_ id: UUID, approved: Bool) {
+        do {
+            try store.decideApprovalChecked(id, approved: approved)
+            refusal = nil
+            // The hand drops on its own: agent status returns to work and
+            // the bubble reverts to the plain header next render.
+        } catch let error as ApprovalDecisionError {
+            refusal = error.bridgeReason(idString: id.uuidString)
+        } catch {
+            refusal = error.localizedDescription
+        }
     }
 }
 
