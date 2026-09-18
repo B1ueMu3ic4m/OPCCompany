@@ -43,10 +43,12 @@ void _useBigViewport(WidgetTester tester) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-/// write-verb commands only (post-#70 the UI also fires query verbs).
+/// write-verb commands only (the UI also fires query verbs: terminal_*,
+/// and since v0.6.0 the JSON-array ledger/approval doors).
+const _queryVerbs = {'terminal_digest', 'terminal_tail',
+    'approvals_list', 'history_list'};
 List<(String, Map<String, dynamic>)> writeCmds(FakeOpcBridge f) =>
-    f.commands.where((c) =>
-        !c.$1.startsWith('terminal_')).toList();
+    f.commands.where((c) => !_queryVerbs.contains(c.$1)).toList();
 
 void main() {
   testWidgets('renders the snapshot the bridge provides', (tester) async {
@@ -111,17 +113,21 @@ void main() {
     await tester.tap(find.text('Send'));
     await tester.pump();
 
-    expect(fake.commands, isEmpty); // never even reached the bridge
+    // never even reached the bridge as a WRITE — boot's ledger pull
+    // (history_list) is the only traffic allowed here, by construction.
+    expect(writeCmds(fake), isEmpty);
     expect(find.textContaining('goal: empty'), findsOneWidget);
   });
 
   testWidgets('goal refusal prints the core reason verbatim', (tester) async {
     _useBigViewport(tester);
-    final fake = FakeOpcBridge(initialSnapshot: _snap())
-      ..nextCommandResult = OpcBridge.refused
-      ..nextError = 'snapshot is shared with the desktop app';
+    final fake = FakeOpcBridge(initialSnapshot: _snap());
     await tester.pumpWidget(_app(fake.asBridge()));
     await tester.pumpAndSettle();
+    // arm AFTER boot settled: a query verb pulled during init would
+    // otherwise eat the one-shot rc before the goal command sees it
+    fake.nextCommandResult = OpcBridge.refused;
+    fake.nextError = 'snapshot is shared with the desktop app';
 
     await tester.enterText(find.byType(TextField), 'nope');
     await tester.tap(find.text('Send'));

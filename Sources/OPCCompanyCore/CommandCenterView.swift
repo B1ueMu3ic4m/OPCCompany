@@ -1018,6 +1018,7 @@ struct BossDecisionCenterSheet: View {
 }
 
 struct BossApprovalDecidedRow: View {
+    @EnvironmentObject private var store: CompanyStore
     let approval: ApprovalRequest
 
     var body: some View {
@@ -1044,6 +1045,11 @@ struct BossApprovalDecidedRow: View {
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundStyle(CompanyTheme.muted)
             }
+            // v0.6.0: the receipt names the hand — decided rows carry the
+            // same attribution line as pending ones.
+            Text("来自 ".L() + store.requesterDisplayName(for: approval))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(CompanyTheme.muted)
         }
         .padding(10)
         .background(badgeColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
@@ -1080,6 +1086,12 @@ struct BossApprovalRequestRow: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(CompanyTheme.muted)
                 .lineLimit(3)
+
+            // v0.6.0 receipt line: the raised hand has an owner — show
+            // WHO is waiting, not just what for.
+            Text("来自 ".L() + store.requesterDisplayName(for: approval))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(CompanyTheme.muted)
 
             HStack(spacing: 8) {
                 Button {

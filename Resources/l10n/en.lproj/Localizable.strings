@@ -2042,6 +2042,7 @@
 "来源" = "Source";
 "来源漂移：员工档案和当前会话的来源配置不一致" = "Source drift: employee dossier and current session source config differ";
 "来源：" = "Source: ";
+"来自 " = "From ";
 "构建原生 macOS SwiftUI/SpriteKit 外壳，并支持点击员工沟通。" = "Build the native macOS SwiftUI/SpriteKit shell with clickable employee conversations.";
 "架构" = "Architecture";
 "架构完成度" = "Architecture completeness";

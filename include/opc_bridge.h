@@ -74,6 +74,16 @@ char *opc_bridge_snapshot_json(void);
  *       cross-product leak structurally impossible). requesterID is the
  *       raising agent; absent when the core recorded no requester.
  *       Read-only: never mutates, never touches the writer guard.
+ *   "history_list" {}              (v1.4)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON array
+ *       [{"id":"<uuid>","title":"...","reason":"...","status":
+ *         "approved"|"rejected","decidedAt":<epoch-seconds>?,
+ *         "requesterID":"<uuid>"?}, ...] — the RESOLVED approvals of the
+ *       CURRENT product, newest-first (decidedAt, createdAt as fallback,
+ *       id as final tiebreak — the store's order, not a bridge guess),
+ *       capped at 50 rows so one reply can never outrun the smuggle
+ *       channel. decidedAt is absent only for pre-v0.6 legacy rows.
+ *       Read-only, same guard silence as approvals_list.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

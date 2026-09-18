@@ -68,6 +68,11 @@ class _CompanyHomeState extends State<CompanyHome> {
   final FocusNode _goalFocus = FocusNode();
   OpcSnapshot? _snap;
   String? _lastAction;
+  // v0.6.0 decision ledger (v1.4 history_list): event-driven exactly like
+  // transcripts — pulled at boot and after every _run verb, never in the
+  // paint path. Null = never answered (bridge too old or verb refused):
+  // the panel then honestly shows "no decisions logged yet", never a lie.
+  List<Map<String, dynamic>>? _history;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -89,6 +94,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _lastAction = 'bridge create failed: ${_bridge.lastError()}';
     } else {
       _snap = _bridge.snapshot();
+      _history = _bridge.historyList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -112,6 +118,7 @@ class _CompanyHomeState extends State<CompanyHome> {
   void _refresh() {
     setState(() {
       _snap = _bridge.snapshot();
+      _history = _bridge.historyList();
       _syncTranscripts();
     });
   }
@@ -170,6 +177,7 @@ class _CompanyHomeState extends State<CompanyHome> {
           ? '$label: ok'
           : '$label: refused — ${_bridge.lastError()}';
       _snap = _bridge.snapshot();
+      _history = _bridge.historyList();
       _syncTranscripts();
     });
   }
@@ -271,6 +279,10 @@ class _CompanyHomeState extends State<CompanyHome> {
 
   Widget _body(OpcSnapshot snap) {
     final pending = snap.pendingApprovals;
+    final history = _history ?? const <Map<String, dynamic>>[];
+    _rosterNames = {
+      for (final (id, name, _) in snap.roster) id.toLowerCase(): name
+    };
     final byStatus = snap.tasksByStatus;
     final running = (byStatus['running'] ?? []).length +
         (byStatus['assigned'] ?? []).length;
@@ -389,6 +401,36 @@ class _CompanyHomeState extends State<CompanyHome> {
                     ),
                   ),
               const SizedBox(height: 12),
+              // v0.6.0 "every hand leaves a receipt": the ledger the boss
+              // already wrote — pulled via history_list (bridge v1.4) on
+              // boot/refresh/after-verb, never per frame. An empty or
+              // unanswered ledger says so plainly; no fabricated history.
+              Text('Recent decisions',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              if (history.isEmpty)
+                const Card(
+                    child: ListTile(
+                        leading: Icon(Icons.receipt_long_outlined),
+                        title: Text('No decisions logged yet.')))
+              else
+                for (final row in history)
+                  Card(
+                    child: ListTile(
+                      leading: Icon(
+                        row['status'] == 'approved'
+                            ? Icons.check_circle_outline
+                            : Icons.cancel_outlined,
+                        color: row['status'] == 'approved'
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      title: Text(row['title'] as String? ?? '?'),
+                      subtitle: Text(_ledgerLine(row),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+              const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () => _run('advance', _bridge.advance),
                 icon: const Icon(Icons.fast_forward),
@@ -492,6 +534,35 @@ class _CompanyHomeState extends State<CompanyHome> {
     final n = snap.approvalCountsByRequester[id.toLowerCase()] ?? 0;
     return n > 1 ? ' ×$n' : '';
   }
+
+  /// Ledger subtitle: WHO asked · WHAT you decided · WHEN. Names come from
+  /// the roster the frame already holds (the bridge ships ids, not names —
+  /// one attribution door, same rule as the office and the command center).
+  /// A legacy row without decidedAt just omits the time; unknown/absent
+  /// requester says so rather than inventing an owner.
+  String _ledgerLine(Map<String, dynamic> row) {
+    final who = switch (row['requesterID']) {
+      final String id => rosterNameOf(id),
+      _ => 'unassigned',
+    };
+    final verdict = row['status'] == 'approved' ? 'approved' : 'rejected';
+    // local wall-clock, NOT toIso8601String (UTC — would drift 8h here):
+    // one honest clock face with the office and the command center.
+    String? when;
+    if (row['decidedAt'] is num) {
+      final d = DateTime.fromMillisecondsSinceEpoch(
+          (row['decidedAt'] as num).toInt() * 1000);
+      String two(int v) => v.toString().padLeft(2, '0');
+      when = '${d.year}-${two(d.month)}-${two(d.day)} '
+          '${two(d.hour)}:${two(d.minute)}';
+    }
+    return [who, verdict, if (when != null) when].join(' · ');
+  }
+
+  String rosterNameOf(String id) =>
+      _rosterNames?[id.toLowerCase()] ?? 'unknown employee';
+
+  Map<String, String>? _rosterNames;
 
   Widget _statusBar() => Material(
         elevation: 8,

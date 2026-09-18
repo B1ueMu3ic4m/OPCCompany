@@ -91,6 +91,9 @@ class FakeOpcBridge {
     final Object? carried = switch (verb) {
       'approvals_list' =>
         approvalsListResult ?? const [{'id': 'fake-approval', 'title': 't'}],
+      // v1.4 ledger rides the SAME array channel (same default rows)
+      'history_list' =>
+        approvalsListResult ?? const [{'id': 'fake-approval', 'title': 't'}],
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
       'terminal_tail' => tailResult ??
           {

@@ -1,7 +1,9 @@
 import Foundation
 
 extension Date {
-    var opcDateTimeText: String {
+    /// Public since v0.6.0: `opc history` formats timestamps through the
+    /// SAME door the GUI uses — one clock face across every surface.
+    public var opcDateTimeText: String {
         formatted(
             .dateTime
                 .locale(Locale(identifier: "zh_CN"))

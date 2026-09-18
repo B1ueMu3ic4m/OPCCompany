@@ -43,6 +43,9 @@ private func usage() -> String {
       opc decide <id> approve|reject
                                  resolve one pending approval (same store path
                                  as the GUI; refuses stale/double taps loudly)
+      opc history [n]            last decisions of the current product —
+                                 who asked, what you decided, when (default
+                                 10). Pure read: nothing here writes state.
       opc products               list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
@@ -100,6 +103,8 @@ struct OPC {
                 try approvals()
             case "decide":
                 try decide(rest)
+            case "history":
+                try history(rest)
             case "products":
                 try products()
             case "use":
@@ -248,6 +253,35 @@ struct OPC {
             }
             store.saveSnapshot()
             print(approved ? "Approved." : "Rejected.")
+        }
+    }
+
+    /// v0.6.0 "every hand leaves a receipt": the terminal's decision
+    /// ledger — newest first, each row time-stamped and attributed to the
+    /// employee who raised the hand. Read-only by construction (no
+    /// guardNoConcurrentWriter: nothing writes).
+    @MainActor
+    static func history(_ rest: [String]) throws {
+        var limit = 10
+        if let first = rest.first {
+            guard let parsed = Int(first), parsed > 0 else {
+                throw CLIError(message: "usage: opc history [n]  (n — a positive count, default 10)")
+            }
+            limit = parsed
+        }
+        try withStore { store in
+            let rows = store.selectedProductResolvedApprovals
+            if rows.isEmpty {
+                print("No decisions yet for \(store.selectedProduct?.name ?? "the selected product") — raised hands appear here once you approve or reject them.")
+                return
+            }
+            let shown = rows.prefix(limit)
+            print("Resolved approvals (\(shown.count) of \(rows.count)) — newest first:")
+            for a in shown {
+                let when = a.decidedAt.map { $0.opcDateTimeText } ?? "—"
+                print("  \(a.id.uuidString)  \(a.status.title)  \(when)  ← \(store.requesterDisplayName(for: a))")
+                print("    \(a.title) — \(a.reason)")
+            }
         }
     }
 
