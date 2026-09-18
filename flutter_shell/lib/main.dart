@@ -324,7 +324,8 @@ class _CompanyHomeState extends State<CompanyHome> {
                           ChoiceChip(
                             avatar: Icon(_agentIcon(status), size: 16),
                             selected: _selectedAgentID == id.toLowerCase(),
-                            label: Text('$name · $status'),
+                            label: Text(
+                                '$name · $status${_pendingBadge(snap, id, status)}'),
                             onSelected: (_) => setState(() {
                               _selectedAgentID = id.toLowerCase();
                               _syncTranscripts();
@@ -481,6 +482,16 @@ class _CompanyHomeState extends State<CompanyHome> {
         'reviewing' => Icons.fact_check,
         _ => Icons.person_outline,
       };
+
+  /// v0.5.0 "the office talks back", shell twin of the ×N hand-raise
+  /// badge: a waitingApproval employee with stacked requests shows the
+  /// count right on the roster chip. Derived from the snapshot the same
+  /// render already holds — zero extra bridge calls on the paint path.
+  String _pendingBadge(OpcSnapshot snap, String id, String status) {
+    if (status != 'waitingApproval') return '';
+    final n = snap.approvalCountsByRequester[id.toLowerCase()] ?? 0;
+    return n > 1 ? ' ×$n' : '';
+  }
 
   Widget _statusBar() => Material(
         elevation: 8,

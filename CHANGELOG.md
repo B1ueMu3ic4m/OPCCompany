@@ -12,6 +12,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   Approving or rejecting inside the popover flashes an honest ✅/❌ seal
   bound to the DECISION EVENT (not to status — the hand drops when the
   runtime moves on), self-expiring in 0.9 s, view-local state only.
+- **Bridge v1.3 — `approvals_list`**: a query verb (`{}` in, JSON array out
+  through the documented last_error channel, rc=0 on success) carrying the
+  CURRENT product's pending approvals — id/title/reason plus the optional
+  requesterID that links a request to its pixel person. Read-only: never
+  mutates, never touches the writer guard. Six-symbol ABI frozen; the
+  contract in `include/opc_bridge.h` documents the array shape.
+- **Shell twin (Flutter)**: `approvalsList()` wrapper (rc decides; torn or
+  malformed payloads fail closed — never partial rows) and the roster's
+  ×N badge over `waitingApproval` chips, derived from the snapshot the
+  frame already holds — zero extra bridge calls on the paint path. Same
+  rule as the office: a lone request shows no number.
+- ffi-e2e grows one behavioral check (`approvals_list answers as a list`),
+  live on macOS and Windows CI through the real C boundary.
 - **`opc products` / `opc use <id>`**: the CLI's product surface — list
   every workspace (current marked `*`) and switch selection through the
   SAME store path as the GUI sidebar (`selectProduct`: agent-team

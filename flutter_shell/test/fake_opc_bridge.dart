@@ -40,6 +40,11 @@ class FakeOpcBridge {
   /// scripted query payloads: set before terminal_digest()/terminalTail()
   Map<String, dynamic>? digestResult;
   Map<String, dynamic>? tailResult;
+  /// v1.3: approvals_list carries a JSON ARRAY (the only array verb).
+  List<dynamic>? approvalsListResult;
+  /// Raw text to smuggle INSTEAD of the JSON-encoded result (tear/truncate
+  /// simulation across the C boundary — nothing else can produce that).
+  String? rawCarryOverride;
 
   /// Fake default: query verbs ALWAYS answer with a JSON object (rc=0 +
   /// payload) — the wrapper contract (result-or-reason by rc) needs the
@@ -83,7 +88,9 @@ class FakeOpcBridge {
     if (rc != OpcBridge.ok) return rc; // preserve the scripted refusal text
     // query verbs carry results through nextError exactly like the bridge
     // does (rc=0 + last_error = payload) — the wrapper's contract test
-    final carried = switch (verb) {
+    final Object? carried = switch (verb) {
+      'approvals_list' =>
+        approvalsListResult ?? const [{'id': 'fake-approval', 'title': 't'}],
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
       'terminal_tail' => tailResult ??
           {
@@ -94,7 +101,7 @@ class FakeOpcBridge {
       _ => null,
     };
     if (carried != null) {
-      nextError = jsonEncode(carried);
+      nextError = rawCarryOverride ?? jsonEncode(carried);
     }
     return rc;
   }

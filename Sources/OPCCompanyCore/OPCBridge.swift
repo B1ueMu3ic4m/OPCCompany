@@ -223,6 +223,25 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     }
                     try OPCWriteGuard.ensureExclusiveAccess()
                     store.selectProduct(productID)
+                case "approvals_list":
+                    // Query (v1.3): every pending approval of the CURRENT
+                    // product — the shell's approval surface reads this so
+                    // "the office talks back" works without a window server.
+                    // Same payload channel as terminal_digest: JSON via
+                    // last_error, 0 = success. requesterID lets the shell
+                    // link a request to its pixel person; the roster
+                    // already maps id→name there.
+                    let pending = store.selectedProductPendingApprovals
+                    let rows: [[String: Any]] = pending.map { a in
+                        var row: [String: Any] = ["id": a.id.uuidString,
+                                                  "title": a.title,
+                                                  "reason": a.reason]
+                        if let r = a.requesterID { row["requesterID"] = r.uuidString }
+                        return row
+                    }
+                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "terminal_digest":
                     // Query: byte lengths per agent log of the selected
                     // product, keyed by agentID (the storage key's suffix —
