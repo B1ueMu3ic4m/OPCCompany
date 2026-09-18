@@ -477,11 +477,11 @@ class _CompanyHomeState extends State<CompanyHome> {
       };
 
   IconData _agentIcon(String status) => switch (status) {
-    'coding' => Icons.code,
-    'thinking' => Icons.psychology,
-    'reviewing' => Icons.fact_check,
-    _ => Icons.person_outline,
-  };
+        'coding' => Icons.code,
+        'thinking' => Icons.psychology,
+        'reviewing' => Icons.fact_check,
+        _ => Icons.person_outline,
+      };
 
   /// v0.5.0 "the office talks back", shell twin of the ×N hand-raise
   /// badge: a waitingApproval employee with stacked requests shows the
