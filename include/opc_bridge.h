@@ -66,6 +66,14 @@ char *opc_bridge_snapshot_json(void);
  *       rewound to that codepoint's start. Resume with nextOffset for exact
  *       concatenation. A length-only digest detects growth/shrink, not a
  *       same-length replacement; full snapshots still include the logs.
+ *   "approvals_list" {}            (v1.3)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON array
+ *       [{"id":"<uuid>","title":"...","reason":"...",
+ *         "requesterID":"<uuid>"?}, ...] — the pending approvals of the
+ *       CURRENT product (product scope filter-locked inside the store,
+ *       cross-product leak structurally impossible). requesterID is the
+ *       raising agent; absent when the core recorded no requester.
+ *       Read-only: never mutates, never touches the writer guard.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

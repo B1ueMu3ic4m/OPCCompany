@@ -78,6 +78,18 @@ class OpcSnapshot {
           (selectedProductID == null || a['productID'] == selectedProductID))
       .toList();
 
+  /// v0.5.0: pending count per raising agent (requesterID → N), the shell
+  /// twin of the office's ×N hand-raise badge. Keyed lowercase to match
+  /// the roster's selection convention; unattributed rows count nowhere.
+  Map<String, int> get approvalCountsByRequester {
+    final counts = <String, int>{};
+    for (final a in pendingApprovals) {
+      final r = (a['requesterID'] as String?)?.toLowerCase();
+      if (r != null && r.isNotEmpty) counts[r] = (counts[r] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   /// tasks of the selected product grouped by their status rawValue.
   Map<String, List<Map<String, dynamic>>> get tasksByStatus {
     final grouped = <String, List<Map<String, dynamic>>>{};
@@ -242,6 +254,23 @@ class OpcBridge {
       result[entry.key] = length;
     }
     return result;
+  }
+
+  /// v1.3 query: the current product's pending approvals — the same rows
+  /// the SwiftUI popover reads, without re-fetching the full snapshot.
+  /// Malformed JSON returns null (never a partial list).
+  List<Map<String, dynamic>>? approvalsList() {
+    if (command('approvals_list') != ok) return null;
+    final source = lastError();
+    if (source.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(source);
+      if (decoded is! List) return null;
+      final rows = decoded.whereType<Map<String, dynamic>>().toList();
+      return rows.length == decoded.length ? rows : null;
+    } on FormatException {
+      return null;
+    }
   }
 
   /// Window of one agent's transcript from [afterOffset].

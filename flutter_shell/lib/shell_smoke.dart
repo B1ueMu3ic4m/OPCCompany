@@ -90,6 +90,19 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
   // smuggling round-trips on the host platform (Windows CI included).
   final digest = bridge.terminalDigest();
   add('terminal_digest answers', digest != null);
+
+  // v1.3 approvals_list: the shell's own boss-queue rows, pulled without
+  // re-fetching the snapshot. Read-only and product-scoped by contract —
+  // safe on the live copy. Shape must be a list whose entries all carry
+  // an id (the wrapper already refuses a malformed payload as null).
+  final approvals = bridge.approvalsList();
+  add(
+      'approvals_list answers as a list',
+      approvals != null &&
+          approvals.every((a) => (a['id'] as String?)?.isNotEmpty == true),
+      bridge.lastError().length > 200
+          ? '(${bridge.lastError().length} bytes)'
+          : bridge.lastError());
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

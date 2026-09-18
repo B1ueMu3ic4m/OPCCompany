@@ -10,6 +10,7 @@ Map<String, dynamic> _snap({
   String selectedProductID = 'P1',
   int taskCount = 3,
   List<Map<String, dynamic>> approvals = const [],
+  List<Map<String, dynamic>>? agents,
 }) {
   return {
     'schemaVersion': 14,
@@ -21,7 +22,7 @@ Map<String, dynamic> _snap({
       for (var i = 0; i < taskCount; i++)
         {'id': 'T$i', 'productID': 'P1', 'title': 'Task $i', 'status': i == 0 ? 'running' : 'planned'}
     ],
-    'agents': [
+    'agents': agents ?? [
       {'id': 'A1', 'displayName': 'Eve', 'status': 'coding'},
       {'id': 'A2', 'displayName': 'Adam', 'status': 'idle'},
     ],
@@ -245,5 +246,35 @@ void main() {
     // and the refetch started from 0, not the stale cursor
     final lastTail = fake.commands.lastWhere((c) => c.$1 == 'terminal_tail');
     expect(lastTail.$2['afterOffset'], 0);
+  });
+
+  testWidgets('v0.5.0 badge: a waitingApproval employee with stacked '
+      'requests shows ×N on the roster chip — a plain or single-request '
+      'employee never does', (tester) async {
+    _useBigViewport(tester);
+    final fake = FakeOpcBridge(initialSnapshot: _snap(
+      agents: [
+        {'id': 'A1', 'displayName': 'Eve', 'status': 'waitingApproval'},
+        {'id': 'A2', 'displayName': 'Adam', 'status': 'waitingApproval'},
+        {'id': 'A3', 'displayName': 'Ivan', 'status': 'idle'},
+      ],
+      approvals: [
+        // Eve stacks two (requesterIDs vary in case on purpose — the
+        // roster's ids are lowercase-matched); Adam has one — a lone
+        // request is already obvious from the raised hand, no badge.
+        {'id': 'AP1', 'productID': 'P1', 'title': 'One', 'status': 'pending',
+         'requesterID': 'A1'},
+        {'id': 'AP2', 'productID': 'P1', 'title': 'Two', 'status': 'pending',
+         'requesterID': 'a1'},
+        {'id': 'AP3', 'productID': 'P1', 'title': 'Solo', 'status': 'pending',
+         'requesterID': 'A2'},
+      ],
+    ));
+    await tester.pumpWidget(_app(fake.asBridge()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Eve · waitingApproval ×2'), findsOneWidget);
+    expect(find.text('Adam · waitingApproval'), findsOneWidget); // single: no badge
+    expect(find.text('Ivan · idle'), findsOneWidget);
   });
 }
