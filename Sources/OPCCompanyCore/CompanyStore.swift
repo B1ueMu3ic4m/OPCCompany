@@ -390,6 +390,16 @@ static let agentMessageBodyTextLimit = 2_400
         selectedProductPendingApprovals.filter { $0.requesterID == agentID }
     }
 
+    /// v0.6.0 "every hand leaves a receipt": WHO asked, in one line.
+    /// Shared by the command-center rows, `opc history` and the bridge's
+    /// history verb, so attribution reads identically everywhere. Pure
+    /// lookup — a missing requester says "unassigned", a stale id says
+    /// "unknown employee"; neither fabricates an owner.
+    public func requesterDisplayName(for approval: ApprovalRequest) -> String {
+        guard let id = approval.requesterID else { return "未分配".L() }
+        return agents.first { $0.id == id }?.displayName ?? "未知员工".L()
+    }
+
     public var selectedProductResolvedApprovals: [ApprovalRequest] {
         selectedProductApprovals
             .filter { $0.status == .approved || $0.status == .rejected }

@@ -3,6 +3,28 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Every hand leaves a receipt (v0.6.0)**: attribution is now one shared
+  door — `requesterDisplayName(for:)` — and both command-center row types
+  (pending AND decided) print "From <employee>" through it. A missing
+  requester says "unassigned", a stale id says "unknown employee": neither
+  surface ever fabricates an owner.
+- **`opc history [n]`**: the terminal's decision ledger — resolved
+  approvals of the current product, newest first, each row timestamped and
+  attributed to who asked (default 10, `n` truncates and says so). Pure
+  read by construction: the subprocess test asserts the snapshot bytes do
+  not move across a call.
+- **Bridge v1.4 — `history_list`**: the ledger over the C ABI, capped at
+  50 rows (decidedAt + status + requesterID ride along) so one reply can
+  never outrun the smuggle channel; the unknown-verb hole stays shut next
+  to the new case (contract-tested both ways). The Flutter shell grew a
+  "Recent decisions" panel on the same door — pulled at boot, refresh and
+  after every verb, never per frame — with roster-name attribution and a
+  local wall-clock (UTC drift was caught mid-review). ffi-e2e checks grew
+  to 19 with the live-ABI ledger shape pin.
+
 ## [0.5.0] - 2026-09-18
 
 ### Added

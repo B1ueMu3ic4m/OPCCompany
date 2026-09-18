@@ -69,4 +69,22 @@ void main() {
     expect(bridge.approvalsList()?.length, 1);
     expect(fake.unfreed, isEmpty);
   });
+
+  test('historyList shares the array door (v1.4): rc decides, same '
+      'fail-closed rules, and it issues its OWN verb', () {
+    final fake = FakeOpcBridge();
+    final bridge = fake.asBridge();
+    fake.approvalsListResult = [
+      {'id': 'AP1', 'title': 'One', 'status': 'approved', 'decidedAt': 1700000000.0},
+      {'id': 'AP2', 'title': 'Two', 'status': 'rejected'},
+    ];
+    final rows = bridge.historyList();
+    expect(rows, isNotNull);
+    expect(rows!.length, 2);
+    expect(fake.commands.last.$1, 'history_list'); // not approvals_list
+    // a torn ledger payload refuses wholesale, exactly like approvals_list
+    fake.rawCarryOverride = '[{"id": ';
+    expect(bridge.historyList(), isNull);
+    expect(fake.unfreed, isEmpty);
+  });
 }

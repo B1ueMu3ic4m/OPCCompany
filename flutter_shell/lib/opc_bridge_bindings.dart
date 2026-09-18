@@ -259,8 +259,19 @@ class OpcBridge {
   /// v1.3 query: the current product's pending approvals — the same rows
   /// the SwiftUI popover reads, without re-fetching the full snapshot.
   /// Malformed JSON returns null (never a partial list).
-  List<Map<String, dynamic>>? approvalsList() {
-    if (command('approvals_list') != ok) return null;
+  List<Map<String, dynamic>>? approvalsList() =>
+      _listVerb('approvals_list');
+
+  /// v1.4 decision ledger: RESOLVED approvals of the current product,
+  /// newest-first, capped at 50 by the bridge. Each row: id/title/reason/
+  /// status/approved|rejected, decidedAt (epoch seconds, absent for legacy
+  /// rows), requesterID (absent when the core recorded no asker). Read-only.
+  List<Map<String, dynamic>>? historyList() => _listVerb('history_list');
+
+  /// The JSON-array verbs' shared door (v1.3/v1.4): rc decides, a torn or
+  /// malformed payload refuses WHOLESALE — half a list is worse than none.
+  List<Map<String, dynamic>>? _listVerb(String verb) {
+    if (command(verb) != ok) return null;
     final source = lastError();
     if (source.isEmpty) return null;
     try {

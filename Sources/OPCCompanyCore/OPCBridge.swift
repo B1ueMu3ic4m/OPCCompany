@@ -242,6 +242,25 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try JSONSerialization.data(withJSONObject: rows)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "history_list":
+                    // Query (v1.4): the decision ledger — RESOLVED approvals
+                    // of the CURRENT product, newest-first, capped (see the
+                    // .h contract). Each row carries decidedAt + status +
+                    // requesterID, so every surface can show WHO asked and
+                    // what the boss decided. Same smuggle as approvals_list;
+                    // read-only by construction.
+                    let rows: [[String: Any]] = store.selectedProductResolvedApprovals.prefix(50).map { a in
+                        var row: [String: Any] = ["id": a.id.uuidString,
+                                                  "title": a.title,
+                                                  "reason": a.reason,
+                                                  "status": a.status.rawValue]
+                        if let d = a.decidedAt { row["decidedAt"] = d.timeIntervalSince1970 }
+                        if let r = a.requesterID { row["requesterID"] = r.uuidString }
+                        return row
+                    }
+                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "terminal_digest":
                     // Query: byte lengths per agent log of the selected
                     // product, keyed by agentID (the storage key's suffix —

@@ -103,6 +103,21 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       bridge.lastError().length > 200
           ? '(${bridge.lastError().length} bytes)'
           : bridge.lastError());
+  // v1.4 history_list: the decision ledger — same door, same rules. An
+  // EMPTY ledger is a valid answer (a young company has decided nothing
+  // yet), so this pins shape + row integrity, not row count; the newest-
+  // first ORDER is store-pinned on the Swift side and the cap rides the
+  // .h contract. decidedAt/requesterID are optional fields by contract.
+  final ledger = bridge.historyList();
+  add(
+      'history_list answers as a list',
+      ledger != null &&
+          ledger.every((r) =>
+              (r['id'] as String?)?.isNotEmpty == true &&
+              ['approved', 'rejected'].contains(r['status'])),
+      bridge.lastError().length > 200
+          ? '(${bridge.lastError().length} bytes)'
+          : bridge.lastError());
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;
