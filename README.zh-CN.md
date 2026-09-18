@@ -88,6 +88,8 @@ swift build -c release --product opc
 .build/release/opc report                 # 老板视角进度报告
 .build/release/opc approvals              # 待批审批,带各自 id
 .build/release/opc decide <id> approve    # 批复一条——过期/双击会被明确拒绝
+.build/release/opc products               # 列出全部产品工作区(当前项带 * 标记)
+.build/release/opc use <id>               # 切换选中产品——与 GUI 侧栏同一条路径
 ```
 
 `opc` 只链接可移植核心层——它也是 Windows 移植路径上的第一个产物:逻辑层自

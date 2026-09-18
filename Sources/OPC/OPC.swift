@@ -43,6 +43,9 @@ private func usage() -> String {
       opc decide <id> approve|reject
                                  resolve one pending approval (same store path
                                  as the GUI; refuses stale/double taps loudly)
+      opc products               list all products (ids included)
+      opc use <id>               switch the selected product (same store path
+                                 as the GUI sidebar; unknown ids refused)
 
     All commands read and write the same local company snapshot the desktop app
     uses, so CLI and GUI stay in sync. State lives under the OPC app-support
@@ -97,6 +100,10 @@ struct OPC {
                 try approvals()
             case "decide":
                 try decide(rest)
+            case "products":
+                try products()
+            case "use":
+                try use(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -241,6 +248,35 @@ struct OPC {
             }
             store.saveSnapshot()
             print(approved ? "Approved." : "Rejected.")
+        }
+    }
+
+    @MainActor
+    static func products() throws {
+        try withStore { store in
+            print("Products (\(store.products.count)) — switch with: opc use <id>")
+            for p in store.products {
+                let marker = p.id == store.selectedProductID ? "*" : " "
+                print("  \(marker) \(p.id.uuidString)  \(p.name)  [\(p.stage.title)]")
+            }
+        }
+    }
+
+    @MainActor
+    static func use(_ rest: [String]) throws {
+        guard rest.count == 1, let productID = UUID(uuidString: rest[0]) else {
+            throw CLIError(message: "usage: opc use <product-id>  (ids from: opc products)")
+        }
+        try guardNoConcurrentWriter()
+        try withStore { store in
+            // Same rule as the bridge's product_select verb: selectProduct()
+            // would be a silent no-op on an unknown id — upgrade to refusal.
+            guard store.products.contains(where: { $0.id == productID }) else {
+                throw CLIError(message: "no product with id \(rest[0]) — run: opc products")
+            }
+            store.selectProduct(productID)
+            store.saveSnapshot()
+            print("Now working on: \(store.selectedProduct?.name ?? rest[0])")
         }
     }
 }

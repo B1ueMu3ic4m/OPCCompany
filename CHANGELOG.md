@@ -3,6 +3,17 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **`opc products` / `opc use <id>`**: the CLI's product surface — list
+  every workspace (current marked `*`) and switch selection through the
+  SAME store path as the GUI sidebar (`selectProduct`: agent-team
+  restart + save). Unknown ids refuse with guidance — the bridge's
+  product_select rule made terminal, so a no-op can never masquerade as
+  a switch. Subprocess regression on the real binary (list→switch→
+  disk-verify→ghost→junk), state-neutral by construction.
+
 ## [0.4.0] - 2026-09-18
 
 ### Added
