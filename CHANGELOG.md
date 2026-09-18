@@ -3,10 +3,10 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.5.0] - 2026-09-18
 
 ### Added
-- **The office talks back (v0.5.0 M1)**: a raised hand now COUNTS itself —
+- **The office talks back**: a raised hand now COUNTS itself —
   when an employee stacks more than one pending approval, the waitingApproval
   bubble wears a `×N` badge (derived read, zero new mutation surface).
   Approving or rejecting inside the popover flashes an honest ✅/❌ seal
@@ -415,6 +415,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Homebrew tap installation (`brew install --cask B1ueMu3ic4m/tap/opc-company`)
 - 568 tests, MIT license, issue templates, contributing guide
 
+[Unreleased]: https://github.com/B1ueMu3ic4m/OPCCompany/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.5.0
 [0.4.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.4.0
 [0.3.3]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.3
 [0.3.2]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.2
