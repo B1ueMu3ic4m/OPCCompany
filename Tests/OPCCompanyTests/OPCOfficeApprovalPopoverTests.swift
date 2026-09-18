@@ -77,4 +77,13 @@ private func loadCompanySceneSource() throws -> String {
     #expect(!scene.contains("store.decideApproval("), "the office must never bypass the guarded facade")
     // refusal wording surfaces verbatim from the shared error, not a local copy
     #expect(scene.contains("error.bridgeReason(idString: id.uuidString)"))
+    // v0.5.0 badge: the raised hand counts itself when >1 (derived read,
+    // plain decoration stays plain — no badge for a single request)
+    #expect(scene.contains("let pendingCount = store.pendingApprovals(forAgent: agent.id).count"))
+    #expect(scene.contains("if pendingCount > 1"))
+    // v0.5.0 feedback: flash bound to the decision event; the Swift 6.4
+    // shadowing hazard is pinned so a "cleanup" can't re-introduce it
+    #expect(scene.contains("if let flash = feedback"))
+    #expect(scene.contains("feedback = (title: title, approved: approved)"))
+    #expect(!scene.contains("if let feedback {"), "task closures must not shadow feedback (compiler assertion)")
 }

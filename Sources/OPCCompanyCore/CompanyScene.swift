@@ -1197,6 +1197,10 @@ struct WaitingApprovalRigHeader: View {
     @State private var showingPanel = false
 
     var body: some View {
+        // Hand-raise badge: "what does this person want FROM ME" should be
+        // answerable at a glance across the room, not only after a click.
+        // Derived read (zero mutation); plain decoration when ≤1.
+        let pendingCount = store.pendingApprovals(forAgent: agent.id).count
         ZStack {
             ActivityMarks(status: .waitingApproval, color: CompanyTheme.warning, phase: phase)
                 .frame(height: 24)
@@ -1217,6 +1221,17 @@ struct WaitingApprovalRigHeader: View {
                 RoundedRectangle(cornerRadius: 2)
                     .stroke(CompanyTheme.ink.opacity(phase ? 0.55 : 0.2), lineWidth: 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if pendingCount > 1 {
+                    Text("\(pendingCount)")
+                        .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(CompanyTheme.ink)
+                        .padding(.horizontal, 3)
+                        .padding(.vertical, 1)
+                        .background(CompanyTheme.warning, in: RoundedRectangle(cornerRadius: 2))
+                        .offset(x: 5, y: -5)
+                }
+            }
             .offset(y: 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1233,6 +1248,11 @@ struct OfficeApprovalPopover: View {
     @EnvironmentObject private var store: CompanyStore
     let agent: CompanyAgent
     @State private var refusal: String?
+    // Feedback animation bound to the DECISION EVENT, not to status:
+    // the hand itself drops when the runtime moves on (could be later),
+    // so the only honest "it worked" signal is a flash on tap. Local
+    // @State only — the snapshot never learns it existed.
+    @State private var feedback: (title: String, approved: Bool)?
 
     var body: some View {
         // Read live from the store: if another surface (CLI/shell) decides
@@ -1261,7 +1281,7 @@ struct OfficeApprovalPopover: View {
                             .lineLimit(3)
                         HStack(spacing: 8) {
                             Button {
-                                decide(approval.id, approved: true)
+                                decide(approval.id, approved: true, title: approval.title)
                             } label: {
                                 Label("批准".L(), systemImage: "checkmark.circle.fill")
                             }
@@ -1269,7 +1289,7 @@ struct OfficeApprovalPopover: View {
                             .tint(CompanyTheme.green)
 
                             Button {
-                                decide(approval.id, approved: false)
+                                decide(approval.id, approved: false, title: approval.title)
                             } label: {
                                 Label("驳回".L(), systemImage: "xmark.circle.fill")
                             }
@@ -1287,16 +1307,40 @@ struct OfficeApprovalPopover: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(CompanyTheme.red)
             }
+
+            if let flash = feedback {
+                // flash on the successful decision, then self-expire.
+                // NOTE: bind to `flash` and never reference the shadowed
+                // `feedback` inside the task closure — Swift 6.4's lazy
+                // ViewBuilder typecheck asserts on that (TypeCheckDecl
+                // .cpp:2766, seen live 2026-09-18).
+                HStack(spacing: 6) {
+                    Image(systemName: flash.approved ? "checkmark.seal.fill" : "xmark.seal.fill")
+                        .foregroundStyle(flash.approved ? CompanyTheme.green : CompanyTheme.red)
+                    Text(flash.title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(CompanyTheme.ink)
+                }
+                .transition(.opacity)
+                .task {
+                    try? await Task.sleep(for: .milliseconds(900))
+                    if self.feedback?.title == flash.title { self.feedback = nil }
+                }
+            }
         }
         .padding(12)
         .frame(width: 300)
         .background(CompanyTheme.panel)
     }
 
-    private func decide(_ id: UUID, approved: Bool) {
+    private func decide(_ id: UUID, approved: Bool, title: String) {
         do {
             try store.decideApprovalChecked(id, approved: approved)
             refusal = nil
+            // Honest "it worked": flash the decision, then it self-expires.
+            withAnimation(.easeIn(duration: 0.15)) {
+                feedback = (title: title, approved: approved)
+            }
             // The hand drops on its own: agent status returns to work and
             // the bubble reverts to the plain header next render.
         } catch let error as ApprovalDecisionError {

@@ -44,8 +44,9 @@ public enum OPCDemoStudio {
                 showsLabel: true, phase: statusPhase
             )
             // The shipping waitingApproval bubble wears a click-affordance
-            // ring (WaitingApprovalRigHeader); mirror it so the marketing
-            // gallery doesn't show a hand the app can't click.
+            // ring (WaitingApprovalRigHeader) and — when several requests
+            // stack up — a count badge. Mirror both; the "2" here is demo
+            // data (the gallery has no store), the SHAPE is the app's.
             .overlay {
                 if status == .waitingApproval {
                     PixelStatusCapsule(color: statusColor(for: status), phase: statusPhase)
@@ -53,6 +54,15 @@ public enum OPCDemoStudio {
                             RoundedRectangle(cornerRadius: 2)
                                 .stroke(CompanyTheme.ink.opacity(statusPhase ? 0.55 : 0.2), lineWidth: 1)
                         )
+                        .overlay(alignment: .topTrailing) {
+                            Text("2")
+                                .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                                .foregroundStyle(CompanyTheme.ink)
+                                .padding(.horizontal, 3)
+                                .padding(.vertical, 1)
+                                .background(CompanyTheme.warning, in: RoundedRectangle(cornerRadius: 2))
+                                .offset(x: 5, y: -5)
+                        }
                         .allowsHitTesting(false)
                 }
             }
