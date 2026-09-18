@@ -5,14 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-09-18
+
 ### Added
-- **Bridge thread-storm regression** (`OPCBridgeThreadStormTests`): 8 worker
-  threads hammer the C ABI (snapshot/save/digest/bogus interleaved) while
-  the host main queue pumps — the real GUI-host shape. Proves serialized,
-  un-torn responses under concurrency and pins the lastError-slot bound.
-- **Boundary stress**: a ~2 MB terminal log (append cost, digest
-  measuring-not-copying, snapshot round-trip) and a 100-product company
-  (real `addProductWorkspace` path, selection sweep, save/load).
 - **`opc approvals` / `opc decide <id> approve|reject`**: the CLI gains the
   boss approval surface — list what waits for you, resolve it from a
   terminal, through the SAME checked store path as the bridge verb (one
@@ -22,21 +17,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   snapshot copy: list→approve→double-decide→ghost-id→junk-args, asserting
   state actually moved on disk, not just on stdout.
 
-### Changed
-- **C-ABI threading contract v1.2**: the storm pinned the precondition the
-  v1.1 wording left implicit — worker-thread calls require the host's main
-  thread to KEEP SERVICING its queue (every GUI does; a main thread parked
-  in a sync wait deadlocks by design). Now spelled out in `opc_bridge.h`.
-
 ### Fixed
-- **`decide` verb refused silent no-ops (night audit R1)**: the store's
-  `decideApproval` returns quietly for unknown ids AND already-decided
-  approvals, so a boss double-tapping an approval row (or acting on a
-  stale list) got `rc=0` while nothing changed. The bridge now checks the
-  precondition and refuses with a reason — same drift class as
-  `product_select`, closed the same way: contract test red→green on both
-  sides of the ABI plus a state-free behavior check in the shell smoke
-  across the real C boundary.
+- **`decide` verb refused silent no-ops**: the store's `decideApproval`
+  returns quietly for unknown ids AND already-decided approvals, so a
+  boss double-tap or an out-of-date approval list got `rc=0` while
+  nothing changed. The bridge now checks the precondition and refuses
+  with a reason — the same drift class `product_select` closed in
+  v0.3.2, closed the same way: contract tests red→green on both sides
+  of the ABI plus a state-free behavior check in the shell smoke (real
+  C boundary, ghost-id refusal, zero side effects).
+
+### Changed
+- **C-ABI threading contract v1.2**: a new 8-thread storm test (960
+  interleaved calls, snapshot/save/digest/bogus) finally exercised the
+  main-queue hop path every previous @MainActor test short-circuited —
+  and pinned two truths now written into `opc_bridge.h`: worker-thread
+  calls require a host that keeps servicing its main queue (every GUI
+  does; a main thread parked in a sync wait deadlocks by contract, not
+  defect), and refusal reasons arrive atomically through the
+  lastError-slot race. New boundary suite covers a ~2 MB terminal log
+  and a 100-product company (append cost, digest measure-not-copy,
+  save/load round-trips), both state-neutral.
 
 ## [0.3.2] - 2026-09-17
 
@@ -355,6 +356,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Homebrew tap installation (`brew install --cask B1ueMu3ic4m/tap/opc-company`)
 - 568 tests, MIT license, issue templates, contributing guide
 
+[0.3.3]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.3
 [0.3.2]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.2
 [0.3.1]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.1
 [0.3.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.3.0
