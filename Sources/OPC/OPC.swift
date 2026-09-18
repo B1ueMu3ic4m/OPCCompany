@@ -32,7 +32,7 @@ struct CLIError: Error { let message: String }
 
 private func usage() -> String {
     """
-    opc — run your local AI company from the terminal. (v0.5.0)
+    opc — run your local AI company from the terminal. (v0.6.0)
 
     USAGE:
       opc status                 company snapshot (products, team, tasks, approvals)
@@ -90,7 +90,7 @@ struct OPC {
             case "help", "--help", "-h":
                 print(usage())
             case "version", "--version":
-                print("opc 0.5.0")
+                print("opc 0.6.0")
             case "status":
                 try status()
             case "goal":
