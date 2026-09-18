@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **The office talks back (v0.5.0 M1)**: a raised hand now COUNTS itself —
+  when an employee stacks more than one pending approval, the waitingApproval
+  bubble wears a `×N` badge (derived read, zero new mutation surface).
+  Approving or rejecting inside the popover flashes an honest ✅/❌ seal
+  bound to the DECISION EVENT (not to status — the hand drops when the
+  runtime moves on), self-expiring in 0.9 s, view-local state only.
 - **`opc products` / `opc use <id>`**: the CLI's product surface — list
   every workspace (current marked `*`) and switch selection through the
   SAME store path as the GUI sidebar (`selectProduct`: agent-team
