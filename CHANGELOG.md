@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **"Raise hand → approve"**: a waitingApproval employee's raised-hand
+  bubble in the office is now a BUTTON, not decoration. One click opens
+  that person's pending approvals (title + reason) and the boss decides
+  right there in the pixel view. Decisions flow exclusively through the
+  guarded `decideApprovalChecked` door — same rule, same refusal wording
+  as `opc decide` and the Flutter shell — so a hand already decided on
+  another surface refuses loudly instead of a silent no-op, and the list
+  reads the store live (shrinks/empties as others act). The desk's
+  safe-zone geometry is identical across the status transition (pinned
+  by the shape-contract test), so no workstation ever jumps.
+  `pendingApprovals(forAgent:)` is the query's whole new store surface:
+  pure read, product-scoped, never mutates.
+- The marketing gallery mirrors the click-affordance ring on Maria's
+  raised hand (the GIF can't advertise a hand the app can't click).
 - **Demo studio + `OPCDemoGif`**: the pixel-workforce status gallery
   (`swift run OPCDemoGif --out …`) renders the SHIPPING workstation views
   (PixelWorkstationSprite + PixelStatusHeader, the same composition
