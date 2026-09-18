@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **Bridge thread-storm regression** (`OPCBridgeThreadStormTests`): 8 worker
+  threads hammer the C ABI (snapshot/save/digest/bogus interleaved) while
+  the host main queue pumps — the real GUI-host shape. Proves serialized,
+  un-torn responses under concurrency and pins the lastError-slot bound.
+- **Boundary stress**: a ~2 MB terminal log (append cost, digest
+  measuring-not-copying, snapshot round-trip) and a 100-product company
+  (real `addProductWorkspace` path, selection sweep, save/load).
 - **`opc approvals` / `opc decide <id> approve|reject`**: the CLI gains the
   boss approval surface — list what waits for you, resolve it from a
   terminal, through the SAME checked store path as the bridge verb (one
@@ -14,6 +21,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   subprocess test that drives the real `opc` binary against an isolated
   snapshot copy: list→approve→double-decide→ghost-id→junk-args, asserting
   state actually moved on disk, not just on stdout.
+
+### Changed
+- **C-ABI threading contract v1.2**: the storm pinned the precondition the
+  v1.1 wording left implicit — worker-thread calls require the host's main
+  thread to KEEP SERVICING its queue (every GUI does; a main thread parked
+  in a sync wait deadlocks by design). Now spelled out in `opc_bridge.h`.
 
 ### Fixed
 - **`decide` verb refused silent no-ops (night audit R1)**: the store's
