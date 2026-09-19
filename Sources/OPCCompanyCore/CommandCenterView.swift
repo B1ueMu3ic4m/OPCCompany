@@ -497,7 +497,10 @@ struct CommandCenterView: View {
                     OPCListOverflowFooter(summary: overflow.summary)
                 }
                 ForEach(store.commandCenterRecentDeliveryArtifacts) { artifact in
-                    BossDecisionRow(title: artifact.title, detail: artifact.summary, color: CompanyTheme.blue)
+                    // v0.7.0 delivery shelf: the dot's COLOR is the live
+                    // verdict (green = the file is there RIGHT NOW, red =
+                    // the claim has no file), not decoration.
+                    BossDecisionRow(title: artifact.title, detail: artifact.summary, color: artifact.existsOnDisk ? CompanyTheme.green : CompanyTheme.red)
                 }
                 if let overflow = store.commandCenterDeliveryArtifactsOverflow() {
                     OPCListOverflowFooter(summary: overflow.summary)

@@ -40,8 +40,11 @@ class FakeOpcBridge {
   /// scripted query payloads: set before terminal_digest()/terminalTail()
   Map<String, dynamic>? digestResult;
   Map<String, dynamic>? tailResult;
-  /// v1.3: approvals_list carries a JSON ARRAY (the only array verb).
+  /// v1.3+ array verbs (approvals/history/deliverables) carry a JSON ARRAY.
   List<dynamic>? approvalsListResult;
+  /// v1.5: deliverables_list rows (existsNow rides along); defaults to a
+  /// one-row shelf shaped like the bridge's answer when unset.
+  List<dynamic>? deliverablesListResult;
   /// Raw text to smuggle INSTEAD of the JSON-encoded result (tear/truncate
   /// simulation across the C boundary — nothing else can produce that).
   String? rawCarryOverride;
@@ -94,6 +97,16 @@ class FakeOpcBridge {
       // v1.4 ledger rides the SAME array channel (same default rows)
       'history_list' =>
         approvalsListResult ?? const [{'id': 'fake-approval', 'title': 't'}],
+      // v1.5 shelf: its own field, default row carries the existsNow verdict
+      'deliverables_list' =>
+        deliverablesListResult ??
+            const [
+              {
+                'id': 'fake-shelf', 'title': 't', 'kind': 'report',
+                'path': '/tmp/t', 'existsNow': true,
+                'createdAt': 1757000000,
+              }
+            ],
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
       'terminal_tail' => tailResult ??
           {

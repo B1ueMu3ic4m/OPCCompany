@@ -73,6 +73,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // paint path. Null = never answered (bridge too old or verb refused):
   // the panel then honestly shows "no decisions logged yet", never a lie.
   List<Map<String, dynamic>>? _history;
+  // v0.7.0 delivery shelf (v1.5 deliverables_list): same event-driven pull
+  // discipline as the ledger — boot / refresh / after-verb, never paint.
+  List<Map<String, dynamic>>? _deliverables;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -95,6 +98,7 @@ class _CompanyHomeState extends State<CompanyHome> {
     } else {
       _snap = _bridge.snapshot();
       _history = _bridge.historyList();
+      _deliverables = _bridge.deliverablesList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -119,6 +123,7 @@ class _CompanyHomeState extends State<CompanyHome> {
     setState(() {
       _snap = _bridge.snapshot();
       _history = _bridge.historyList();
+      _deliverables = _bridge.deliverablesList();
       _syncTranscripts();
     });
   }
@@ -178,6 +183,7 @@ class _CompanyHomeState extends State<CompanyHome> {
           : '$label: refused — ${_bridge.lastError()}';
       _snap = _bridge.snapshot();
       _history = _bridge.historyList();
+      _deliverables = _bridge.deliverablesList();
       _syncTranscripts();
     });
   }
@@ -436,6 +442,36 @@ class _CompanyHomeState extends State<CompanyHome> {
                     ),
                   ),
               const SizedBox(height: 12),
+              // v0.7.0 "the delivery shelf": what the company handed over —
+              // and whether the file is there RIGHT NOW (existsNow is
+              // computed by the bridge at read time, so this list re-
+              // answers on every pull; null never fakes an empty shelf).
+              Text('Delivery shelf',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              if (_deliverables == null || _deliverables!.isEmpty)
+                const Card(
+                    child: ListTile(
+                        leading: Icon(Icons.inventory_outlined),
+                        title: Text('No deliveries recorded yet.')))
+              else
+                for (final row in _deliverables!)
+                  Card(
+                    child: ListTile(
+                      leading: Icon(
+                        row['existsNow'] == true
+                            ? Icons.verified_outlined
+                            : Icons.broken_image_outlined,
+                        color: row['existsNow'] == true
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      title: Text(row['title'] as String? ?? '?'),
+                      subtitle: Text(_shelfLine(row),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+              const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () => _run('advance', _bridge.advance),
                 icon: const Icon(Icons.fast_forward),
@@ -538,6 +574,23 @@ class _CompanyHomeState extends State<CompanyHome> {
     if (status != 'waitingApproval') return '';
     final n = snap.approvalCountsByRequester[id.toLowerCase()] ?? 0;
     return n > 1 ? ' ×$n' : '';
+  }
+
+  /// Shelf subtitle: kind · on-disk verdict · when recorded · the claimed
+  /// path itself. The verdict word is the bridge's live existsNow — the
+  /// GUI's [OK]/[MISSING] and this line can never drift, both re-read the
+  /// filesystem on every pull.
+  String _shelfLine(Map<String, dynamic> row) {
+    final verdict = row['existsNow'] == true ? 'on disk' : 'MISSING';
+    final when = row['createdAt'] is num
+        ? DateTime.fromMillisecondsSinceEpoch(
+                (row['createdAt'] as num).toInt() * 1000)
+            .toString().substring(0, 16)
+        : null;
+    return [(row['kind'] as String?) ?? 'artifact', verdict,
+            if (when != null) when,
+            (row['path'] as String?) ?? '?']
+        .join(' · ');
   }
 
   /// Ledger subtitle: WHO asked · WHAT you decided · WHEN. Names come from

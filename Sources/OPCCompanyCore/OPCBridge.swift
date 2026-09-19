@@ -261,6 +261,27 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try JSONSerialization.data(withJSONObject: rows)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "deliverables_list":
+                    // Query (v1.5): the delivery shelf — the CURRENT
+                    // product's recorded deliveries, newest-first, capped
+                    // (see the .h contract). `existsNow` is computed HERE,
+                    // at read time, never serialized: the bridge answers
+                    // "is the file there RIGHT NOW", so a shell row can
+                    // flip [OK]->[MISSING] without any snapshot change.
+                    // Same smuggle as the other list verbs; read-only.
+                    let rows: [[String: Any]] = store.selectedProductRecentDeliveryArtifacts.prefix(50).map { a in
+                        var row: [String: Any] = ["id": a.id.uuidString,
+                                                  "title": a.title,
+                                                  "kind": a.kind.rawValue,
+                                                  "path": a.path,
+                                                  "existsNow": a.existsOnDisk]
+                        if let c = a.taskID { row["taskID"] = c.uuidString }
+                        row["createdAt"] = a.createdAt.timeIntervalSince1970
+                        return row
+                    }
+                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "terminal_digest":
                     // Query: byte lengths per agent log of the selected
                     // product, keyed by agentID (the storage key's suffix —

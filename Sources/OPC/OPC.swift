@@ -46,6 +46,9 @@ private func usage() -> String {
       opc history [n]            last decisions of the current product —
                                  who asked, what you decided, when (default
                                  10). Pure read: nothing here writes state.
+      opc deliverables [n]       the delivery shelf — what the company handed
+                                 over, and whether each file still EXISTS on
+                                 disk right now (default 10). Pure read.
       opc products               list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
@@ -105,6 +108,8 @@ struct OPC {
                 try decide(rest)
             case "history":
                 try history(rest)
+            case "deliverables":
+                try deliverables(rest)
             case "products":
                 try products()
             case "use":
@@ -281,6 +286,39 @@ struct OPC {
                 let when = a.decidedAt.map { $0.opcDateTimeText } ?? "—"
                 print("  \(a.id.uuidString)  \(a.status.title)  \(when)  ← \(store.requesterDisplayName(for: a))")
                 print("    \(a.title) — \(a.reason)")
+            }
+        }
+    }
+
+    /// v0.7.0 "the delivery shelf": what did the company actually HAND
+    /// OVER — and is it still on disk? The boss's last question. Reads the
+    /// SAME delivery view the command center draws, stamps every row with
+    /// the live existsOnDisk verdict; pure read, no side effects.
+    @MainActor
+    static func deliverables(_ rest: [String]) throws {
+        var limit = 10
+        if let first = rest.first {
+            guard let parsed = Int(first), parsed > 0 else {
+                throw CLIError(message: "usage: opc deliverables [n]  (n — a positive count, default 10)")
+            }
+            limit = parsed
+        }
+        try withStore { store in
+            let rows = store.selectedProductRecentDeliveryArtifacts
+            if rows.isEmpty {
+                print("No deliveries recorded for \(store.selectedProduct?.name ?? "the selected product") yet.")
+                return
+            }
+            let shown = rows.prefix(limit)
+            print("Deliverables (\(shown.count) of \(rows.count)) — newest first:")
+            for a in shown {
+                let mark = a.existsOnDisk ? "[OK] " : "[MISSING] "
+                print("  \(mark)\(a.kind.title)  \(a.createdAt.opcDateTimeText)  \(a.title)")
+                print("    \(a.path)")
+            }
+            let missing = rows.filter { !$0.existsOnDisk }.count
+            if missing > 0 {
+                print("\(missing) of \(rows.count) recorded deliveries have NO file on disk right now.")
             }
         }
     }
