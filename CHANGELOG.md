@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- **The delivery shelf (v0.7.0)**: the boss's last question — "an employee says it
+  shipped X — is X there?" — now has an answer on every surface. `ArtifactRecord
+  .existsOnDisk` is the ONE door: computed per read, never serialized, so no snapshot
+  can ever freeze a stale verdict (a test encodes a record and proves the key never
+  reaches disk). The command-center dot and the artifact card pill went from decoration
+  to live verdict; `opc deliverables [n]` prints the shelf with `[OK]`/`[MISSING]`
+  marks and a ghost tally (subprocess test: delete a file, the very next call flips
+  the row — nothing wrote state). **Bridge v1.5 `deliverables_list`** ships the same
+  view with `existsNow` computed inside the bridge (contract caps it at 50; the ABI's
+  six symbols stay frozen). The Flutter shell grew a "Delivery shelf" panel pulled on
+  boot/refresh/after-verb with per-row live verdicts — and the fake-bridge write-filter
+  moved from an enumerated list to the contract's naming rule (`*_list` / `terminal_*`),
+  so future query verbs can no longer slip past it silently.
+
 - **The shell's pending queue attributes too** (v0.6 tail): every waiting row now
   reads "reason · from <employee>" through the shell's single door (`_askerOf`),
   which the decision ledger also rides — name for a roster hit, "unknown employee"

@@ -84,6 +84,18 @@ char *opc_bridge_snapshot_json(void);
  *       capped at 50 rows so one reply can never outrun the smuggle
  *       channel. decidedAt is absent only for pre-v0.6 legacy rows.
  *       Read-only, same guard silence as approvals_list.
+ *   "deliverables_list" {}         (v1.5)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON array
+ *       [{"id":"<uuid>","title":"...","kind":"report|source|...",
+ *         "path":"<claimed path>","existsNow":true|false,
+ *         "taskID":"<uuid>"?,"createdAt":<epoch-seconds>}, ...] — the
+ *       CURRENT product's delivery-view artifacts, newest-first (the
+ *       store's order, not a bridge guess), capped at 50. The delivery
+ *       view = what the boss's command center draws (maintenance records
+ *       excluded), so shell and GUI never disagree about what counts.
+ *       existsNow is computed AT READ TIME by the bridge — never stored,
+ *       never frozen in the snapshot: delete a file and the very next
+ *       call flips the row. Read-only, same guard silence as approvals_list.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

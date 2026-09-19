@@ -87,4 +87,28 @@ void main() {
     expect(bridge.historyList(), isNull);
     expect(fake.unfreed, isEmpty);
   });
+
+  test('deliverablesList shares the array door (v1.5): its own verb, its '
+      'own default row, the same fail-closed rules', () {
+    final fake = FakeOpcBridge();
+    final bridge = fake.asBridge();
+    // the default shelf row must be the SHELF's shape (existsNow present),
+    // not a borrowed approvals row — the fake proves the two doors differ.
+    final rows = bridge.deliverablesList();
+    expect(rows, isNotNull);
+    expect(rows!.single['existsNow'], true);
+    expect(fake.commands.last.$1, 'deliverables_list');
+    fake.deliverablesListResult = [
+      {'id': 'S1', 'title': 'real', 'existsNow': true},
+      {'id': 'S2', 'title': 'ghost', 'existsNow': false},
+    ];
+    final scripted = bridge.deliverablesList()!;
+    expect(scripted.map((r) => r['existsNow']), [true, false]);
+    // object-shaped and torn smuggles both refuse wholesale
+    fake.rawCarryOverride = '[{"id": ';
+    expect(bridge.deliverablesList(), isNull);
+    fake.rawCarryOverride = '{"existsNow": true}';
+    expect(bridge.deliverablesList(), isNull);
+    expect(fake.unfreed, isEmpty);
+  });
 }

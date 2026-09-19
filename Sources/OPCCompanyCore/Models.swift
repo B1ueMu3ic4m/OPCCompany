@@ -1815,6 +1815,19 @@ public struct ArtifactRecord: Identifiable, Codable, Hashable, Sendable {
     public var summary: String
     public var createdAt: Date
 
+    /// v0.7.0 "the delivery shelf": does the claimed file actually exist,
+    /// RIGHT NOW, at this instant? Computed — never serialized — so a
+    /// snapshot can never freeze a stale verdict, and the shelf answers
+    /// the boss's real question ("employee says it shipped X — is X
+    /// there?") without any bookkeeping. Directory counts as delivered.
+    public var existsOnDisk: Bool {
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
+        else { return false }
+        _ = isDir  // a folder artifact is a delivery too
+        return true
+    }
+
     public init(id: UUID = UUID(), productID: UUID, taskID: UUID? = nil, kind: ArtifactKind, title: String, path: String, summary: String, createdAt: Date = Date()) {
         self.id = id
         self.productID = productID

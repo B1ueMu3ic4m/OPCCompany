@@ -1358,6 +1358,7 @@ enum AppStringsGenerated {
         "已中断 · 幽灵巡检已标记。": "Interrupted · marked by ghost audit.",
         "已为 ": "Created for ",
         "已为当前产品创建 ": "Created for the current product: ",
+        "已交付": "Delivered",
         "已从角色包 ": "Applied from role pack ",
         "已使用独立执行区": "Using independent execution area",
         "已停止": "Stopped",

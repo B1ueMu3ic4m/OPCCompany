@@ -1972,6 +1972,12 @@ struct ArtifactRecordCard: View {
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(CompanyTheme.ink)
                 Spacer()
+                // v0.7.0 delivery shelf: the path printed below is a CLAIM;
+                // this pill is the live VERDICT, re-checked every render.
+                StatusPill(text: artifact.existsOnDisk
+                           ? "已交付".L() : "缺失".L(),
+                           color: artifact.existsOnDisk
+                           ? CompanyTheme.green : CompanyTheme.red)
                 StatusPill(text: artifact.kind.title, color: CompanyTheme.blue)
             }
             Text(artifact.path)

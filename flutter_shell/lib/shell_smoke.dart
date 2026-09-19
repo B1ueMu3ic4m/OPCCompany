@@ -118,6 +118,21 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       bridge.lastError().length > 200
           ? '(${bridge.lastError().length} bytes)'
           : bridge.lastError());
+  // v1.5 delivery shelf: existsNow is the POINT of the verb — it must be
+  // PRESENT and BOOLEAN on every row (a shelf that hides the verdict is
+  // worse than no shelf). Count is not pinned (a young company's shelf is
+  // legitimately bare); order/cap are store/contract-pinned elsewhere.
+  final shelf = bridge.deliverablesList();
+  add(
+      'deliverables_list answers with live verdicts',
+      shelf != null &&
+          shelf.every((r) =>
+              (r['id'] as String?)?.isNotEmpty == true &&
+              r['existsNow'] is bool &&
+              (r['path'] as String?)?.isNotEmpty == true),
+      bridge.lastError().length > 200
+          ? '(${bridge.lastError().length} bytes)'
+          : bridge.lastError());
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

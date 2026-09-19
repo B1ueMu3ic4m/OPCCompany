@@ -95,6 +95,35 @@ void main() {
     expect(find.text('r3 · from unassigned'), findsOneWidget);
   });
 
+  testWidgets('delivery shelf rows carry the LIVE on-disk verdict',
+      (tester) async {
+    tester.view.physicalSize = const Size(2000, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final fake = FakeOpcBridge(initialSnapshot: _snapWith());
+    fake.deliverablesListResult = [
+      {'id': 'S1', 'title': 'auth module', 'kind': 'source',
+          'path': '/repo/auth.swift', 'existsNow': true,
+          'createdAt': 1757000000},
+      {'id': 'S2', 'title': 'ghost build', 'kind': 'package',
+          'path': '/repo/dist', 'existsNow': false},
+    ];
+    await tester.pumpWidget(MaterialApp(
+        home: CompanyHome(bridge: fake.asBridge())));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delivery shelf'), findsOneWidget);
+    expect(find.text('auth module'), findsOneWidget);
+    expect(find.text('ghost build'), findsOneWidget);
+    // subtitle carries the bridge's live verdict, per row — the shelf
+    // never averages or hides a missing claim.
+    expect(find.textContaining('source · on disk · '), findsOneWidget);
+    expect(find.text('package · MISSING · /repo/dist'), findsOneWidget,
+        reason: 'no createdAt: the time segment is honestly omitted');
+  });
+
   testWidgets('empty ledger answers with the honest empty card',
       (tester) async {
     tester.view.physicalSize = const Size(2000, 4000);

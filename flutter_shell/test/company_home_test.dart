@@ -43,12 +43,17 @@ void _useBigViewport(WidgetTester tester) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-/// write-verb commands only (the UI also fires query verbs: terminal_*,
-/// and since v0.6.0 the JSON-array ledger/approval doors).
-const _queryVerbs = {'terminal_digest', 'terminal_tail',
-    'approvals_list', 'history_list'};
+/// write-verb commands only. The query doors follow a NAMING RULE baked
+/// into the bridge contract (v1.3+ array verbs are `*_list`, logs are
+/// `terminal_*`) — enforce the rule, not an ever-growing list. A new
+/// query verb that ignores the naming rule will break HERE, loudly.
+const _queryVerbPrefixes = ['terminal_', 'snapshot'];
 List<(String, Map<String, dynamic>)> writeCmds(FakeOpcBridge f) =>
-    f.commands.where((c) => !_queryVerbs.contains(c.$1)).toList();
+    f.commands
+        .where((c) =>
+            !_queryVerbPrefixes.any(c.$1.startsWith) &&
+            !c.$1.endsWith('_list'))
+        .toList();
 
 void main() {
   testWidgets('renders the snapshot the bridge provides', (tester) async {

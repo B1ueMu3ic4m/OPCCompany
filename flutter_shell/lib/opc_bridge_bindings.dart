@@ -268,6 +268,14 @@ class OpcBridge {
   /// rows), requesterID (absent when the core recorded no asker). Read-only.
   List<Map<String, dynamic>>? historyList() => _listVerb('history_list');
 
+  /// v1.5 delivery shelf: recorded deliveries of the current product,
+  /// newest-first, capped at 50. Each row: id/title/kind/path/createdAt +
+  /// existsNow — computed by the bridge AT READ TIME, so the shell's row
+  /// flips [OK]->[MISSING] the moment someone deletes the file, without
+  /// any snapshot change. Read-only.
+  List<Map<String, dynamic>>? deliverablesList() =>
+      _listVerb('deliverables_list');
+
   /// The JSON-array verbs' shared door (v1.3/v1.4): rc decides, a torn or
   /// malformed payload refuses WHOLESALE — half a list is worse than none.
   List<Map<String, dynamic>>? _listVerb(String verb) {
