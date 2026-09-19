@@ -373,10 +373,15 @@ class _CompanyHomeState extends State<CompanyHome> {
                     child: ListTile(
                       leading: const Icon(Icons.how_to_reg),
                       title: Text(a['title'] as String? ?? '?'),
-                      subtitle: (a['reason'] as String?) == null
-                          ? null
-                          : Text(a['reason'] as String,
-                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                      // v0.6 tail: the pending rows attribute too — the
+                      // SAME door the ledger uses (roster names in, ids
+                      // out; unassigned/unknown never fabricate an owner).
+                      subtitle: Text(
+                          (a['reason'] as String?)?.trim().isNotEmpty == true
+                          ? '${a['reason']} · from ${_askerOf(a['requesterID'])}'
+                          : 'from ${_askerOf(a['requesterID'])}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -541,10 +546,7 @@ class _CompanyHomeState extends State<CompanyHome> {
   /// A legacy row without decidedAt just omits the time; unknown/absent
   /// requester says so rather than inventing an owner.
   String _ledgerLine(Map<String, dynamic> row) {
-    final who = switch (row['requesterID']) {
-      final String id => rosterNameOf(id),
-      _ => 'unassigned',
-    };
+    final who = _askerOf(row['requesterID']);
     final verdict = row['status'] == 'approved' ? 'approved' : 'rejected';
     // local wall-clock, NOT toIso8601String (UTC — would drift 8h here):
     // one honest clock face with the office and the command center.
@@ -558,6 +560,15 @@ class _CompanyHomeState extends State<CompanyHome> {
     }
     return [who, verdict, if (when != null) when].join(' · ');
   }
+
+  /// The one shell-side attribution door (mirrors requesterDisplayName):
+  /// a roster hit names the employee, a stale id says so, no id at all is
+  /// UNASSIGNED — never a fabricated owner. Pending rows and ledger rows
+  /// must both come through here.
+  String _askerOf(Object? requesterID) => switch (requesterID) {
+        final String id when id.isNotEmpty => rosterNameOf(id),
+        _ => 'unassigned',
+      };
 
   String rosterNameOf(String id) =>
       _rosterNames?[id.toLowerCase()] ?? 'unknown employee';

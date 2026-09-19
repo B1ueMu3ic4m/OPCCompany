@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **The shell's pending queue attributes too** (v0.6 tail): every waiting row now
+  reads "reason · from <employee>" through the shell's single door (`_askerOf`),
+  which the decision ledger also rides — name for a roster hit, "unknown employee"
+  for a stale id, "unassigned" for none. No surface invents an owner.
+
 ### Changed
 - **Issue #10 closed — one door for the language switch** (`OPCLocalizationProviding`):
   the bundle redirect and the session-string table no longer switch by name; every
