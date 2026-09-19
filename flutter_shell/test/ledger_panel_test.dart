@@ -12,7 +12,10 @@ import 'fake_opc_bridge.dart';
 // local clock text, and the honest empty state.
 // ignore_for_file: lines_longer_than_80_chars
 
-Map<String, dynamic> _snapWith({List<Map<String, dynamic>> agents = const []}) => {
+Map<String, dynamic> _snapWith({
+  List<Map<String, dynamic>> agents = const [],
+  List<Map<String, dynamic>> approvals = const [],
+}) => {
       'schemaVersion': 14,
       'selectedProductID': 'P1',
       'products': [
@@ -20,7 +23,7 @@ Map<String, dynamic> _snapWith({List<Map<String, dynamic>> agents = const []}) =
       ],
       'tasks': <Map<String, dynamic>>[],
       'agents': agents,
-      'approvals': <Map<String, dynamic>>[],
+      'approvals': approvals,
     };
 
 void main() {
@@ -59,6 +62,37 @@ void main() {
         reason: 'attributed row must show name, verdict, local time');
     expect(find.textContaining('unassigned · rejected'), findsOneWidget);
     expect(fake.unfreed, isEmpty);
+  });
+
+  testWidgets('pending queue rows attribute through the SAME door',
+      (tester) async {
+    tester.view.physicalSize = const Size(2000, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // three hands: a known employee (case-insensitive id), a stale id,
+    // and no requester at all — the door answers name / unknown / unassigned.
+    final fake = FakeOpcBridge(initialSnapshot: _snapWith(
+      agents: const [
+        {'id': 'aaa', 'displayName': 'Eve', 'status': 'waitingApproval'},
+      ],
+      approvals: const [
+        {'id': 'AP1', 'productID': 'P1', 'title': 'Raise cap',
+            'reason': 'r1', 'status': 'pending', 'requesterID': 'AAA'},
+        {'id': 'AP2', 'productID': 'P1', 'title': 'New hire',
+            'status': 'pending', 'requesterID': 'zzz'},
+        {'id': 'AP3', 'productID': 'P1', 'title': 'Buy GPU',
+            'reason': 'r3', 'status': 'pending'},
+      ],
+    ));
+    await tester.pumpWidget(MaterialApp(
+        home: CompanyHome(bridge: fake.asBridge())));
+    await tester.pumpAndSettle();
+
+    expect(find.text('r1 · from Eve'), findsOneWidget);
+    expect(find.text('from unknown employee'), findsOneWidget);
+    expect(find.text('r3 · from unassigned'), findsOneWidget);
   });
 
   testWidgets('empty ledger answers with the honest empty card',
