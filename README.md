@@ -133,7 +133,7 @@ snapshot JSON the core owns, every button is one bridge verb.
 What CI proves on every push:
 
 - `OPCCompanyBridge.dll` builds on Windows and `dumpbin` verifies all six exports
-- the Windows shell package is assembled (Flutter SDK pinned to the official release) and **launched in CI** — its 10-check behavioral smoke must print `"ok":true`
+- the Windows shell package is assembled (Flutter SDK pinned to the official release) and **launched in CI** — its behavioral smoke suite (query verbs, cursors, UTF-8 round-trips, durability) must print `"ok":true`
 - the package is **self-contained**: CI walks the real import closure with `dumpbin /DEPENDENTS` and bundles the Swift/MSVC runtime DLLs beside the exe, then runs the smoke with `PATH` stripped to the system dirs (proving nothing the app needs lives only in the build environment)
 - `scripts/build-shell-macos.sh` bundles the bridge dylib into a standalone .app and the packaged app self-checks ALL PASS
 

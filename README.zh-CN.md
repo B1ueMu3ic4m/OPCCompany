@@ -115,7 +115,7 @@ create/destroy/lastError/snapshotJson/command/free)——任何能 `dlopen` 的�
 每次 push CI 证明的事:
 
 - `OPCCompanyBridge.dll` 在 Windows 构建成功,`dumpbin` 验证全部 6 个导出符号
-- Windows 壳包被组装(Flutter SDK 钉官方版本)并**在 CI 里真实启动**——10 项行为冒烟必须输出 `"ok":true`
+- Windows 壳包被组装(Flutter SDK 钉官方版本)并**在 CI 里真实启动**——行为冒烟套件(查询动词、游标、UTF-8 往返、持久性)必须输出 `"ok":true`
 - 壳包**自包含**:CI 用 `dumpbin /DEPENDENTS` 走真实导入闭包,把 Swift/MSVC 运行时 DLL 捆进包里,再以仅剩系统目录的 `PATH` 跑冒烟——证明应用不再依赖构建环境里才有的 DLL
 - `scripts/build-shell-macos.sh` 把桥 dylib 捆进独立 .app,打包后的 app 自检全绿才算构建完成
 
