@@ -76,6 +76,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v0.7.0 delivery shelf (v1.5 deliverables_list): same event-driven pull
   // discipline as the ledger — boot / refresh / after-verb, never paint.
   List<Map<String, dynamic>>? _deliverables;
+  // v0.8.0 morning standup (v1.6 standup_window): one window of TRAFFIC,
+  // same pull discipline. Null = bridge too old — the card says so honestly.
+  Map<String, int>? _standup;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -99,6 +102,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _snap = _bridge.snapshot();
       _history = _bridge.historyList();
       _deliverables = _bridge.deliverablesList();
+      _standup = _bridge.standupWindow();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -124,6 +128,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _snap = _bridge.snapshot();
       _history = _bridge.historyList();
       _deliverables = _bridge.deliverablesList();
+      _standup = _bridge.standupWindow();
       _syncTranscripts();
     });
   }
@@ -184,6 +189,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _snap = _bridge.snapshot();
       _history = _bridge.historyList();
       _deliverables = _bridge.deliverablesList();
+      _standup = _bridge.standupWindow();
       _syncTranscripts();
     });
   }
@@ -412,6 +418,14 @@ class _CompanyHomeState extends State<CompanyHome> {
                     ),
                   ),
               const SizedBox(height: 12),
+              // v0.8.0 "the morning standup": what the company DID in the
+              // window — one sentence, computed by the store's door (same
+              // math the CLI prints; shell and terminal can't disagree).
+              Text('Standup — last 24h',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _standupCard(),
+              const SizedBox(height: 12),
               // v0.6.0 "every hand leaves a receipt": the ledger the boss
               // already wrote — pulled via history_list (bridge v1.4) on
               // boot/refresh/after-verb, never per frame. An empty or
@@ -574,6 +588,43 @@ class _CompanyHomeState extends State<CompanyHome> {
     if (status != 'waitingApproval') return '';
     final n = snap.approvalCountsByRequester[id.toLowerCase()] ?? 0;
     return n > 1 ? ' ×$n' : '';
+  }
+
+  /// v0.8.0 standup card: one honest sentence for the window. Null (old
+  /// bridge / refused verb) says "no standup yet" — never zero counts
+  /// dressed up as a quiet company. The quiet-but-answered case says
+  /// quiet. awaitingNow > 0 always surfaces: that part is NOT windowed.
+  Widget _standupCard() {
+    final w = _standup;
+    if (w == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.wb_twilight),
+              title: Text('No standup from this core.')));
+    }
+    final parts = <String>[
+      if (w['newWork']! > 0) '${w['newWork']} new',
+      if (w['decisions']! > 0) '${w['decisions']} decided',
+      if (w['deliveries']! > 0)
+        (w['missing']! > 0
+            ? '${w['deliveries']} delivered (${w['missing']} MISSING)'
+            : '${w['deliveries']} delivered'),
+      if (w['risks']! > 0) '${w['risks']} risk(s)',
+    ];
+    final traffic = parts.isEmpty ? 'nothing' : parts.join(' · ');
+    final owed = w['awaitingNow']!;
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          owed > 0 ? Icons.wb_sunny : Icons.wb_twilight,
+          color: owed > 0 ? Colors.amber : null,
+        ),
+        title: Text('$traffic in the last ${w['hours']}h'),
+        subtitle: owed > 0
+            ? Text('$owed approval(s) awaiting YOU right now')
+            : null,
+      ),
+    );
   }
 
   /// Shelf subtitle: kind · on-disk verdict · when recorded · the claimed

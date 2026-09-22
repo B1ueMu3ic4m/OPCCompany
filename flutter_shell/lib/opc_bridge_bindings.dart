@@ -276,6 +276,28 @@ class OpcBridge {
   List<Map<String, dynamic>>? deliverablesList() =>
       _listVerb('deliverables_list');
 
+  /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
+  /// seven integer counts {hours,newWork,decisions,deliveries,missing,
+  /// risks,awaitingNow}, computed live by the store's own door. Unlike
+  /// the *_list verbs this payload is an OBJECT — a missing or non-int
+  /// field refuses WHOLESALE (null), never half a standup.
+  Map<String, int>? standupWindow() {
+    if (command('standup_window') != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    const keys = [
+      'hours', 'newWork', 'decisions', 'deliveries', 'missing', 'risks',
+      'awaitingNow',
+    ];
+    final result = <String, int>{};
+    for (final key in keys) {
+      final value = raw[key];
+      if (value is! int) return null;
+      result[key] = value;
+    }
+    return result;
+  }
+
   /// The JSON-array verbs' shared door (v1.3/v1.4): rc decides, a torn or
   /// malformed payload refuses WHOLESALE — half a list is worse than none.
   List<Map<String, dynamic>>? _listVerb(String verb) {

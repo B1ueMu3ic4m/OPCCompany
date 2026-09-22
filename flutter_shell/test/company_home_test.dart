@@ -43,14 +43,19 @@ void _useBigViewport(WidgetTester tester) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-/// write-verb commands only. The query doors follow a NAMING RULE baked
-/// into the bridge contract (v1.3+ array verbs are `*_list`, logs are
-/// `terminal_*`) — enforce the rule, not an ever-growing list. A new
-/// query verb that ignores the naming rule will break HERE, loudly.
+/// write-verb commands only. The query doors mostly follow a NAMING RULE
+/// baked into the bridge contract (array verbs end `*_list`, logs start
+/// `terminal_`) — enforce the rule first. But an object-channel query
+/// matches NO rule: v1.6 `standup_window` is listed explicitly (the
+/// v1.4 lesson: a startsWith-only filter ate a one-shot scripted rc).
+/// When a new query verb joins, audit BOTH this filter AND the
+/// boot-pump set below.
+const _queryVerbs = ['standup_window'];
 const _queryVerbPrefixes = ['terminal_', 'snapshot'];
 List<(String, Map<String, dynamic>)> writeCmds(FakeOpcBridge f) =>
     f.commands
         .where((c) =>
+            !_queryVerbs.contains(c.$1) &&
             !_queryVerbPrefixes.any(c.$1.startsWith) &&
             !c.$1.endsWith('_list'))
         .toList();

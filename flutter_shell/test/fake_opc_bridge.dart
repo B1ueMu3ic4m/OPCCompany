@@ -39,6 +39,12 @@ class FakeOpcBridge {
 
   /// scripted query payloads: set before terminal_digest()/terminalTail()
   Map<String, dynamic>? digestResult;
+
+  /// v1.6 standup window payload (seven integer counts); null => the
+  /// default quiet-but-valid window below.
+  Map<String, dynamic>? standupResult;
+  /// simulate a core OLDER than v1.6: the verb is simply not registered
+  bool standupRefused = false;
   Map<String, dynamic>? tailResult;
   /// v1.3+ array verbs (approvals/history/deliverables) carry a JSON ARRAY.
   List<dynamic>? approvalsListResult;
@@ -89,6 +95,9 @@ class FakeOpcBridge {
     final rc = nextCommandResult;
     nextCommandResult = OpcBridge.ok;
     if (rc != OpcBridge.ok) return rc; // preserve the scripted refusal text
+    // a core older than v1.6: the verb simply does not exist (rc=-1),
+    // exactly what a pre-standup dylib answers
+    if (verb == 'standup_window' && standupRefused) return -1;
     // query verbs carry results through nextError exactly like the bridge
     // does (rc=0 + last_error = payload) — the wrapper's contract test
     final Object? carried = switch (verb) {
@@ -108,6 +117,12 @@ class FakeOpcBridge {
               }
             ],
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
+      // v1.6 standup: an OBJECT rides the same smuggle channel
+      'standup_window' => standupResult ??
+          const <String, dynamic>{
+            'hours': 24, 'newWork': 0, 'decisions': 0, 'deliveries': 0,
+            'missing': 0, 'risks': 0, 'awaitingNow': 0,
+          },
       'terminal_tail' => tailResult ??
           {
             ..._defaultTail,

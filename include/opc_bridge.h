@@ -96,6 +96,16 @@ char *opc_bridge_snapshot_json(void);
  *       existsNow is computed AT READ TIME by the bridge — never stored,
  *       never frozen in the snapshot: delete a file and the very next
  *       call flips the row. Read-only, same guard silence as approvals_list.
+ *   "standup_window" {}              (v1.6)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       (not array): {"hours":24,"newWork":N,"decisions":N,"deliveries":N,
+ *       "missing":N,"risks":N,"awaitingNow":N} — one rolling window's
+ *       TRAFFIC for the CURRENT product, computed live by the store's
+ *       own standup door (events+approvals+artifacts; 'missing' is the
+ *       window's deliveries that fail the existence door RIGHT NOW;
+ *       'awaitingNow' is the live pending queue, NOT windowed). No
+ *       parameters: the default 24h window is the whole contract.
+ *       Read-only, same guard silence as approvals_list.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a
