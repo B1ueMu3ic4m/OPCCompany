@@ -3,7 +3,7 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.8.0] - 2026-09-23
 
 ### Added
 - **The morning standup (v0.8.0)**: every surface answered what the company HAS —
@@ -486,7 +486,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Homebrew tap installation (`brew install --cask B1ueMu3ic4m/tap/opc-company`)
 - 568 tests, MIT license, issue templates, contributing guide
 
-[Unreleased]: https://github.com/B1ueMu3ic4m/OPCCompany/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/B1ueMu3ic4m/OPCCompany/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/B1ueMu3ic4m/OPCCompany/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.7.0
 [0.6.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.6.0
 [0.5.0]: https://github.com/B1ueMu3ic4m/OPCCompany/releases/tag/v0.5.0
