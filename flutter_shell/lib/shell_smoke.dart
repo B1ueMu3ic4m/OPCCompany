@@ -133,6 +133,15 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       bridge.lastError().length > 200
           ? '(${bridge.lastError().length} bytes)'
           : bridge.lastError());
+  // v1.6 standup: a fresh company must answer a seven-int 24h window —
+  // the OBJECT channel, distinct shape from the *_list arrays above.
+  final standup = bridge.standupWindow();
+  add(
+      'standup_window answers a seven-count object',
+      standup != null &&
+          standup['hours'] == 24 &&
+          standup.keys.length == 7,
+      standup == null ? bridge.lastError() : 'quiet=${standup['newWork'] == 0}');
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

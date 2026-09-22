@@ -2979,6 +2979,15 @@
     "已回写": "written back",
     "未回写": "not written back",
     "未知错误": "unknown error",
-    "已交付": "Delivered"
+    "已交付": "Delivered",
+    "项新工作": " new task(s)",
+    "个决定": " decision(s)",
+    "项交付": " delivered",
+    "项缺失": " MISSING",
+    "条风险": " risk(s)",
+    "一切安静": "all quiet",
+    "过去 ": "Last ",
+    " 小时：": "h: ",
+    "项审批等你": " approval(s) awaiting you"
   }
 }

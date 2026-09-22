@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **The morning standup (v0.8.0)**: every surface answered what the company HAS —
+  now one door answers what it DID. `CompanyStore.standupWindow(hours:now:)`
+  aggregates one rolling window of TRAFFIC (new work, decisions, deliveries +
+  the deliveries failing the v0.7 existence door, risks, and the live awaiting-you
+  queue) scoped to the current product; pure read, never stored, `now` injectable
+  so no surface races the wall clock. Pre-v0.6 decided receipts without a
+  decidedAt are honestly excluded — never guessed. `opc standup [hours]` prints
+  it (subprocess test pins: real counts, window math, delete-a-file flips
+  MISSING, junk refused, snapshot bytes never move); **bridge v1.6
+  `standup_window`** smuggles the seven-count OBJECT over the same frozen six
+  symbols (idempotency compared semantically — object key order is not the
+  contract); the Flutter shell shows a "Standup" card that renders "no standup"
+  for an old core rather than dressing zeros up as quiet; the command center's
+  "今日结论" headlines the same sentence the CLI computes — one math, five surfaces.
+
 ## [0.7.0] - 2026-09-19
 
 ### Added

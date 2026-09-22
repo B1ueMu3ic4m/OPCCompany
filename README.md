@@ -105,6 +105,7 @@ swift build -c release --product opc
 .build/release/opc use <id>               # select a product — same path as the GUI sidebar
 .build/release/opc history [n]            # decision ledger: who asked, your verdict, when
 .build/release/opc deliverables [n]       # delivery shelf: what was handed over — and whether each file still exists right now
+.build/release/opc standup [hours]      # morning standup: what the company DID in the window
 ```
 
 `opc` links only the portable core — it's also the first artifact on the

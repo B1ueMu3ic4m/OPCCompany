@@ -259,6 +259,14 @@ struct CommandCenterView: View {
                         .foregroundStyle(CompanyTheme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(5)
+                    // v0.8.0 the morning standup: the SAME traffic door the
+                    // CLI and shell read — three surfaces, one math. The
+                    // MISSING half of the sentence rides the v0.7 existence
+                    // door, so "delivered" can never mean "claimed".
+                    Text(store.standupHeadlineText())
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(CompanyTheme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
 

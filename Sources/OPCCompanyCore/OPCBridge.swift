@@ -282,6 +282,27 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try JSONSerialization.data(withJSONObject: rows)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "standup_window":
+                    // v1.6 the morning standup: one window's traffic as an
+                    // OBJECT (not a list) through the same smuggle channel —
+                    // {hours,newWork,decisions,deliveries,missing,risks,
+                    // awaitingNow}. Every count is the store's own door
+                    // (standupWindow), so shell, CLI and GUI can never
+                    // disagree about what happened; 'missing' rides the v0.7
+                    // existence door AT READ TIME. Read-only, guard-silent.
+                    let w = store.standupWindow()
+                    let window: [String: Any] = [
+                        "hours": w.hours,
+                        "newWork": w.newWork,
+                        "decisions": w.decisions,
+                        "deliveries": w.deliveries,
+                        "missing": w.missing,
+                        "risks": w.risks,
+                        "awaitingNow": w.awaitingNow,
+                    ]
+                    let data = try JSONSerialization.data(withJSONObject: window)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "terminal_digest":
                     // Query: byte lengths per agent log of the selected
                     // product, keyed by agentID (the storage key's suffix —

@@ -15,6 +15,7 @@
 //   opc goal "TEXT"         hand a boss goal to the CTO
 //   opc advance             push every open supervisor goal one step
 //   opc report              boss-readable progress report for the current product
+//   opc standup [hours]     what happened in the window (traffic)
 //   opc help / --help       usage
 
 import Foundation
@@ -49,6 +50,9 @@ private func usage() -> String {
       opc deliverables [n]       the delivery shelf — what the company handed
                                  over, and whether each file still EXISTS on
                                  disk right now (default 10). Pure read.
+      opc standup [HOURS]      what the company DID in the window
+                                 (default 24) — traffic, not inventory.
+                                 Pure read: nothing here writes state.
       opc products               list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
@@ -110,6 +114,8 @@ struct OPC {
                 try history(rest)
             case "deliverables":
                 try deliverables(rest)
+            case "standup":
+                try standup(rest)
             case "products":
                 try products()
             case "use":
@@ -320,6 +326,34 @@ struct OPC {
             if missing > 0 {
                 print("\(missing) of \(rows.count) recorded deliveries have NO file on disk right now.")
             }
+        }
+    }
+
+    /// v0.8.0 "the morning standup": what the company DID in the window
+    /// (traffic), not what it HAS (status/report). Same pure-read promise
+    /// as deliverables: no writer guard, nothing here writes state.
+    @MainActor
+    static func standup(_ rest: [String]) throws {
+        var hours = 24
+        if let first = rest.first {
+            guard let parsed = Int(first), parsed > 0 else {
+                throw CLIError(message: "usage: opc standup [hours]  (window in hours, default 24)")
+            }
+            hours = parsed
+        }
+        try withStore { store in
+            let w = store.standupWindow(hours: hours)
+            let product = store.selectedProduct?.name ?? "the selected product"
+            if w.quiet && w.awaitingNow == 0 {
+                print("Standup — \(product): nothing in the last \(hours)h.")
+                return
+            }
+            print("Standup — \(product), last \(hours)h:")
+            print("  new work:      \(w.newWork)")
+            print("  decided:       \(w.decisions)")
+            print("  delivered:     \(w.deliveries)" + (w.missing > 0 ? "  (⚠ \(w.missing) MISSING on disk NOW)" : ""))
+            print("  risks raised:  \(w.risks)")
+            print("  awaiting you:  \(w.awaitingNow)" + (w.awaitingNow > 0 ? "  <- open the app or run: opc pending" : ""))
         }
     }
 
