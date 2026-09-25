@@ -25,15 +25,25 @@ let iconFiles: [(name: String, pixels: Int)] = [
 ]
 
 for icon in iconFiles {
-    let image = NSImage(size: NSSize(width: icon.pixels, height: icon.pixels))
-    image.lockFocus()
+    // Draw into an EXPLICIT bitmap context at exact pixel size. The old
+    // NSImage.lockFocus() path inherits the display's backing scale, so
+    // on a Retina-scaled session every PNG silently came out 2x — the
+    // shipped icns jumped 1.47MB -> 5.2MB depending on the monitor,
+    // breaking reproducible builds (v0.10.0 release-audit lesson).
+    guard let rep = NSBitmapImageRep(
+        bitmapDataPlanes: nil, pixelsWide: icon.pixels, pixelsHigh: icon.pixels,
+        bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+        colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+          let bitmapContext = NSGraphicsContext(bitmapImageRep: rep) else {
+        fatalError("Failed to allocate bitmap for \(icon.name)")
+    }
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = bitmapContext
     drawIcon(in: NSRect(x: 0, y: 0, width: icon.pixels, height: icon.pixels), scale: CGFloat(icon.pixels) / 1024.0)
-    image.unlockFocus()
+    NSGraphicsContext.restoreGraphicsState()
 
-    guard let tiff = image.tiffRepresentation,
-          let rep = NSBitmapImageRep(data: tiff),
-          let png = rep.representation(using: .png, properties: [:]) else {
-        fatalError("Failed to render \(icon.name)")
+    guard let png = rep.representation(using: .png, properties: [:]) else {
+        fatalError("Failed to encode \(icon.name)")
     }
     try png.write(to: iconsetURL.appendingPathComponent(icon.name), options: .atomic)
 }
