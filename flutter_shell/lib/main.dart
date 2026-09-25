@@ -80,6 +80,8 @@ class _CompanyHomeState extends State<CompanyHome> {
   // same pull discipline. Null = bridge too old — the card says so honestly.
   Map<String, int>? _standup;
   List<Map<String, dynamic>>? _team;
+  // v0.10.0 stall watch: same pull discipline; null = core predates v1.8.
+  List<Map<String, dynamic>>? _stalls;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -105,6 +107,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _deliverables = _bridge.deliverablesList();
       _standup = _bridge.standupWindow();
       _team = _bridge.teamStatsList();
+      _stalls = _bridge.stallsList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -132,6 +135,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _deliverables = _bridge.deliverablesList();
       _standup = _bridge.standupWindow();
       _team = _bridge.teamStatsList();
+      _stalls = _bridge.stallsList();
       _syncTranscripts();
     });
   }
@@ -194,6 +198,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _deliverables = _bridge.deliverablesList();
       _standup = _bridge.standupWindow();
       _team = _bridge.teamStatsList();
+      _stalls = _bridge.stallsList();
       _syncTranscripts();
     });
   }
@@ -439,6 +444,14 @@ class _CompanyHomeState extends State<CompanyHome> {
               const SizedBox(height: 8),
               _teamPanel(),
               const SizedBox(height: 12),
+              // v0.10.0 "the stall watch": what STOPPED moving — pulled
+              // through stalls_list (bridge v1.8), the store's own door,
+              // so dwell math can never drift between shell and CLI.
+              Text('Stalls — parked over 30 min',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _stallPanel(),
+              const SizedBox(height: 12),
               // v0.6.0 "every hand leaves a receipt": the ledger the boss
               // already wrote — pulled via history_list (bridge v1.4) on
               // boot/refresh/after-verb, never per frame. An empty or
@@ -656,6 +669,53 @@ class _CompanyHomeState extends State<CompanyHome> {
       if ((row['activeNow'] ?? 0) > 0) '${row['activeNow']} open now',
     ];
     return parts.isEmpty ? 'quiet' : parts.join(' · ');
+  }
+
+  /// v0.10.0 stall watch panel. Three honest states, same discipline as
+  /// the team panel: null (core predates v1.8) says the core cannot
+  /// answer — never a fake quiet; an empty list is a genuinely unstuck
+  /// office; rows render in the door's order (longest-frozen first,
+  /// unattributed last) WITHOUT resorting. waitingOnYou rides the row's
+  /// status fact, never an invented accusation.
+  Widget _stallPanel() {
+    final rows = _stalls;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.hourglass_disabled_outlined),
+              title: Text('No stall watch from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.hourglass_empty),
+              title: Text('Nothing parked over 30 min.')));
+    }
+    return Column(
+      children: [
+        for (final row in rows)
+          Card(
+            child: ListTile(
+              leading: Icon(row['waitingOnYou'] == true
+                  ? Icons.error_outline
+                  : Icons.hourglass_full,
+                  color:
+                      row['waitingOnYou'] == true ? Colors.orange : null),
+              title: Text('${row['name']}'),
+              subtitle: Text(_stallLine(row),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// One stalled item: dwell + status as the door computed them.
+  String _stallLine(Map<String, dynamic> row) {
+    final dwell = row['dwellMinutes'] ?? '?';
+    final status = row['status'] ?? '?';
+    final onYou = row['waitingOnYou'] == true ? ' · WAITS ON YOU' : '';
+    return '$dwell min — $status$onYou';
   }
 
   Widget _standupCard() {

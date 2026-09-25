@@ -117,6 +117,18 @@ char *opc_bridge_snapshot_json(void);
  *       artifacts whose task chain dead-ends, orphan artifacts; attribution
  *       never fabricates an owner. "missing" rides the v0.7 existence door
  *       AT READ TIME. Read-only, same guard silence as approvals_list.
+ *   "stalls_list" {"over_minutes":N}?  (v1.8)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY:
+ *       [{"itemID":"<uuid>","name":"<display>","status":"<raw>",
+ *       "dwellMinutes":N,"waitingOnYou":true|false, "agentID":"<uuid>"?},
+ *       ...] — non-terminal work parked LONGER than N minutes
+ *       (default 30) on the current product, longest-frozen FIRST; the
+ *       unattributed row (no agentID key when the roster lost the agent —
+ *       name is then the localized unassigned label) sorts LAST.
+ *       "waitingOnYou" is a status fact (the item waits on approval),
+ *       never an accusation. dwell/threshold math runs INSIDE the store's
+ *       door at read time — pure read, zero writes. Same guard silence
+ *       as approvals_list.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

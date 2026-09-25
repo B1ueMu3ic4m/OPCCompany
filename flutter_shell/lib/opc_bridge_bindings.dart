@@ -276,6 +276,30 @@ class OpcBridge {
   List<Map<String, dynamic>>? deliverablesList() =>
       _listVerb('deliverables_list');
 
+  /// v1.8 the stall watch: non-terminal work parked longer than
+  /// [overMinutes] (default 30) on the current product. Rows arrive in the
+  /// door's order — longest-frozen FIRST, the unattributed row (no
+  /// agentID key) LAST. Each row: itemID/name/status/dwellMinutes/
+  /// waitingOnYou (+agentID when attributed). dwell math runs inside the
+  /// store at read time; waitingOnYou is a status fact, never an
+  /// accusation. Read-only.
+  List<Map<String, dynamic>>? stallsList({int? overMinutes}) {
+    if (command('stalls_list',
+            overMinutes == null ? const {} : {'over_minutes': overMinutes}) != ok) {
+      return null;
+    }
+    final source = lastError();
+    if (source.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(source);
+      if (decoded is! List) return null;
+      final rows = decoded.whereType<Map<String, dynamic>>().toList();
+      return rows.length == decoded.length ? rows : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
   /// v1.7 the name behind the work: per-employee TRAFFIC of the current
   /// product over the window (default 24h, optional [hours]). Rows arrive
   /// in the door's order — traffic desc, and the unattributed row (no

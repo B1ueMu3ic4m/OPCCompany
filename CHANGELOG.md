@@ -3,6 +3,26 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added — v0.10.0 "the stall watch"
+- **`stallWatch(overMinutes:now:)`** — the fourth door: what STOPPED
+  moving. Non-terminal work parked longer than the threshold (default
+  30 minutes, a parameter not an opinion), longest-frozen first, the
+  unattributed row last. Future-stamped items are refused, terminal
+  history never stalls, dwell math runs at read time. Pure read.
+- **`opc stalls [minutes]`** — the same door on the terminal, with
+  `WAITS ON YOU` spelled out for approval-parked items.
+- **Bridge v1.8 `stalls_list`** — rows ride the list channel (order IS
+  the contract); `over_minutes` arrives through the payload.
+- **Shell stall panel** — three honest states: an old core says the
+  core cannot answer, an empty watch says nothing parked, rows keep the
+  door's order verbatim.
+- **Command center line 3** — the stall headline beside standup and
+  team: three surfaces, one math.
+- The list channel now serializes with sorted keys — repeat reads are
+  byte-stable (a v0.9-era vacuous test hid this; now pinned).
+
 ## [0.9.0] - 2026-09-25
 
 ### Added

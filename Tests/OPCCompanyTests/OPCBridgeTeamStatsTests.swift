@@ -64,11 +64,14 @@ private func seedTeam(now: Date) throws -> (CompanyStore, UUID) {
         #expect(a[key] is Int, "\(key) must be an integer count")
     }
 
-    // the door is deterministic: the same answer twice (arrays ride raw
-    // compare — order IS the contract for lists, unlike the v1.6 object)
+    // the door is deterministic: two SEPARATE calls must agree byte for
+    // byte (arrays ride raw compare — order IS the contract for lists,
+    // unlike the v1.6 object). Read each sample right after ITS call;
+    // reading last_error twice around one call compares the same buffer
+    // twice and passes vacuously (v0.10 probe lesson).
+    let first = String(cString: try #require(opc_bridge_last_error()))
     #expect(opc_bridge_command(verb, nil) == 0)
     let again = String(cString: try #require(opc_bridge_last_error()))
-    let first = String(cString: try #require(opc_bridge_last_error()))
     #expect(again == first, "same store, same list, same bytes")
 
     // hours arrives through the payload
