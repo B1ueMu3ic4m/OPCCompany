@@ -2988,6 +2988,11 @@
     "一切安静": "all quiet",
     "过去 ": "Last ",
     " 小时：": "h: ",
-    "项审批等你": " approval(s) awaiting you"
+    "项审批等你": " approval(s) awaiting you",
+    "团队无人动": "team of 0",
+    " 最忙": " — busiest",
+    " 共 ": " (total ",
+    " 笔": " pieces)",
+    "有未归属工作": "some work is unattributed"
   }
 }

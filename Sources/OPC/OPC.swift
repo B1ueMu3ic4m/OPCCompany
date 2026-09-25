@@ -16,6 +16,7 @@
 //   opc advance             push every open supervisor goal one step
 //   opc report              boss-readable progress report for the current product
 //   opc standup [hours]     what happened in the window (traffic)
+//   opc team [hours]        who did what in the window (traffic)
 //   opc help / --help       usage
 
 import Foundation
@@ -53,6 +54,9 @@ private func usage() -> String {
       opc standup [HOURS]      what the company DID in the window
                                  (default 24) — traffic, not inventory.
                                  Pure read: nothing here writes state.
+      opc team [HOURS]         WHO did what in the window (default 24)
+                                 — per-employee attribution through real
+                                 edges. Pure read: nothing here writes state.
       opc products               list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
@@ -116,6 +120,8 @@ struct OPC {
                 try deliverables(rest)
             case "standup":
                 try standup(rest)
+            case "team":
+                try team(rest)
             case "products":
                 try products()
             case "use":
@@ -354,6 +360,37 @@ struct OPC {
             print("  delivered:     \(w.deliveries)" + (w.missing > 0 ? "  (⚠ \(w.missing) MISSING on disk NOW)" : ""))
             print("  risks raised:  \(w.risks)")
             print("  awaiting you:  \(w.awaitingNow)" + (w.awaitingNow > 0 ? "  <- open the app or run: opc pending" : ""))
+        }
+    }
+
+    @MainActor
+    static func team(_ rest: [String]) throws {
+        var hours = 24
+        if let first = rest.first {
+            guard let parsed = Int(first), parsed > 0 else {
+                throw CLIError(message: "usage: opc team [hours]  (window in hours, default 24)")
+            }
+            hours = parsed
+        }
+        try withStore { store in
+            let rows = store.teamWindow(hours: hours)
+            let product = store.selectedProduct?.name ?? "the selected product"
+            if rows.isEmpty {
+                print("Team — \(product): nobody moved in the last \(hours)h.")
+                return
+            }
+            print("Team — \(product), last \(hours)h:")
+            for r in rows {
+                var parts: [String] = []
+                if r.assigned > 0 { parts.append("\(r.assigned) assigned") }
+                if r.deliveries > 0 {
+                    parts.append("\(r.deliveries) delivered" + (r.missing > 0 ? " (\(r.missing) MISSING)" : ""))
+                }
+                if r.asked > 0 { parts.append("\(r.asked) approvals") }
+                if r.risks > 0 { parts.append("\(r.risks) risks") }
+                if r.activeNow > 0 { parts.append("\(r.activeNow) open now") }
+                print("  " + r.name + ": " + (parts.isEmpty ? "—" : parts.joined(separator: ", ")))
+            }
         }
     }
 

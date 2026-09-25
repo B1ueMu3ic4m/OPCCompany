@@ -79,6 +79,7 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v0.8.0 morning standup (v1.6 standup_window): one window of TRAFFIC,
   // same pull discipline. Null = bridge too old — the card says so honestly.
   Map<String, int>? _standup;
+  List<Map<String, dynamic>>? _team;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -103,6 +104,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _history = _bridge.historyList();
       _deliverables = _bridge.deliverablesList();
       _standup = _bridge.standupWindow();
+      _team = _bridge.teamStatsList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -129,6 +131,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _history = _bridge.historyList();
       _deliverables = _bridge.deliverablesList();
       _standup = _bridge.standupWindow();
+      _team = _bridge.teamStatsList();
       _syncTranscripts();
     });
   }
@@ -190,6 +193,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _history = _bridge.historyList();
       _deliverables = _bridge.deliverablesList();
       _standup = _bridge.standupWindow();
+      _team = _bridge.teamStatsList();
       _syncTranscripts();
     });
   }
@@ -426,6 +430,15 @@ class _CompanyHomeState extends State<CompanyHome> {
               const SizedBox(height: 8),
               _standupCard(),
               const SizedBox(height: 12),
+              // v0.9.0 "the name behind the work": per-employee window
+              // contribution — pulled through team_stats_list (bridge
+              // v1.7), the store's own team door, so shell rows and CLI
+              // rows can never drift.
+              Text('Team — last 24h',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _teamPanel(),
+              const SizedBox(height: 12),
               // v0.6.0 "every hand leaves a receipt": the ledger the boss
               // already wrote — pulled via history_list (bridge v1.4) on
               // boot/refresh/after-verb, never per frame. An empty or
@@ -594,6 +607,57 @@ class _CompanyHomeState extends State<CompanyHome> {
   /// bridge / refused verb) says "no standup yet" — never zero counts
   /// dressed up as a quiet company. The quiet-but-answered case says
   /// quiet. awaitingNow > 0 always surfaces: that part is NOT windowed.
+  /// Team window panel. Three honest states: null (no answer from an old
+  /// core) says "no team stats from this core" — never an empty office;
+  /// an empty list means literally nobody moved; rows render in the
+  /// door's order (traffic desc, 未分配 last) WITHOUT resorting.
+  Widget _teamPanel() {
+    final rows = _team;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.groups_outlined),
+              title: Text('No team stats from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.groups_outlined),
+              title: Text('Nobody moved in the last 24h.')));
+    }
+    return Column(
+      children: [
+        for (final row in rows)
+          Card(
+            child: ListTile(
+              leading: Icon(row['agentID'] == null
+                  ? Icons.person_off_outlined
+                  : Icons.person),
+              title: Text('${row['name']}'),
+              subtitle: Text(_teamLine(row),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// One employee's row: counted pieces only; MISSING rides the bridge's
+  /// read-time verdict exactly like the shelf does.
+  String _teamLine(Map<String, dynamic> row) {
+    final parts = <String>[
+      if ((row['assigned'] ?? 0) > 0) '${row['assigned']} assigned',
+      if ((row['deliveries'] ?? 0) > 0)
+        (row['missing'] ?? 0) > 0
+            ? '${row['deliveries']} delivered (${row['missing']} MISSING)'
+            : '${row['deliveries']} delivered',
+      if ((row['asked'] ?? 0) > 0) '${row['asked']} approvals',
+      if ((row['risks'] ?? 0) > 0) '${row['risks']} risk(s)',
+      if ((row['activeNow'] ?? 0) > 0) '${row['activeNow']} open now',
+    ];
+    return parts.isEmpty ? 'quiet' : parts.join(' · ');
+  }
+
   Widget _standupCard() {
     final w = _standup;
     if (w == null) {

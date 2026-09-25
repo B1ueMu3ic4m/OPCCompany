@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **The name behind the work (v0.9.0)**: v0.8 answers WHAT the company did;
+  one new door answers WHO did it. `CompanyStore.teamWindow(hours:now:)`
+  aggregates per-employee contribution over the rolling window — work
+  assigned, deliveries (with the v0.7 existence verdict riding at read
+  time), approvals raised, risks attributed, and the live open-work load —
+  through REAL edges only (event.agentID, approval.requesterID,
+  artifact→task→owner); a dead chain or missing id lands honestly in the
+  named unattributed bucket instead of a guessed owner. Pure read, `now`
+  injectable, traffic-descending order with the unattributed row always
+  last. `opc team [hours]`; bridge v1.7 `team_stats_list` (the array
+  channel, so the shell's naming rule covers it for free); the Flutter
+  shell grows a Team panel beside Standup; the macOS command center quotes
+  the same door ("who was busiest, what is unclaimed"). CLI, bridge, shell
+  and GUI share one math — five surfaces, no drift.
+
 ## [0.8.0] - 2026-09-23
 
 ### Added

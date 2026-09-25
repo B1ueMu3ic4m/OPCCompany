@@ -276,6 +276,29 @@ class OpcBridge {
   List<Map<String, dynamic>>? deliverablesList() =>
       _listVerb('deliverables_list');
 
+  /// v1.7 the name behind the work: per-employee TRAFFIC of the current
+  /// product over the window (default 24h, optional [hours]). Rows arrive
+  /// in the door's order — traffic desc, and the unattributed row (no
+  /// agentID key, 未分配) LAST. Each row: name/assigned/deliveries/missing/
+  /// asked/risks/activeNow (+agentID when attributed). missing rides the
+  /// existence door at read time. Read-only.
+  List<Map<String, dynamic>>? teamStatsList({int? hours}) {
+    if (command('team_stats_list',
+            hours == null ? const {} : {'hours': hours}) != ok) {
+      return null;
+    }
+    final source = lastError();
+    if (source.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(source);
+      if (decoded is! List) return null;
+      final rows = decoded.whereType<Map<String, dynamic>>().toList();
+      return rows.length == decoded.length ? rows : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
   /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
   /// seven integer counts {hours,newWork,decisions,deliveries,missing,
   /// risks,awaitingNow}, computed live by the store's own door. Unlike

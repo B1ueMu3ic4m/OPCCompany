@@ -40,6 +40,11 @@ class FakeOpcBridge {
   /// scripted query payloads: set before terminal_digest()/terminalTail()
   Map<String, dynamic>? digestResult;
 
+  /// v1.7: team_stats_list rows; defaults to a busy-but-honest office.
+  List<Map<String, dynamic>>? teamStatsResult;
+  /// true => simulate a core older than v1.7 (unknown verb, rc=-1).
+  bool teamStatsRefused = false;
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -98,6 +103,7 @@ class FakeOpcBridge {
     // a core older than v1.6: the verb simply does not exist (rc=-1),
     // exactly what a pre-standup dylib answers
     if (verb == 'standup_window' && standupRefused) return -1;
+    if (verb == 'team_stats_list' && teamStatsRefused) return -1;
     // query verbs carry results through nextError exactly like the bridge
     // does (rc=0 + last_error = payload) — the wrapper's contract test
     final Object? carried = switch (verb) {
@@ -118,6 +124,16 @@ class FakeOpcBridge {
             ],
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
       // v1.6 standup: an OBJECT rides the same smuggle channel
+      'team_stats_list' => teamStatsResult ??
+          const [
+            {
+              'agentID': 'fake-alice', 'name': 'Alice', 'assigned': 2,
+              'deliveries': 1, 'missing': 0, 'asked': 1, 'risks': 0,
+              'activeNow': 1,
+            },
+            {'name': '未分配', 'assigned': 0, 'deliveries': 1,
+             'missing': 1, 'asked': 0, 'risks': 0, 'activeNow': 0},
+          ],
       'standup_window' => standupResult ??
           const <String, dynamic>{
             'hours': 24, 'newWork': 0, 'decisions': 0, 'deliveries': 0,

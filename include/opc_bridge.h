@@ -106,6 +106,17 @@ char *opc_bridge_snapshot_json(void);
  *       'awaitingNow' is the live pending queue, NOT windowed). No
  *       parameters: the default 24h window is the whole contract.
  *       Read-only, same guard silence as approvals_list.
+ *   "team_stats_list" {"hours":N}?   (v1.7)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY:
+ *       [{"agentID":"<uuid>","name":"<display>","assigned":N,
+ *       "deliveries":N,"missing":N,"asked":N,"risks":N,"activeNow":N}, ...]
+ *       — per-employee TRAFFIC for the CURRENT product over the window
+ *       (default 24h; "hours" is an optional positive int). Row order IS
+ *       the contract: traffic-desc, and the unattributed row (no agentID
+ *       key, name "未分配") LAST — it collects events with no agent,
+ *       artifacts whose task chain dead-ends, orphan artifacts; attribution
+ *       never fabricates an owner. "missing" rides the v0.7 existence door
+ *       AT READ TIME. Read-only, same guard silence as approvals_list.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a
