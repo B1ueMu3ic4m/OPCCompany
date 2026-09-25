@@ -95,6 +95,7 @@
 " 会话预热失败" = " session warmup failed";
 " 位员工。这里先显示关键进度，完整团队仍在产品详情和员工工作台查看。" = " employees. Key progress shows here first; the full team is in Product Detail and the Employee Desk.";
 " 先处理阻塞任务并回报解决方案。" = " handles blocked tasks first and reports the solution.";
+" 共 " = " (total ";
 " 分配给 " = " assigned to ";
 " 创建员工。" = " to create an employee.";
 " 加入当前产品团队。" = " joined the current product team.";
@@ -153,6 +154,7 @@
 " 是本地占位模式，不能真正运行外部模型。" = " is a local placeholder and cannot really run external models.";
 " 是订阅制命令行模式，但命令配置不合理：" = " is in CLI mode with an invalid command: ";
 " 暂未配置专用就绪提示，手动交互轮次仅对配置了独立行就绪提示的命令行工具开放。" = "'s CLI has no dedicated ready prompt; manual turns are only for CLIs with line-ready prompts.";
+" 最忙" = " — busiest";
 " 未加入 " = " has not joined ";
 " 未加入当前产品团队。" = " has not joined the current product team.";
 " 条" = " items";
@@ -245,6 +247,7 @@
 " 秒，有运行占用）" = "s, with run occupation)";
 " 秒，超过阈值 " = "s, over threshold ";
 " 移除。" = " removed.";
+" 笔" = " pieces)";
 " 类智能工具线索、" = " AI-tool clues, ";
 " 组重复的自动状态摘要，共移除 " = " duplicate summary groups, removed ";
 " 组重复，可清理 " = " duplicate groups; cleanable ";
@@ -1172,6 +1175,7 @@
 "团队 " = "Team of ";
 "团队 %lld 人 · %lld" = "Team of %lld · %@";
 "团队 \\( 人 · \\(" = "Team of \\( · \\(";
+"团队无人动" = "team of 0";
 "团队模板" = "Team Template";
 "团队继续执行进行中任务，完成后进入验收区。" = "The team continues in-progress tasks; finished ones enter the acceptance area.";
 "团队负责人" = "Team Lead";
@@ -1914,6 +1918,7 @@
 "最近风险" = "Recent risks";
 "有 " = "You have ";
 "有 \\( 项待你确认（审批请求 + 风险/阻塞任务）。" = "\\( items await your confirmation (approval requests + risk/blocked tasks).";
+"有未归属工作" = "some work is unattributed";
 "有警告" = "With warnings";
 "有风险" = "At risk";
 "服务繁忙" = "Service busy";

@@ -142,6 +142,22 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
           standup['hours'] == 24 &&
           standup.keys.length == 7,
       standup == null ? bridge.lastError() : 'quiet=${standup['newWork'] == 0}');
+  // v1.7 team: rows answer in the door's order, unattributed last. The
+  // young company may honestly answer [] — pin shape, never a count.
+  final team = bridge.teamStatsList(hours: 24);
+  // the door's ordering invariant, stated correctly: an unattributed row
+  // is LAST — it does NOT mean the last row must be unattributed (a real
+  // company has attributed traffic and may have no orphan work at all).
+  final firstUnattributed =
+      team?.indexWhere((r) => r['agentID'] == null) ?? (-1);
+  final ordered = team == null
+      ? false
+      : firstUnattributed == -1 ||
+          firstUnattributed == team.length - 1; // never mid-list
+  add(
+      'team_stats_list answers rows (unattributed sorts last)',
+      team != null && team.every((row) => row['name'] is String) && ordered,
+      team == null ? bridge.lastError() : 'rows=${team.length}');
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

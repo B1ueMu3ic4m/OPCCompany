@@ -303,6 +303,28 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try JSONSerialization.data(withJSONObject: window)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "team_stats_list":
+                    // v1.7 the name behind the work: per-employee window
+                    // contribution as a LIST (newest-first not applicable —
+                    // order IS traffic-desc, unattributed last, set by the
+                    // door). payload may carry "hours" (default 24). Every
+                    // row is the store's own teamWindow, so attribution can
+                    // never drift between shell/CLI/GUI. Read-only.
+                    let hours = (payload["hours"] as? Int) ?? 24
+                    let rows: [[String: Any]] = store.teamWindow(hours: max(1, hours)).map { r in
+                        var row: [String: Any] = ["name": r.name,
+                                                  "assigned": r.assigned,
+                                                  "deliveries": r.deliveries,
+                                                  "missing": r.missing,
+                                                  "asked": r.asked,
+                                                  "risks": r.risks,
+                                                  "activeNow": r.activeNow]
+                        if let a = r.agentID { row["agentID"] = a.uuidString }
+                        return row
+                    }
+                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "terminal_digest":
                     // Query: byte lengths per agent log of the selected
                     // product, keyed by agentID (the storage key's suffix —

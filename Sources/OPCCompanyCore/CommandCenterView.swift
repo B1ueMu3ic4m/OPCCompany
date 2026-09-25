@@ -267,6 +267,13 @@ struct CommandCenterView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(CompanyTheme.muted)
                         .fixedSize(horizontal: false, vertical: true)
+                    // v0.9.0 "the name behind the work": the SAME team
+                    // door the CLI and shell read — who was busiest and
+                    // whether anything sits unattributed.
+                    Text(store.teamHeadlineText())
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(CompanyTheme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
 
