@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-25
+
 ### Added — v0.10.0 "the stall watch"
 - **`stallWatch(overMinutes:now:)`** — the fourth door: what STOPPED
   moving. Non-terminal work parked longer than the threshold (default
