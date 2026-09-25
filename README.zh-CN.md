@@ -93,7 +93,8 @@ swift build -c release --product opc
 .build/release/opc history [n]            # 决策台账——谁在问、你的批复、何时(纯读)
 .build/release/opc deliverables [n]       # 交付货架——交付了什么、文件此刻是否还在(纯读)
 .build/release/opc standup [hours]        # 晨会速览——过去窗口干了什么(流量,纯读)
-.build/release/opc team [hours]           # 谁在干活——窗口内每位员工的贡献(含未归属,纯读)
+`.build/release/opc team [hours]`           # 谁在干活——窗口内每位员工的贡献(含未归属,纯读)
+`.build/release/opc stalls [minutes]`       # 谁卡住了——停摆超时的任务,最久优先(纯读)
 ```
 
 `opc` 只链接可移植核心层——它也是 Windows 移植路径上的第一个产物:逻辑层自

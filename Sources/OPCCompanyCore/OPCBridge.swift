@@ -239,7 +239,8 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                         if let r = a.requesterID { row["requesterID"] = r.uuidString }
                         return row
                     }
-                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    let data = try JSONSerialization.data(withJSONObject: rows,
+                                                          options: [.sortedKeys])
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "history_list":
@@ -258,7 +259,8 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                         if let r = a.requesterID { row["requesterID"] = r.uuidString }
                         return row
                     }
-                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    let data = try JSONSerialization.data(withJSONObject: rows,
+                                                          options: [.sortedKeys])
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "deliverables_list":
@@ -279,7 +281,8 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                         row["createdAt"] = a.createdAt.timeIntervalSince1970
                         return row
                     }
-                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    let data = try JSONSerialization.data(withJSONObject: rows,
+                                                          options: [.sortedKeys])
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "standup_window":
@@ -311,7 +314,10 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // row is the store's own teamWindow, so attribution can
                     // never drift between shell/CLI/GUI. Read-only.
                     let hours = (payload["hours"] as? Int) ?? 24
-                    let rows: [[String: Any]] = store.teamWindow(hours: max(1, hours)).map { r in
+                    // .sortedKeys: dictionary key order inside each row is
+                    // otherwise unstable per serialization (v1.8 probe lesson) —
+                    // pinned so repeat reads are byte-stable for caches/tests.
+                    let rows: [[String: Any]] = store.teamWindow(hours: hours).map { r in
                         var row: [String: Any] = ["name": r.name,
                                                   "assigned": r.assigned,
                                                   "deliveries": r.deliveries,
@@ -322,7 +328,8 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                         if let a = r.agentID { row["agentID"] = a.uuidString }
                         return row
                     }
-                    let data = try JSONSerialization.data(withJSONObject: rows)
+                    let data = try JSONSerialization.data(withJSONObject: rows,
+                                                          options: [.sortedKeys])
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "terminal_digest":
@@ -355,6 +362,28 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                         "length": window.length,
                     ]
                     let data = try JSONSerialization.data(withJSONObject: envelope)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
+                case "stalls_list":
+                    // v1.8 the stall watch: non-terminal work parked over
+                    // [over_minutes] (default 30), longest-frozen FIRST,
+                    // unattributed rows LAST (the door's own order — for a
+                    // LIST verb order IS the contract). payload may carry
+                    // "over_minutes". Every row is the store's stallWatch,
+                    // so dwell math never drifts between shell/CLI/GUI.
+                    // Read-only.
+                    let over = max(0, (payload["over_minutes"] as? Int) ?? 30)
+                    let rows: [[String: Any]] = store.stallWatch(overMinutes: over).map { r in
+                        var row: [String: Any] = ["itemID": r.itemID.uuidString,
+                                                  "name": r.agentName,
+                                                  "status": r.status.rawValue,
+                                                  "dwellMinutes": r.dwellMinutes,
+                                                  "waitingOnYou": r.waitingOnYou]
+                        if let a = r.agentID { row["agentID"] = a.uuidString }
+                        return row
+                    }
+                    let data = try JSONSerialization.data(withJSONObject: rows,
+                                                          options: [.sortedKeys])
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 default:

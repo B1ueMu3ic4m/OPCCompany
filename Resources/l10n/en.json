@@ -2993,6 +2993,13 @@
     " 最忙": " — busiest",
     " 共 ": " (total ",
     " 笔": " pieces)",
-    "有未归属工作": "some work is unattributed"
+    "有未归属工作": "some work is unattributed",
+    "没有停滞超过 ": "No task stalled over ",
+    " 分钟的任务": " min",
+    " 项停滞": " stalled",
+    " 分钟": " min",
+    "），最久 ": ", longest ",
+    " 分钟：": " min: ",
+    "有任务等你审批": "a task waits on your approval"
   }
 }

@@ -274,6 +274,14 @@ struct CommandCenterView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(CompanyTheme.muted)
                         .fixedSize(horizontal: false, vertical: true)
+                    // v0.10.0 "the stall watch": the SAME door — what
+                    // STOPPED moving and how long, and whether the jam
+                    // waits on approval (a status fact, not an
+                    // accusation).
+                    Text(store.stallHeadlineText())
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(CompanyTheme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
 

@@ -71,6 +71,9 @@ void main() {
         'asked': 0, 'risks': 0, 'activeNow': 0,
       },
     ];
+    // the stall panel shares the home column; neutralize its default
+    // rows so the exact-text finders below speak only about the team
+    fake.stallsResult = [];
     await tester.pumpWidget(
         MaterialApp(home: CompanyHome(bridge: fake.asBridge())));
     await tester.pumpAndSettle();

@@ -17,6 +17,7 @@
 //   opc report              boss-readable progress report for the current product
 //   opc standup [hours]     what happened in the window (traffic)
 //   opc team [hours]        who did what in the window (traffic)
+//   opc stalls [minutes]    what STOPPED moving and for how long
 //   opc help / --help       usage
 
 import Foundation
@@ -57,6 +58,10 @@ private func usage() -> String {
       opc team [HOURS]         WHO did what in the window (default 24)
                                  — per-employee attribution through real
                                  edges. Pure read: nothing here writes state.
+      opc stalls [MINUTES]     what STOPPED moving: non-terminal work
+                                 parked over [MINUTES] (default 30), longest
+                                 first; approval-parked says WAITS ON YOU.
+                                 Pure read: nothing here writes state.
       opc products               list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
@@ -122,6 +127,8 @@ struct OPC {
                 try standup(rest)
             case "team":
                 try team(rest)
+            case "stalls":
+                try stalls(rest)
             case "products":
                 try products()
             case "use":
@@ -390,6 +397,34 @@ struct OPC {
                 if r.risks > 0 { parts.append("\(r.risks) risks") }
                 if r.activeNow > 0 { parts.append("\(r.activeNow) open now") }
                 print("  " + r.name + ": " + (parts.isEmpty ? "—" : parts.joined(separator: ", ")))
+            }
+        }
+    }
+
+    @MainActor
+    /// v0.10.0 "the stall watch": non-terminal work parked longer than
+    /// [minutes] (default 30), longest first. Pure read — the door's own
+    /// clock, no surface math.
+    static func stalls(_ rest: [String]) throws {
+        var minutes = 30
+        if let first = rest.first {
+            guard let parsed = Int(first), parsed > 0 else {
+                throw CLIError(message: "usage: opc stalls [minutes]  (threshold in minutes, default 30)")
+            }
+            minutes = parsed
+        }
+        try withStore { store in
+            let rows = store.stallWatch(overMinutes: minutes)
+            let product = store.selectedProduct?.name ?? "the selected product"
+            if rows.isEmpty {
+                print("Stalls — \(product): nothing parked over \(minutes) min.")
+                return
+            }
+            print("Stalls — \(product), over \(minutes) min (longest first):")
+            for r in rows {
+                var line = "  \(r.dwellMinutes) min — \(r.status.rawValue)"
+                line += r.waitingOnYou ? " (WAITS ON YOU)" : ""
+                print(line + " — \(r.agentName)")
             }
         }
     }

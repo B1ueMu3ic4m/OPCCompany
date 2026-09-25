@@ -106,7 +106,8 @@ swift build -c release --product opc
 .build/release/opc history [n]            # decision ledger: who asked, your verdict, when
 .build/release/opc deliverables [n]       # delivery shelf: what was handed over — and whether each file still exists right now
 .build/release/opc standup [hours]        # morning standup: what the company DID in the window
-.build/release/opc team [hours]           # the name behind the work: who did it, per employee
+`.build/release/opc team [hours]`           # the name behind the work: who did it, per employee
+`.build/release/opc stalls [minutes]`       # the stall watch: what STOPPED moving, longest-frozen first
 ```
 
 `opc` links only the portable core — it's also the first artifact on the

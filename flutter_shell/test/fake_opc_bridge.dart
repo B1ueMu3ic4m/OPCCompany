@@ -45,6 +45,11 @@ class FakeOpcBridge {
   /// true => simulate a core older than v1.7 (unknown verb, rc=-1).
   bool teamStatsRefused = false;
 
+  /// v1.8: stalls_list rows; defaults to a jammed-but-honest watch.
+  List<Map<String, dynamic>>? stallsResult;
+  /// true => simulate a core older than v1.8 (unknown verb, rc=-1).
+  bool stallsRefused = false;
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -104,6 +109,7 @@ class FakeOpcBridge {
     // exactly what a pre-standup dylib answers
     if (verb == 'standup_window' && standupRefused) return -1;
     if (verb == 'team_stats_list' && teamStatsRefused) return -1;
+    if (verb == 'stalls_list' && stallsRefused) return -1;
     // query verbs carry results through nextError exactly like the bridge
     // does (rc=0 + last_error = payload) — the wrapper's contract test
     final Object? carried = switch (verb) {
@@ -124,6 +130,16 @@ class FakeOpcBridge {
             ],
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
       // v1.6 standup: an OBJECT rides the same smuggle channel
+      'stalls_list' => stallsResult ??
+          const [
+            {
+              'itemID': 'fake-jam', 'agentID': 'fake-alice', 'name': 'Alice',
+              'status': 'waitingApproval', 'dwellMinutes': 90,
+              'waitingOnYou': true,
+            },
+            {'itemID': 'fake-lost', 'name': '未分配', 'status': 'running',
+             'dwellMinutes': 45, 'waitingOnYou': false},
+          ],
       'team_stats_list' => teamStatsResult ??
           const [
             {

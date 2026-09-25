@@ -158,6 +158,29 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       'team_stats_list answers rows (unattributed sorts last)',
       team != null && team.every((row) => row['name'] is String) && ordered,
       team == null ? bridge.lastError() : 'rows=${team.length}');
+  // v1.8 stalls: the watch answers in the door's order — longest-frozen
+  // FIRST; an unattributed row, if present, is LAST (existence
+  // conditional, the v0.9 lesson: never assert a fixed position blindly).
+  final stalls = bridge.stallsList(overMinutes: 30);
+  final dwells =
+      stalls?.map((r) => r['dwellMinutes']).whereType<int>().toList() ?? [];
+  final firstStallUnattributed =
+      stalls?.indexWhere((r) => r['agentID'] == null) ?? (-1);
+  final stallsOrdered = stalls == null
+      ? false
+      : (firstStallUnattributed == -1 ||
+              firstStallUnattributed == stalls.length - 1) &&
+          _isNonIncreasing(dwells);
+  add(
+      'stalls_list answers rows (longest first, unattributed last)',
+      stalls != null &&
+          stalls.every((row) =>
+              row['name'] is String &&
+              row['status'] is String &&
+              row['dwellMinutes'] is int &&
+              row['waitingOnYou'] is bool) &&
+          stallsOrdered,
+      stalls == null ? bridge.lastError() : 'rows=${stalls.length}');
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;
@@ -212,6 +235,15 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
 /// exit or a diagnosis (first run revealed exactly that — a sandboxed write
 /// threw before exit(), so the runner only saw a timeout). The verdict is
 /// always printed + drives the exit code regardless of the file.
+/// The door promises longest-frozen first; the smoke checks the printed
+/// sequence without re-implementing any math — non-increasing dwell only.
+bool _isNonIncreasing(List<int> values) {
+  for (var i = 1; i < values.length; i++) {
+    if (values[i] > values[i - 1]) return false;
+  }
+  return true;
+}
+
 Future<void> finishShellSmoke(OpcBridge bridge) async {
   final results = await runShellSmoke(bridge);
   final allPass = results.every((r) => r.pass);

@@ -97,6 +97,9 @@
 " 先处理阻塞任务并回报解决方案。" = " handles blocked tasks first and reports the solution.";
 " 共 " = " (total ";
 " 分配给 " = " assigned to ";
+" 分钟" = " min";
+" 分钟的任务" = " min";
+" 分钟：" = " min: ";
 " 创建员工。" = " to create an employee.";
 " 加入当前产品团队。" = " joined the current product team.";
 " 及其任务/队列/审批/产物/记忆已删除。" = " deleted with its tasks/queue/approvals/artifacts/memories.";
@@ -271,6 +274,7 @@
 " 项。" = " items.";
 " 项不为通过，建议复看交付验收中心。" = " items not passed — recheck the Delivery Acceptance Center.";
 " 项任务。处理完上方任务后下一项会自动浮现。" = " tasks. Handle the ones above and the next appears automatically.";
+" 项停滞" = " stalled";
 " 项分配任务。处理或入队上方任务后下一项会自动浮现。" = " assigned tasks. Handle or queue the ones above and the next appears.";
 " 项告警，请审查员补充结论或补充证据。" = " warning items — the reviewer should add conclusions or evidence.";
 " 项在推进" = " in progress";
@@ -1918,6 +1922,7 @@
 "最近风险" = "Recent risks";
 "有 " = "You have ";
 "有 \\( 项待你确认（审批请求 + 风险/阻塞任务）。" = "\\( items await your confirmation (approval requests + risk/blocked tasks).";
+"有任务等你审批" = "a task waits on your approval";
 "有未归属工作" = "some work is unattributed";
 "有警告" = "With warnings";
 "有风险" = "At risk";
@@ -2132,6 +2137,7 @@
 "汇报链路：成员 -> " = "Reporting chain: member -> ";
 "沟通" = "Comms";
 "沟通中" = "Communicating";
+"没有停滞超过 " = "No task stalled over ";
 "没有可恢复的安全检查点" = "No recoverable safety checkpoint";
 "没有可接收手机指令的已启用通道。指令内容已拒绝进入任务队列。" = "No enabled channel can receive phone commands; the command content was rejected from the task queue.";
 "没有可用的预热命令。" = "No warmup command available.";
@@ -2941,6 +2947,7 @@
 "（未通过 " = "(failed ";
 "（状态：" = " (status: ";
 "）" = ")";
+"），最久 " = ", longest ";
 "）：状态 " = "): status ";
 "，" = ", ";
 "，不在已登记工作区根白名单。" = ", not in the registered workspace-root allowlist.";
