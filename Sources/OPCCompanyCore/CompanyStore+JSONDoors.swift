@@ -43,6 +43,41 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The decision ledger as a LIST (bridge v1.4 `history_list`):
+    /// RESOLVED approvals of the CURRENT product, newest-first, capped
+    /// at 50 — each row carries decidedAt + status + requesterID.
+    public func historyJSON() throws -> Data {
+        let rows: [[String: Any]] = selectedProductResolvedApprovals.prefix(50).map { a in
+            var row: [String: Any] = ["id": a.id.uuidString,
+                                      "title": a.title,
+                                      "reason": a.reason,
+                                      "status": a.status.rawValue]
+            if let d = a.decidedAt { row["decidedAt"] = d.timeIntervalSince1970 }
+            if let r = a.requesterID { row["requesterID"] = r.uuidString }
+            return row
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
+    /// The delivery shelf as a LIST (bridge v1.5 `deliverables_list`):
+    /// newest-first, capped at 50; `existsNow` computed HERE at read
+    /// time, never serialized.
+    public func deliverablesJSON() throws -> Data {
+        let rows: [[String: Any]] = selectedProductRecentDeliveryArtifacts.prefix(50).map { a in
+            var row: [String: Any] = ["id": a.id.uuidString,
+                                      "title": a.title,
+                                      "kind": a.kind.rawValue,
+                                      "path": a.path,
+                                      "existsNow": a.existsOnDisk]
+            if let c = a.taskID { row["taskID"] = c.uuidString }
+            row["createdAt"] = a.createdAt.timeIntervalSince1970
+            return row
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
     /// One window's traffic as the seven-count OBJECT (bridge v1.6
     /// `standup_window`).
     public func standupWindowJSON(hours: Int = 24,

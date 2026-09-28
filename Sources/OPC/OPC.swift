@@ -78,9 +78,10 @@ private func usage() -> String {
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
 
-    Read commands (status, approvals, standup, team, stalls, catchup)
-    accept --json: machine-readable output, byte-identical to what the
-    FFI bridge serves the shell (one serializer, no drift).
+    Read commands (status, approvals, history, deliverables, standup,
+    team, stalls, catchup) accept --json: machine-readable output,
+    byte-identical to what the FFI bridge serves the shell (one
+    serializer, no drift).
 
     All commands read and write the same local company snapshot the desktop app
     uses, so CLI and GUI stay in sync. State lives under the OPC app-support
@@ -334,14 +335,16 @@ struct OPC {
     /// guardNoConcurrentWriter: nothing writes).
     @MainActor
     static func history(_ rest: [String]) throws {
+        let (json, args) = splitJSONFlag(rest)
         var limit = 10
-        if let first = rest.first {
+        if let first = args.first {
             guard let parsed = Int(first), parsed > 0 else {
                 throw CLIError(message: "usage: opc history [n]  (n — a positive count, default 10)")
             }
             limit = parsed
         }
         try withStore { store in
+            if json { try printJSON(store, store.historyJSON()); return }
             let rows = store.selectedProductResolvedApprovals
             if rows.isEmpty {
                 print("No decisions yet for \(store.selectedProduct?.name ?? "the selected product") — raised hands appear here once you approve or reject them.")
@@ -363,14 +366,16 @@ struct OPC {
     /// the live existsOnDisk verdict; pure read, no side effects.
     @MainActor
     static func deliverables(_ rest: [String]) throws {
+        let (json, args) = splitJSONFlag(rest)
         var limit = 10
-        if let first = rest.first {
+        if let first = args.first {
             guard let parsed = Int(first), parsed > 0 else {
                 throw CLIError(message: "usage: opc deliverables [n]  (n — a positive count, default 10)")
             }
             limit = parsed
         }
         try withStore { store in
+            if json { try printJSON(store, store.deliverablesJSON()); return }
             let rows = store.selectedProductRecentDeliveryArtifacts
             if rows.isEmpty {
                 print("No deliveries recorded for \(store.selectedProduct?.name ?? "the selected product") yet.")

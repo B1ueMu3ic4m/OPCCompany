@@ -243,17 +243,8 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // requesterID, so every surface can show WHO asked and
                     // what the boss decided. Same smuggle as approvals_list;
                     // read-only by construction.
-                    let rows: [[String: Any]] = store.selectedProductResolvedApprovals.prefix(50).map { a in
-                        var row: [String: Any] = ["id": a.id.uuidString,
-                                                  "title": a.title,
-                                                  "reason": a.reason,
-                                                  "status": a.status.rawValue]
-                        if let d = a.decidedAt { row["decidedAt"] = d.timeIntervalSince1970 }
-                        if let r = a.requesterID { row["requesterID"] = r.uuidString }
-                        return row
-                    }
-                    let data = try JSONSerialization.data(withJSONObject: rows,
-                                                          options: [.sortedKeys])
+                    // v0.13+: serialization lives in the shared JSON layer
+                    let data = try store.historyJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "deliverables_list":
@@ -264,18 +255,8 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // "is the file there RIGHT NOW", so a shell row can
                     // flip [OK]->[MISSING] without any snapshot change.
                     // Same smuggle as the other list verbs; read-only.
-                    let rows: [[String: Any]] = store.selectedProductRecentDeliveryArtifacts.prefix(50).map { a in
-                        var row: [String: Any] = ["id": a.id.uuidString,
-                                                  "title": a.title,
-                                                  "kind": a.kind.rawValue,
-                                                  "path": a.path,
-                                                  "existsNow": a.existsOnDisk]
-                        if let c = a.taskID { row["taskID"] = c.uuidString }
-                        row["createdAt"] = a.createdAt.timeIntervalSince1970
-                        return row
-                    }
-                    let data = try JSONSerialization.data(withJSONObject: rows,
-                                                          options: [.sortedKeys])
+                    // v0.13+: serialization lives in the shared JSON layer
+                    let data = try store.deliverablesJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "standup_window":

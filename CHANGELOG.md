@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.14.0 "the json family completes"
+- **`opc history --json`** and **`opc deliverables --json`** — the two
+  read verbs that missed the v0.13 wave join the scriptable door. Same
+  shared serializer (CompanyStore+JSONDoors), same anti-drift pin: the
+  CLI prints the bridge's `history_list` / `deliverables_list` bytes
+  byte for byte. Every read verb now speaks JSON.
+
 ## [0.13.0] - 2026-09-29
 
 ### Added — v0.13.0 "the scriptable door"
