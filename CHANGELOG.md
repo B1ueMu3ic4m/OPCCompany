@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.12.0 "the live office"
+- **`opc watch [seconds]`** — the terminal gets the live view: one
+  frame every [seconds] (default 5), quoting the store's own doors
+  (standup / team / stall / desk counts), restamped with the wall
+  clock — a live view IS about time; the doors stay clockless.
+  `watch --once` renders a single frame (the testable seam); pure
+  read, junk intervals refuse loudly.
+- **Shell heartbeat** — the Flutter shell re-pulls the bridge every
+  3 seconds (production only: `CompanyHome(pollInterval:)` is null in
+  widget tests, because a periodic Timer would starve pumpAndSettle
+  forever). An employee typing inside a real terminal changes no
+  snapshot field; event-driven-only meant staring at frozen pixels.
+
 ## [0.11.0] - 2026-09-29
 
 ### Added — v0.11.0 "the catch-up"
