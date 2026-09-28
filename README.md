@@ -59,6 +59,7 @@ If you want to *watch* one Claude Code session play as pixel characters inside y
 - 🌐 **Bilingual UI** — in-app switch between 简体中文 and English
 - ⌨️ **Headless CLI (`opc`, v0.2.0)** — status / goal / advance / report from the terminal, driving the same local company snapshot as the GUI
 - 🧬 **Embeddable core + Flutter desktop shell (v0.3.0)** — the company engine exports a 6-symbol C ABI; a dart:ffi shell mirrors it on macOS **and Windows** (technical preview), both packaged and launched in CI
+- 🚪 **Five boss doors, one math (v0.8–v0.11)** — the standup (what the company did), the team door (who did it), the stall watch (what stopped moving) and the catch-up (one page: traffic, who, stuck, your desk, shelf integrity) — every door is a pure read over the same store, quoted verbatim by the GUI command center, the `opc` CLI, the C-ABI bridge and the Flutter shell, so no two surfaces can ever disagree
 
 ## Quick Start
 
