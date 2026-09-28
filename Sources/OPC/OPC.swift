@@ -62,6 +62,13 @@ private func usage() -> String {
                                  parked over [MINUTES] (default 30), longest
                                  first; approval-parked says WAITS ON YOU.
                                  Pure read: nothing here writes state.
+      opc catchup [HOURS] [MINUTES]
+                                 one page that brings you up to speed —
+                                 traffic, who did what, what's stuck, what
+                                 waits on your desk, shelf integrity — the
+                                 other doors composed, zero new math
+                                 (defaults: 24h window, 30min stuck threshold).
+                                 Pure read: nothing here writes state.
       opc products               list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
@@ -129,6 +136,8 @@ struct OPC {
                 try team(rest)
             case "stalls":
                 try stalls(rest)
+            case "catchup":
+                try catchup(rest)
             case "products":
                 try products()
             case "use":
@@ -426,6 +435,31 @@ struct OPC {
                 line += r.waitingOnYou ? " (WAITS ON YOU)" : ""
                 print(line + " — \(r.agentName)")
             }
+        }
+    }
+
+    /// v0.11.0 "the catch-up": one page that brings the boss up to
+    /// speed — traffic, who, stuck, your desk, shelf integrity — the
+    /// store's own doors composed, zero new math. Pure read; the page
+    /// is byte-stable for a given state (no wall-clock inside).
+    @MainActor
+    static func catchup(_ rest: [String]) throws {
+        var hours = 24
+        var minutes = 30
+        if let first = rest.first {
+            guard let parsed = Int(first), parsed > 0 else {
+                throw CLIError(message: "usage: opc catchup [hours] [minutes]  (window hours, default 24; stuck threshold minutes, default 30)")
+            }
+            hours = parsed
+        }
+        if rest.count > 1 {
+            guard let parsed = Int(rest[1]), parsed > 0 else {
+                throw CLIError(message: "usage: opc catchup [hours] [minutes]  (window hours, default 24; stuck threshold minutes, default 30)")
+            }
+            minutes = parsed
+        }
+        try withStore { store in
+            print(store.catchUpPage(hours: hours, overMinutes: minutes))
         }
     }
 

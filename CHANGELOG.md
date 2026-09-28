@@ -5,6 +5,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.11.0 "the catch-up"
+- **`catchUpPage(hours:overMinutes:now:)`** — the ONE page door: what
+  v0.8–v0.10 answer separately (traffic, who, stuck), plus the two
+  things the boss asks next (what waits on MY desk, is the shelf still
+  intact), composed into a single paste-ready page. Zero new math —
+  every number is the door it quotes, on the same injectable clock;
+  the page is a TERMINAL artifact (stable English prose) with section
+  order as the contract, quiet sections keep their place, every list
+  rides its door's own order, and 8-row caps say "...and N more"
+  instead of pretending. No wall-clock inside: repeat reads are
+  byte-identical.
+- **`opc catchup [hours] [minutes]`** — the same page on the terminal,
+  straight from the store (the CLI composes nothing).
+- **Bridge v1.9 `catchup_md`** — the page rides the smuggle channel as
+  a plain UTF-8 string (the page IS the payload); payload may carry
+  `hours` / `over_minutes`. Byte-stability documented as contract.
+- **Report center column** — the macOS boss report center renders the
+  page with one-tap copy; the Flutter shell grows a Catch-up card that
+  renders the page verbatim (selectable), and an old core honestly
+  says "no catch-up page from this core".
+
 ## [0.10.0] - 2026-09-25
 
 ### Added — v0.10.0 "the stall watch"

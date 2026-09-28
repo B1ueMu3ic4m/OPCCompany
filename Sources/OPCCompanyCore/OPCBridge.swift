@@ -386,6 +386,25 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                                                           options: [.sortedKeys])
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "catchup_md":
+                    // v1.9 the catch-up: ONE PAGE that brings the boss up
+                    // to speed — traffic / who / stuck / desk / shelf —
+                    // riding the smuggle channel as a plain UTF-8 STRING
+                    // (not JSON: the page IS the payload). Composed live
+                    // by the store's own doors (standupWindow, teamWindow,
+                    // stallWatch, the pending queue, the v0.7 existence
+                    // door) — zero new math, so the shell's page can never
+                    // drift from the CLI's. payload may carry "hours" /
+                    // "over_minutes". No wall-clock inside: byte-stable
+                    // for a given state, parameters and localization —
+                    // the same discipline the list channel pinned at v1.8.
+                    // Section order IS the contract (traffic, who, stuck,
+                    // desk, shelf, footer). Read-only.
+                    let hours = max(1, (payload["hours"] as? Int) ?? 24)
+                    let over = max(0, (payload["over_minutes"] as? Int) ?? 30)
+                    box.lastError = store.catchUpPage(hours: hours,
+                                                      overMinutes: over)
+                    return 0
                 default:
                     throw OPCBridgeRefusal(message: "unknown bridge verb '\(verbString)'")
                 }

@@ -3000,6 +3000,10 @@
     " 分钟": " min",
     "），最久 ": ", longest ",
     " 分钟：": " min: ",
-    "有任务等你审批": "a task waits on your approval"
+    "有任务等你审批": "a task waits on your approval",
+    "跟上进度（一页）": "Catch-up (one page)",
+    "把交通、人头、停滞、待批、货架五门合为一页，与终端、桥、壳同源同字。": "One page from five doors — traffic, who, stuck, desk, shelf — byte-identical to the CLI, bridge and shell surfaces.",
+    "复制 Catch-up 页": "Copy catch-up page",
+    "已复制": "Copied"
   }
 }
