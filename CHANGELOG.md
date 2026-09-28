@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-29
+
 ### Added — v0.11.0 "the catch-up"
 - **`catchUpPage(hours:overMinutes:now:)`** — the ONE page door: what
   v0.8–v0.10 answer separately (traffic, who, stuck), plus the two
