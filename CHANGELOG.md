@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-29
+
 ### Added — v0.13.0 "the scriptable door"
 - **`--json` on every read verb** — `status`, `approvals`, `standup`,
   `team`, `stalls`, `catchup` all accept `--json` and print
