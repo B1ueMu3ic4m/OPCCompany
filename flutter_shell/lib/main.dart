@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -48,15 +49,27 @@ class OpcShellApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         title: 'OPC Company',
         theme: _theme,
-        home: const CompanyHome(),
+        home: CompanyHome(
+            // v0.12.0 "the live office": production polls the bridge every
+            // 3s so transcripts/doors move even when no shell action fires
+            // (an employee typing in a real terminal changes no snapshot
+            // field). Widget tests construct CompanyHome directly WITHOUT
+            // a pollInterval — a periodic Timer would never let
+            // pumpAndSettle settle.
+            pollInterval: const Duration(seconds: 3)),
       );
 }
 
 class CompanyHome extends StatefulWidget {
-  const CompanyHome({super.key, this.bridge});
+  const CompanyHome({super.key, this.bridge, this.pollInterval});
 
   /// Widget-test seam: inject a fake; production passes null → real bridge.
   final OpcBridge? bridge;
+
+  /// v0.12.0 "the live office": how often to re-pull the bridge (snapshot,
+  /// every door, transcript digests). Null (widget tests) = event-driven
+  /// only — a periodic Timer would starve pumpAndSettle forever.
+  final Duration? pollInterval;
 
   @override
   State<CompanyHome> createState() => _CompanyHomeState();
@@ -85,6 +98,8 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v0.11.0 catch-up: the ONE page (bridge v1.9), same pull discipline;
   // null = core predates v1.9 — the card says so honestly.
   String? _catchup;
+  // v0.12.0 live-office heartbeat; null in widget tests (event-driven only).
+  Timer? _poll;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -101,6 +116,17 @@ class _CompanyHomeState extends State<CompanyHome> {
   @override
   void initState() {
     super.initState();
+    // v0.12.0 "the live office": production re-pulls on a timer so the
+    // transcript and every door move even when no shell action fires —
+    // an employee typing inside a real terminal changes no snapshot
+    // field, and event-driven-only meant staring at frozen pixels.
+    // Tests construct CompanyHome without a pollInterval: a periodic
+    // Timer would never let pumpAndSettle settle.
+    if (widget.pollInterval != null) {
+      _poll = Timer.periodic(widget.pollInterval!, (_) {
+        if (mounted) _refresh();
+      });
+    }
     final rc = _bridge.start();
     if (rc != OpcBridge.ok) {
       _lastAction = 'bridge create failed: ${_bridge.lastError()}';
@@ -125,6 +151,7 @@ class _CompanyHomeState extends State<CompanyHome> {
 
   @override
   void dispose() {
+    _poll?.cancel();
     _goalController.dispose();
     _goalFocus.dispose();
     _transcriptScroll.dispose();

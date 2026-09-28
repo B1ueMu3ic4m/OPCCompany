@@ -62,6 +62,11 @@ private func usage() -> String {
                                  parked over [MINUTES] (default 30), longest
                                  first; approval-parked says WAITS ON YOU.
                                  Pure read: nothing here writes state.
+      opc watch [SECONDS]      live view: one frame of the company every
+                                 [SECONDS] (default 5) — the same doors the
+                                 GUI quotes, restamped with the wall clock.
+                                 Pure read. `opc watch --once` renders one
+                                 frame and exits.
       opc catchup [HOURS] [MINUTES]
                                  one page that brings you up to speed —
                                  traffic, who did what, what's stuck, what
@@ -138,6 +143,8 @@ struct OPC {
                 try stalls(rest)
             case "catchup":
                 try catchup(rest)
+            case "watch":
+                try watch(rest)
             case "products":
                 try products()
             case "use":
@@ -460,6 +467,98 @@ struct OPC {
         }
         try withStore { store in
             print(store.catchUpPage(hours: hours, overMinutes: minutes))
+        }
+    }
+
+    /// v0.12.0 "the live office": one frame of the terminal live view.
+    /// CLI surface, English prose (house rule) — but every NUMBER comes
+    /// from the store's own doors (standupWindow / teamWindow /
+    /// stallWatch / the pending queue), so a frame can never drift from
+    /// what the GUI quotes. The wall-clock stamp belongs here: a live
+    /// view IS about time; the doors themselves stay clockless.
+    @MainActor
+    static func watchFrame(_ store: CompanyStore, now: Date = Date()) -> String {
+        let product = store.selectedProduct?.name ?? "— (no product yet)"
+        let clock = Self.frameFormatter.string(from: now)
+        var frame: [String] = []
+        frame.append("OPC Company — \(product) · \(clock)")
+        frame.append("  products: \(store.products.count)   employees: \(store.agents.count)")
+
+        let scoped = store.tasks.filter { $0.productID == store.selectedProductID }
+        if scoped.isEmpty {
+            frame.append("  tasks: none yet — run: opc goal \"your first objective\"")
+        } else {
+            var counts: [String: Int] = [:]
+            for t in scoped { counts[t.status.title, default: 0] += 1 }
+            let line = counts.sorted { $0.value > $1.value }
+                .map { "\($0.value) \($0.key)" }.joined(separator: ", ")
+            frame.append("  tasks (\(scoped.count)): \(line)")
+        }
+
+        let w = store.standupWindow(now: now)
+        var traffic: [String] = []
+        if w.newWork > 0 { traffic.append("\(w.newWork) new") }
+        if w.decisions > 0 { traffic.append("\(w.decisions) decided") }
+        if w.deliveries > 0 {
+            traffic.append("\(w.deliveries) delivered"
+                + (w.missing > 0 ? " (\(w.missing) MISSING)" : ""))
+        }
+        if w.risks > 0 { traffic.append("\(w.risks) risk(s)") }
+        frame.append("  last 24h: \(traffic.isEmpty ? "quiet" : traffic.joined(separator: " · "))")
+
+        if let busiest = store.teamWindow(now: now).first {
+            frame.append("  busiest: \(busiest.name) (traffic \(busiest.assigned + busiest.deliveries + busiest.asked + busiest.risks))")
+        }
+
+        let stalls = store.stallWatch(now: now)
+        if stalls.isEmpty {
+            frame.append("  stuck: nothing parked over 30 min")
+        } else {
+            let worst = stalls.first!
+            frame.append("  stuck: \(stalls.count) parked over 30 min — worst \(worst.dwellMinutes) min \(worst.status.rawValue)\(worst.waitingOnYou ? " (WAITS ON YOU)" : "")")
+        }
+
+        let pending = store.selectedProductPendingApprovals.count
+        frame.append("  awaiting you: \(pending) approval\(pending == 1 ? "" : "s")")
+        return frame.joined(separator: "\n")
+    }
+
+    private static let frameFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f
+    }()
+
+    /// The live view: clear + redraw every [seconds]. `--once` renders a
+    /// single frame and exits — the seam tests pin without loops. Pure
+    /// read: watching never writes state.
+    @MainActor
+    static func watch(_ rest: [String]) throws {
+        var once = false
+        var seconds = 5.0
+        var args = rest
+        if let i = args.firstIndex(of: "--once") {
+            once = true
+            args.remove(at: i)
+        }
+        if let first = args.first {
+            guard let parsed = Double(first), parsed >= 1, parsed <= 3600 else {
+                throw CLIError(message: "usage: opc watch [seconds] [--once]  (interval 1–3600, default 5)")
+            }
+            seconds = parsed
+        }
+        try withStore { store in
+            let frame = watchFrame(store)
+            // clear-once at startup, then redraw in place: a scrollback
+            // full of cleared frames helps nobody (\u{1B}[H home, [2J clear)
+            print("\u{1B}[H\u{1B}[2J")
+            print(frame)
+            if once { return }
+            while true {
+                Thread.sleep(forTimeInterval: seconds)
+                print("\u{1B}[H\u{1B}[2J")
+                print(watchFrame(store))
+            }
         }
     }
 
