@@ -97,6 +97,7 @@ swift build -c release --product opc
 `.build/release/opc team [hours]`           # 谁在干活——窗口内每位员工的贡献(含未归属,纯读)
 `.build/release/opc stalls [minutes]`       # 谁卡住了——停摆超时的任务,最久优先(纯读)
 `.build/release/opc catchup [hours]`        # 跟上进度——一页看完:流量、人头、停滞、待批、货架(五门合一,纯读)
+`.build/release/opc watch [seconds]`        # 活的办公室——同几扇门,按钟重印(`--once` 只出一帧)
 ```
 
 `opc` 只链接可移植核心层——它也是 Windows 移植路径上的第一个产物:逻辑层自
