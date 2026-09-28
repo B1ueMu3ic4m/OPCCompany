@@ -5,6 +5,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.13.0 "the scriptable door"
+- **`--json` on every read verb** — `status`, `approvals`, `standup`,
+  `team`, `stalls`, `catchup` all accept `--json` and print
+  machine-readable output for scripts and CI: pipe to jq, diff across
+  time, drive `opc decide` from a bot. Flag position is tolerated
+  (`opc standup --json 6` == `opc standup 6 --json`).
+- **One serializer** — the JSON moved OUT of the bridge's inline
+  closures into `CompanyStore+JSONDoors` (the store layer, next to the
+  doors): the bridge and the CLI now print the SAME bytes, so drift
+  between them is structurally impossible. A test pins it: CLI stdout
+  == bridge smuggle channel, byte for byte, on the same state.
+- **`standup_window` is byte-stable** — the object channel was the
+  last one serializing with unstable key order (the bridge's own test
+  compared it semantically for exactly that reason); it now rides
+  .sortedKeys like every other channel.
+
+## [0.12.0] - 2026-09-29
+
 ### Added — v0.12.0 "the live office"
 - **`opc watch [seconds]`** — the terminal gets the live view: one
   frame every [seconds] (default 5), quoting the store's own doors

@@ -1,0 +1,116 @@
+import Foundation
+
+// v0.13.0 "the scriptable door" — the ONE JSON layer. The bridge's query
+// verbs serialized their rows inline; `--json` on the CLI now needs the
+// EXACT same bytes, and two serializers would eventually disagree (the
+// v0.9 lesson, surfaces division). So the serialization moves HERE, next
+// to the doors: the bridge and the CLI both call these functions, and a
+// byte drift between them is now structurally impossible.
+//
+// Contract notes, inherited from the bridge verbatim:
+//   * list payloads serialize with .sortedKeys — repeat reads are
+//     byte-stable (the v1.8 discipline), so scripts can diff and cache.
+//   * rows carry the door's OWN order (traffic-desc / longest-first /
+//     oldest-waiting; unattributed last) — for a list, order IS the
+//     contract.
+//   * catchup JSON wraps the page, never re-derives it: the page IS the
+//     payload (v1.9); {"page": ...} is an envelope, not a second truth.
+
+extension CompanyStore {
+
+    /// The FULL snapshot as JSON — byte-for-byte what the bridge's
+    /// `opc_bridge_snapshot_json` serves (same encoder strategy, same
+    /// encode input), now shared so the CLI's `status --json` and the
+    /// shell cannot drift.
+    public func snapshotJSONData() -> Data? {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return try? encoder.encode(currentSnapshot())
+    }
+
+    /// Every pending approval of the CURRENT product (bridge v1.3
+    /// `approvals_list`): id/title/reason + requesterID when the roster
+    /// link exists.
+    public func pendingApprovalsJSON() throws -> Data {
+        let rows: [[String: Any]] = selectedProductPendingApprovals.map { a in
+            var row: [String: Any] = ["id": a.id.uuidString,
+                                      "title": a.title,
+                                      "reason": a.reason]
+            if let r = a.requesterID { row["requesterID"] = r.uuidString }
+            return row
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
+    /// One window's traffic as the seven-count OBJECT (bridge v1.6
+    /// `standup_window`).
+    public func standupWindowJSON(hours: Int = 24,
+                                  now: Date = Date()) throws -> Data {
+        let w = standupWindow(hours: hours, now: now)
+        let window: [String: Any] = [
+            "hours": w.hours,
+            "newWork": w.newWork,
+            "decisions": w.decisions,
+            "deliveries": w.deliveries,
+            "missing": w.missing,
+            "risks": w.risks,
+            "awaitingNow": w.awaitingNow,
+        ]
+        // .sortedKeys: the object channel predates the v1.8 discipline and
+        // serialized with UNSTABLE key order every read (the bridge's own
+        // test compared semantically for exactly this reason). One
+        // serializer, now byte-stable everywhere.
+        return try JSONSerialization.data(withJSONObject: window,
+                                          options: [.sortedKeys])
+    }
+
+    /// Per-employee window contribution as a LIST (bridge v1.7
+    /// `team_stats_list`): traffic-desc, the unattributed row (no
+    /// agentID key) last — the door's own order.
+    public func teamStatsJSON(hours: Int = 24,
+                              now: Date = Date()) throws -> Data {
+        let rows: [[String: Any]] = teamWindow(hours: hours, now: now).map { r in
+            var row: [String: Any] = ["name": r.name,
+                                      "assigned": r.assigned,
+                                      "deliveries": r.deliveries,
+                                      "missing": r.missing,
+                                      "asked": r.asked,
+                                      "risks": r.risks,
+                                      "activeNow": r.activeNow]
+            if let a = r.agentID { row["agentID"] = a.uuidString }
+            return row
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
+    /// Non-terminal work parked over the threshold as a LIST (bridge
+    /// v1.8 `stalls_list`): longest-frozen first, unattributed last.
+    public func stallsJSON(overMinutes: Int = 30,
+                           now: Date = Date()) throws -> Data {
+        let rows: [[String: Any]] = stallWatch(overMinutes: overMinutes, now: now).map { r in
+            var row: [String: Any] = ["itemID": r.itemID.uuidString,
+                                      "name": r.agentName,
+                                      "status": r.status.rawValue,
+                                      "dwellMinutes": r.dwellMinutes,
+                                      "waitingOnYou": r.waitingOnYou]
+            if let a = r.agentID { row["agentID"] = a.uuidString }
+            return row
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
+    /// The catch-up page wrapped for machines (bridge v1.9 `catchup_md`
+    /// carries the raw page; this is the same page in an envelope —
+    /// never a second derivation).
+    public func catchupPageJSON(hours: Int = 24, overMinutes: Int = 30,
+                                now: Date = Date()) throws -> Data {
+        let envelope: [String: Any] = [
+            "page": catchUpPage(hours: hours, overMinutes: overMinutes, now: now)
+        ]
+        return try JSONSerialization.data(withJSONObject: envelope,
+                                          options: [.sortedKeys])
+    }
+}
