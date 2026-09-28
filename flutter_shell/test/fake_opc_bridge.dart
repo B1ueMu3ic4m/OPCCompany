@@ -50,6 +50,12 @@ class FakeOpcBridge {
   /// true => simulate a core older than v1.8 (unknown verb, rc=-1).
   bool stallsRefused = false;
 
+  /// v1.9: catchup_md page (plain UTF-8 string, NOT JSON); null => the
+  /// default one-page composition below.
+  String? catchupMdResult;
+  /// true => simulate a core older than v1.9 (unknown verb, rc=-1).
+  bool catchupRefused = false;
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -74,6 +80,15 @@ class FakeOpcBridge {
     'nextOffset': 0,
     'length': 0,
   };
+
+  static const String _defaultCatchupPage = '# Catch-up — Demo\n'
+      '\n'
+      '## Traffic (last 24h)\n'
+      '- new work: 0\n'
+      '- a quiet window — nothing moved.\n'
+      '\n'
+      '## Waiting on you (0)\n'
+      '- nothing — your desk is clear.\n';
 
   int _snapshotCalls = 0;
   final Set<int> _live = {};
@@ -110,6 +125,14 @@ class FakeOpcBridge {
     if (verb == 'standup_window' && standupRefused) return -1;
     if (verb == 'team_stats_list' && teamStatsRefused) return -1;
     if (verb == 'stalls_list' && stallsRefused) return -1;
+    if (verb == 'catchup_md' && catchupRefused) return -1;
+    // v1.9: the page rides the channel as a RAW string — the real bridge
+    // stores it in last_error WITHOUT jsonEncode (the page IS the payload),
+    // so the fake must not wrap it in quotes either.
+    if (verb == 'catchup_md') {
+      nextError = rawCarryOverride ?? (catchupMdResult ?? _defaultCatchupPage);
+      return rc;
+    }
     // query verbs carry results through nextError exactly like the bridge
     // does (rc=0 + last_error = payload) — the wrapper's contract test
     final Object? carried = switch (verb) {

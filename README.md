@@ -108,6 +108,7 @@ swift build -c release --product opc
 .build/release/opc standup [hours]        # morning standup: what the company DID in the window
 `.build/release/opc team [hours]`           # the name behind the work: who did it, per employee
 `.build/release/opc stalls [minutes]`       # the stall watch: what STOPPED moving, longest-frozen first
+`.build/release/opc catchup [hours]`        # v0.11 the catch-up: one page — traffic, who, stuck, your desk, shelf — all doors composed
 ```
 
 `opc` links only the portable core — it's also the first artifact on the

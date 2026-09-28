@@ -323,6 +323,24 @@ class OpcBridge {
     }
   }
 
+  /// v1.9 the catch-up: ONE page that brings the boss up to speed —
+  /// traffic / who / stuck / desk / shelf — composed live by the store's
+  /// own doors and riding the smuggle channel as a plain UTF-8 STRING
+  /// (not JSON: the page IS the payload). Section order IS the contract;
+  /// no wall-clock inside, so repeat reads are byte-stable. Optional
+  /// [hours] (default 24) and [overMinutes] (default 30). Null = the
+  /// core predates v1.9 or the verb was refused — the card says so
+  /// honestly, never a fabricated page. Read-only.
+  String? catchupMd({int? hours, int? overMinutes}) {
+    final payload = <String, dynamic>{
+      if (hours != null) 'hours': hours,
+      if (overMinutes != null) 'over_minutes': overMinutes,
+    };
+    if (command('catchup_md', payload) != ok) return null;
+    final page = lastError();
+    return page.isEmpty ? null : page;
+  }
+
   /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
   /// seven integer counts {hours,newWork,decisions,deliveries,missing,
   /// risks,awaitingNow}, computed live by the store's own door. Unlike

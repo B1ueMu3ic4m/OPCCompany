@@ -181,6 +181,38 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
               row['waitingOnYou'] is bool) &&
           stallsOrdered,
       stalls == null ? bridge.lastError() : 'rows=${stalls.length}');
+  // v1.9 catch-up: the ONE page rides the channel as a raw UTF-8
+  // string — the shell renders it verbatim, so the smoke only pins the
+  // contract: the page arrives, every section header in order, and a
+  // second read is byte-identical (no wall-clock inside).
+  final catchup = bridge.catchupMd();
+  String? catchupAgain;
+  if (catchup != null) catchupAgain = bridge.catchupMd();
+  const catchupSections = [
+    '# Catch-up — ',
+    '## Traffic',
+    '## Who did what',
+    '## Stuck',
+    '## Waiting on you',
+    '## Shelf integrity',
+    'Pure read — this page wrote nothing.',
+  ];
+  var catchupCursor = -1;
+  final catchupOrdered = catchup == null
+      ? false
+      : catchupSections.every((s) {
+          final at = catchup.indexOf(s, catchupCursor + 1);
+          if (at < 0) return false;
+          catchupCursor = at;
+          return true;
+        });
+  add('catchup_md answers the page (sections in order, byte-stable)',
+      catchup != null &&
+          catchupOrdered &&
+          catchupAgain == catchup,
+      catchup == null
+          ? bridge.lastError()
+          : 'bytes=${catchup.length}${catchupAgain == catchup ? ', stable' : ', UNSTABLE'}');
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

@@ -129,6 +129,19 @@ char *opc_bridge_snapshot_json(void);
  *       never an accusation. dwell/threshold math runs INSIDE the store's
  *       door at read time — pure read, zero writes. Same guard silence
  *       as approvals_list.
+ *   "catchup_md" {"hours":N,"over_minutes":N}?  (v1.9)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a plain UTF-8
+ *       STRING (not JSON — the page IS the payload): the catch-up page
+ *       for the CURRENT product, composed live by the store's own doors
+ *       (standup_window, team_stats_list, stalls_list, the pending
+ *       queue, the v0.7 existence door) — zero new math, so the shell's
+ *       page can never drift from the CLI's. Section order IS the
+ *       contract: traffic, who, stuck, desk, shelf, footer; a quiet
+ *       section keeps its place with a quiet line (never omitted).
+ *       No wall-clock inside: byte-stable for a given state, parameters
+ *       and localization. "hours" (default 24, positive int) and
+ *       "over_minutes" (default 30, non-negative int) are optional.
+ *       Read-only, same guard silence as approvals_list.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

@@ -1997,6 +1997,7 @@ struct ArtifactRecordCard: View {
 
 struct BossReportCenter: View {
     @EnvironmentObject private var store: CompanyStore
+    @State private var copiedCatchUp = false
 
     private var bossMessages: [ChatMessage] {
         // BossReportCenter UI 文案明示「报告会汇总当前产品...」，必须按当前产品作用域。
@@ -2085,6 +2086,42 @@ struct BossReportCenter: View {
                         OPCListOverflowFooter(summary: overflow.summary)
                     }
                 }
+            }
+            .commandPanel()
+
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeader(title: "跟上进度（一页）".L())
+                Text("把交通、人头、停滞、待批、货架五门合为一页，与终端、桥、壳同源同字。".L())
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(CompanyTheme.muted)
+                // v0.11.0 the catch-up: the SAME page the CLI prints and
+                // the shell renders — the store's doors composed, zero
+                // surface math, so no view can drift from `opc catchup`.
+                Button {
+                    let page = store.catchUpPage()
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(page, forType: .string)
+                    copiedCatchUp = true
+                    Task {
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        copiedCatchUp = false
+                    }
+                } label: {
+                    Label(copiedCatchUp ? "已复制".L() : "复制 Catch-up 页".L(),
+                          systemImage: copiedCatchUp ? "checkmark" : "doc.on.doc")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                ScrollView {
+                    Text(store.catchUpPage())
+                        .font(.system(size: 10.5, weight: .regular, design: .monospaced))
+                        .foregroundStyle(CompanyTheme.terminalInk)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                }
+                .frame(height: 220)
+                .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
             }
             .commandPanel()
         }

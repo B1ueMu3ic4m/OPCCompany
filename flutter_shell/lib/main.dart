@@ -82,6 +82,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   List<Map<String, dynamic>>? _team;
   // v0.10.0 stall watch: same pull discipline; null = core predates v1.8.
   List<Map<String, dynamic>>? _stalls;
+  // v0.11.0 catch-up: the ONE page (bridge v1.9), same pull discipline;
+  // null = core predates v1.9 — the card says so honestly.
+  String? _catchup;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -108,6 +111,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _standup = _bridge.standupWindow();
       _team = _bridge.teamStatsList();
       _stalls = _bridge.stallsList();
+      _catchup = _bridge.catchupMd();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -136,6 +140,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _standup = _bridge.standupWindow();
       _team = _bridge.teamStatsList();
       _stalls = _bridge.stallsList();
+      _catchup = _bridge.catchupMd();
       _syncTranscripts();
     });
   }
@@ -199,6 +204,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _standup = _bridge.standupWindow();
       _team = _bridge.teamStatsList();
       _stalls = _bridge.stallsList();
+      _catchup = _bridge.catchupMd();
       _syncTranscripts();
     });
   }
@@ -451,6 +457,16 @@ class _CompanyHomeState extends State<CompanyHome> {
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               _stallPanel(),
+              const SizedBox(height: 12),
+              // v0.11.0 "the catch-up": ONE page that brings the boss up
+              // to speed — traffic / who / stuck / desk / shelf — pulled
+              // through catchup_md (bridge v1.9), composed by the store's
+              // own doors, so the shell's page can never drift from the
+              // CLI's. An old core says so; never a fabricated page.
+              Text('Catch-up — one page',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _catchupCard(),
               const SizedBox(height: 12),
               // v0.6.0 "every hand leaves a receipt": the ledger the boss
               // already wrote — pulled via history_list (bridge v1.4) on
@@ -716,6 +732,29 @@ class _CompanyHomeState extends State<CompanyHome> {
     final status = row['status'] ?? '?';
     final onYou = row['waitingOnYou'] == true ? ' · WAITS ON YOU' : '';
     return '$dwell min — $status$onYou';
+  }
+
+  /// v0.11.0 catch-up card: the page verbatim in monospace (it IS the
+  /// artifact — selectable so the boss can copy it straight out). Null
+  /// (old core / refused verb) says "no catch-up page" — never a
+  /// fabricated page.
+  Widget _catchupCard() {
+    final page = _catchup;
+    if (page == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.description_outlined),
+              title: Text('No catch-up page from this core.')));
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: SelectionArea(
+          child: Text(page,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+        ),
+      ),
+    );
   }
 
   Widget _standupCard() {

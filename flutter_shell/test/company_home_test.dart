@@ -46,11 +46,11 @@ void _useBigViewport(WidgetTester tester) {
 /// write-verb commands only. The query doors mostly follow a NAMING RULE
 /// baked into the bridge contract (array verbs end `*_list`, logs start
 /// `terminal_`) — enforce the rule first. But an object-channel query
-/// matches NO rule: v1.6 `standup_window` is listed explicitly (the
-/// v1.4 lesson: a startsWith-only filter ate a one-shot scripted rc).
-/// When a new query verb joins, audit BOTH this filter AND the
-/// boot-pump set below.
-const _queryVerbs = ['standup_window'];
+/// matches NO rule: v1.6 `standup_window` and v1.9 `catchup_md` are
+/// listed explicitly (the v1.4 lesson: a startsWith-only filter ate a
+/// one-shot scripted rc). When a new query verb joins, audit BOTH this
+/// filter AND the boot-pump set below.
+const _queryVerbs = ['standup_window', 'catchup_md'];
 const _queryVerbPrefixes = ['terminal_', 'snapshot'];
 List<(String, Map<String, dynamic>)> writeCmds(FakeOpcBridge f) =>
     f.commands
@@ -258,7 +258,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('OLD CONTENT'), findsNothing);
-    expect(find.textContaining('new'), findsOneWidget);
+    // exact match: v0.11's catch-up page also contains the substring
+    // "new" ("new work: …") — the tail widget's text is exactly this
+    expect(find.text('new'), findsOneWidget);
     // and the refetch started from 0, not the stale cursor
     final lastTail = fake.commands.lastWhere((c) => c.$1 == 'terminal_tail');
     expect(lastTail.$2['afterOffset'], 0);
