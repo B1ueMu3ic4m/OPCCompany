@@ -54,6 +54,8 @@ AI 编程智能体很强大,但是**看不见**。任务丢进终端,然后就�
 - 🔒 **本地优先** —— SQLite 历史索引,钥匙串存密钥,核心链路不依赖云
 - 🌐 **中英双语** —— 应用内一键切换 简体中文 / English
 - ⌨️ **无头 CLI(`opc`,v0.2.0)** —— 终端里 status / goal / advance / report,与 GUI 共用同一份本司快照
+- 🔌 **可编程之门(v0.13/v0.14)**——每个读动词都接受 `--json`,由桥给壳的同一个序列化器打印,脚本、机器人和 GUI 读到的是同一批字节
+- 🫀 **活的办公室(v0.12)**——Flutter 壳每几秒重拉一次桥(员工在真终端里打字不会改动任何快照字段,只靠事件驱动就是盯着死像素),`opc watch` 给终端同款活视图
 - 🚪 **老板五门,一套数学(v0.8–v0.11)**——晨会(公司干了什么)、人头门(谁干的)、停摆守望(什么停了)、跟上进度(一页看完:流量、人头、停滞、待批、货架)——每扇门都是对同一存储的纯读,GUI 命令中心、`opc` 终端、C-ABI 桥、Flutter 壳逐字引用同一扇门,任何两个表面都不会打架
 - 🧬 **可嵌入核心 + Flutter 桌面壳(v0.3.0)** —— 公司引擎导出 6 符号 C ABI;dart:ffi 薄壳在 macOS **与 Windows** 镜像同一家公司(技术预览),两端包均在 CI 构建并真实启动验证
 
@@ -98,6 +100,8 @@ swift build -c release --product opc
 `.build/release/opc stalls [minutes]`       # 谁卡住了——停摆超时的任务,最久优先(纯读)
 `.build/release/opc catchup [hours]`        # 跟上进度——一页看完:流量、人头、停滞、待批、货架(五门合一,纯读)
 `.build/release/opc watch [seconds]`        # 活的办公室——同几扇门,按钟重印(`--once` 只出一帧)
+`.build/release/opc approvals --json`       # 每个读动词都说 JSON——与 FFI 桥逐字节相同(可直接接 jq)
+`.build/release/opc deliverables --json`    # v0.14 家族补全:history 与 deliverables 也会说了
 ```
 
 `opc` 只链接可移植核心层——它也是 Windows 移植路径上的第一个产物:逻辑层自
