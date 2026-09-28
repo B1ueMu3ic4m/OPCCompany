@@ -120,9 +120,7 @@ public func opc_bridge_snapshot_json() -> UnsafeMutablePointer<CChar>? {
     let json: String? = onMain {
         withBridgeLock { box in
             guard let store = box.store else { return nil }
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            guard let data = try? encoder.encode(store.currentSnapshot()) else { return nil }
+            guard let data = store.snapshotJSONData() else { return nil }
             return String(decoding: data, as: UTF8.self)
         }
     }
@@ -231,16 +229,11 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // last_error, 0 = success. requesterID lets the shell
                     // link a request to its pixel person; the roster
                     // already maps id→name there.
-                    let pending = store.selectedProductPendingApprovals
-                    let rows: [[String: Any]] = pending.map { a in
-                        var row: [String: Any] = ["id": a.id.uuidString,
-                                                  "title": a.title,
-                                                  "reason": a.reason]
-                        if let r = a.requesterID { row["requesterID"] = r.uuidString }
-                        return row
-                    }
-                    let data = try JSONSerialization.data(withJSONObject: rows,
-                                                          options: [.sortedKeys])
+                    // v0.13: serialization lives in the store's shared
+                    // JSON layer (CompanyStore+JSONDoors) — the CLI's
+                    // --json prints THESE bytes, so bridge and terminal
+                    // can never drift.
+                    let data = try store.pendingApprovalsJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "history_list":
@@ -293,17 +286,7 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // (standupWindow), so shell, CLI and GUI can never
                     // disagree about what happened; 'missing' rides the v0.7
                     // existence door AT READ TIME. Read-only, guard-silent.
-                    let w = store.standupWindow()
-                    let window: [String: Any] = [
-                        "hours": w.hours,
-                        "newWork": w.newWork,
-                        "decisions": w.decisions,
-                        "deliveries": w.deliveries,
-                        "missing": w.missing,
-                        "risks": w.risks,
-                        "awaitingNow": w.awaitingNow,
-                    ]
-                    let data = try JSONSerialization.data(withJSONObject: window)
+                    let data = try store.standupWindowJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "team_stats_list":
@@ -314,22 +297,7 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // row is the store's own teamWindow, so attribution can
                     // never drift between shell/CLI/GUI. Read-only.
                     let hours = (payload["hours"] as? Int) ?? 24
-                    // .sortedKeys: dictionary key order inside each row is
-                    // otherwise unstable per serialization (v1.8 probe lesson) —
-                    // pinned so repeat reads are byte-stable for caches/tests.
-                    let rows: [[String: Any]] = store.teamWindow(hours: hours).map { r in
-                        var row: [String: Any] = ["name": r.name,
-                                                  "assigned": r.assigned,
-                                                  "deliveries": r.deliveries,
-                                                  "missing": r.missing,
-                                                  "asked": r.asked,
-                                                  "risks": r.risks,
-                                                  "activeNow": r.activeNow]
-                        if let a = r.agentID { row["agentID"] = a.uuidString }
-                        return row
-                    }
-                    let data = try JSONSerialization.data(withJSONObject: rows,
-                                                          options: [.sortedKeys])
+                    let data = try store.teamStatsJSON(hours: hours)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "terminal_digest":
@@ -373,17 +341,7 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     // so dwell math never drifts between shell/CLI/GUI.
                     // Read-only.
                     let over = max(0, (payload["over_minutes"] as? Int) ?? 30)
-                    let rows: [[String: Any]] = store.stallWatch(overMinutes: over).map { r in
-                        var row: [String: Any] = ["itemID": r.itemID.uuidString,
-                                                  "name": r.agentName,
-                                                  "status": r.status.rawValue,
-                                                  "dwellMinutes": r.dwellMinutes,
-                                                  "waitingOnYou": r.waitingOnYou]
-                        if let a = r.agentID { row["agentID"] = a.uuidString }
-                        return row
-                    }
-                    let data = try JSONSerialization.data(withJSONObject: rows,
-                                                          options: [.sortedKeys])
+                    let data = try store.stallsJSON(overMinutes: over)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
                 case "catchup_md":

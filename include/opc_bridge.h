@@ -105,6 +105,9 @@ char *opc_bridge_snapshot_json(void);
  *       window's deliveries that fail the existence door RIGHT NOW;
  *       'awaitingNow' is the live pending queue, NOT windowed). No
  *       parameters: the default 24h window is the whole contract.
+ *       Since v0.13 the object serializes with .sortedKeys — repeat
+ *       reads are byte-stable (it was the last channel with unstable
+ *       key order).
  *       Read-only, same guard silence as approvals_list.
  *   "team_stats_list" {"hours":N}?   (v1.7)
  *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY:

@@ -78,10 +78,27 @@ private func usage() -> String {
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
 
+    Read commands (status, approvals, standup, team, stalls, catchup)
+    accept --json: machine-readable output, byte-identical to what the
+    FFI bridge serves the shell (one serializer, no drift).
+
     All commands read and write the same local company snapshot the desktop app
     uses, so CLI and GUI stay in sync. State lives under the OPC app-support
     directory (override with OPC_COMPANY_SUPPORT_DIR); nothing leaves your machine.
     """
+}
+
+/// v0.13.0 "the scriptable door": read verbs accept `--json` and print
+/// the SAME bytes the bridge serves (CompanyStore+JSONDoors is the one
+/// serializer) — pipe them into jq, diff them across time, drive
+/// decisions from scripts. A `--json` read is still a pure read.
+private func splitJSONFlag(_ rest: [String]) -> (Bool, [String]) {
+    (rest.contains("--json"), rest.filter { $0 != "--json" })
+}
+
+@MainActor
+private func printJSON(_ store: CompanyStore, _ data: Data) {
+    print(String(decoding: data, as: UTF8.self))
 }
 
 @MainActor
@@ -120,7 +137,7 @@ struct OPC {
             case "version", "--version":
                 print("opc 0.12.0")
             case "status":
-                try status()
+                try status(rest)
             case "goal":
                 try goal(rest)
             case "advance":
@@ -128,7 +145,7 @@ struct OPC {
             case "report":
                 try report()
             case "approvals":
-                try approvals()
+                try approvals(rest)
             case "decide":
                 try decide(rest)
             case "history":
@@ -164,8 +181,18 @@ struct OPC {
     }
 
     @MainActor
-    static func status() throws {
+    static func status(_ rest: [String]) throws {
         try withStore { store in
+            let (json, _) = splitJSONFlag(rest)
+            if json {
+                // byte-for-byte what opc_bridge_snapshot_json serves the
+                // shell — same shared serializer now
+                guard let data = store.snapshotJSONData() else {
+                    throw CLIError(message: "snapshot serialization failed")
+                }
+                printJSON(store, data)
+                return
+            }
             let product = store.selectedProduct?.name ?? "— (no product yet)"
             print("OPC Company — \(product)")
             print("  products: \(store.products.count)   employees: \(store.agents.count)")
@@ -257,8 +284,13 @@ struct OPC {
     }
 
     @MainActor
-    static func approvals() throws {
+    static func approvals(_ rest: [String]) throws {
         try withStore { store in
+            let (json, _) = splitJSONFlag(rest)
+            if json {
+                try printJSON(store, store.pendingApprovalsJSON())
+                return
+            }
             let pending = store.approvals.filter {
                 $0.productID == store.selectedProductID && $0.status == .pending
             }
@@ -363,14 +395,16 @@ struct OPC {
     /// as deliverables: no writer guard, nothing here writes state.
     @MainActor
     static func standup(_ rest: [String]) throws {
+        let (json, args) = splitJSONFlag(rest)
         var hours = 24
-        if let first = rest.first {
+        if let first = args.first {
             guard let parsed = Int(first), parsed > 0 else {
                 throw CLIError(message: "usage: opc standup [hours]  (window in hours, default 24)")
             }
             hours = parsed
         }
         try withStore { store in
+            if json { try printJSON(store, store.standupWindowJSON(hours: hours)); return }
             let w = store.standupWindow(hours: hours)
             let product = store.selectedProduct?.name ?? "the selected product"
             if w.quiet && w.awaitingNow == 0 {
@@ -388,14 +422,16 @@ struct OPC {
 
     @MainActor
     static func team(_ rest: [String]) throws {
+        let (json, args) = splitJSONFlag(rest)
         var hours = 24
-        if let first = rest.first {
+        if let first = args.first {
             guard let parsed = Int(first), parsed > 0 else {
                 throw CLIError(message: "usage: opc team [hours]  (window in hours, default 24)")
             }
             hours = parsed
         }
         try withStore { store in
+            if json { try printJSON(store, store.teamStatsJSON(hours: hours)); return }
             let rows = store.teamWindow(hours: hours)
             let product = store.selectedProduct?.name ?? "the selected product"
             if rows.isEmpty {
@@ -422,14 +458,16 @@ struct OPC {
     /// [minutes] (default 30), longest first. Pure read — the door's own
     /// clock, no surface math.
     static func stalls(_ rest: [String]) throws {
+        let (json, args) = splitJSONFlag(rest)
         var minutes = 30
-        if let first = rest.first {
+        if let first = args.first {
             guard let parsed = Int(first), parsed > 0 else {
                 throw CLIError(message: "usage: opc stalls [minutes]  (threshold in minutes, default 30)")
             }
             minutes = parsed
         }
         try withStore { store in
+            if json { try printJSON(store, store.stallsJSON(overMinutes: minutes)); return }
             let rows = store.stallWatch(overMinutes: minutes)
             let product = store.selectedProduct?.name ?? "the selected product"
             if rows.isEmpty {
@@ -451,21 +489,26 @@ struct OPC {
     /// is byte-stable for a given state (no wall-clock inside).
     @MainActor
     static func catchup(_ rest: [String]) throws {
+        let (json, args) = splitJSONFlag(rest)
         var hours = 24
         var minutes = 30
-        if let first = rest.first {
+        if let first = args.first {
             guard let parsed = Int(first), parsed > 0 else {
                 throw CLIError(message: "usage: opc catchup [hours] [minutes]  (window hours, default 24; stuck threshold minutes, default 30)")
             }
             hours = parsed
         }
-        if rest.count > 1 {
-            guard let parsed = Int(rest[1]), parsed > 0 else {
+        if args.count > 1 {
+            guard let parsed = Int(args[1]), parsed > 0 else {
                 throw CLIError(message: "usage: opc catchup [hours] [minutes]  (window hours, default 24; stuck threshold minutes, default 30)")
             }
             minutes = parsed
         }
         try withStore { store in
+            if json {
+                try printJSON(store, store.catchupPageJSON(hours: hours, overMinutes: minutes))
+                return
+            }
             print(store.catchUpPage(hours: hours, overMinutes: minutes))
         }
     }
