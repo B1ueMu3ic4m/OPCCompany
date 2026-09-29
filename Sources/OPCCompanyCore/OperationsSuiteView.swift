@@ -2125,9 +2125,16 @@ struct BossReportCenter: View {
                 // v0.15.0 the weight door: scale without opinions — the
                 // SAME numbers `opc weight` prints and the shell card shows.
                 if let w = try? store.snapshotWeightReport() {
-                    Text("快照体重：".L() + ByteCountFormatter.string(fromByteCount: Int64(w.totalBytes), countStyle: .file)
+                    // broken into locals: this expression defeated the
+                    // type checker under release optimization (CI lesson)
+                    let total = ByteCountFormatter.string(
+                        fromByteCount: Int64(w.totalBytes), countStyle: .file)
+                    let advisory = ByteCountFormatter.string(
+                        fromByteCount: Int64(w.advisoryBytes), countStyle: .file)
+                    let line = "快照体重：".L() + total
                         + "（终端日志 ".L() + "\(w.logSharePercent)"
-                        + "%，建议阈值 ".L() + ByteCountFormatter.string(fromByteCount: Int64(w.advisoryBytes), countStyle: .file) + "）".L())
+                        + "%，建议阈值 ".L() + advisory + "）".L()
+                    Text(line)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(w.exceedsAdvisory ? CompanyTheme.warning : CompanyTheme.muted)
                 }
