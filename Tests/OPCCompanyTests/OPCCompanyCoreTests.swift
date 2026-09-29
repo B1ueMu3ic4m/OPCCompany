@@ -17373,6 +17373,12 @@ private func makeStoreWithAPIAgent(
     #expect(version.matches(of: /^\d+\.\d+\.\d+$/).count == 1, "VERSION 必须是 x.y.z")
     let cli = try loadOPCCompanyCoreSource("../OPC/OPC.swift")
     #expect(cli.contains(version), "CLI 打印串必须含 VERSION 的完整版本号 \(version)")
+    // v0.14.0 教训:banner 含版本号会掩盖 print 行漏改——两处必须各自
+    // 精确钉死,一个 contains(version) 骗不过这次检查。
+    #expect(cli.contains("print(\"opc \(version)\")"),
+            "CLI --version 打印必须精确等于 VERSION: \(version)")
+    #expect(cli.contains("(v\(version))"),
+            "CLI usage banner 必须精确等于 (vVERSION): \(version)")
     let script = try String(contentsOf: root.appendingPathComponent("scripts/build_app_bundle.sh"), encoding: .utf8)
     #expect(!script.contains("<string>\(version)</string>"),
             "Info.plist 模板不得硬编码当前版本字面量(必须走 $APP_VERSION)")
