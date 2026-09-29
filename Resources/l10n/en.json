@@ -3066,6 +3066,11 @@
     " 次，后续任务将重新开始。\n": " times); later tasks start fresh.\n",
     "\n[OPC 上下文复用失败]\n当前产品的上一轮上下文暂时不可用 ": "\n[OPC context reuse failed]\nThe previous context for the current product is temporarily unavailable (",
     " 次；再次不可用会自动重置。\n": " times); one more failure resets it automatically.\n",
-    "\n[OPC 交互状态]\n状态：": "\n[OPC interaction state]\nState: "
+    "\n[OPC 交互状态]\n状态：": "\n[OPC interaction state]\nState: ",
+    "等你批准": "Waiting for your approval",
+    "任务停滞": "Task stalled",
+    " 分钟 — ": " min — ",
+    "等你审批": "waits on you",
+    "menu.enableBossCalls": "Keep me posted (notifications)"
   }
 }

@@ -5,6 +5,11 @@ import OPCCompanyCore
 struct OPCCompanyApp: App {
     @StateObject private var store = CompanyStore.bootstrap()
     @StateObject private var l10n = L10nEnvironment.shared
+    // v0.16.0 "the office calls": the delivery shell is built lazily on
+    // scene appearance (the StateObject's wrappedValue is not yet valid
+    // in init) and stays silent unless the boss grants notification
+    // permission.
+    @State private var bossNotifier: BossNotifier?
 
     private var lang: AppLanguage { l10n.language }
     private var resolved: AppLanguage { lang.resolving() }

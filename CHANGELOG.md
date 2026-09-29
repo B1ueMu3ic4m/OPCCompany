@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.16.0 "the office calls"
+- **macOS notifications when the office needs the boss**: approvals
+  waiting on the desk and non-approval stalls, quoted from the EXISTING
+  doors (the pending queue + the stall watch — zero new math), delivered
+  ONCE per cause (BossAlertDeduper keys on the doors' own ids and prunes
+  handled ones so its storage cannot grow forever), permission-gated by
+  the system, and structurally unable to move a single company byte —
+  delivery state lives in UserDefaults, never the snapshot. The core
+  holds every testable decision (the alert door + the deduper); the app
+  ships a thin guarded UserNotifications shell. v0.5 let the office
+  talk back; v0.16 lets it call first.
+
 ## [0.15.0] - 2026-09-30
 
 ### Added — v0.15.0 "the weight door"
