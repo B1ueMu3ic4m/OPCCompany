@@ -22,6 +22,12 @@ jobs:
       - name: Build
         run: swift build
 
+      - name: Build (release)
+        # v0.15 lesson: a SwiftUI expression that type-checks fine under
+        # debug CI timed out under release optimization — catch
+        # release-only breakage HERE, not in the packaging step.
+        run: swift build -c release
+
       - name: Test
         run: swift test --no-parallel
 
