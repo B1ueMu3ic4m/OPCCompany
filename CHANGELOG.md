@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-01
+
 ### Added — v0.17.0 "seat steering" (Option B phase 1)
 - **Bridge v1.11 `terminal_send`** — inject ONE line into a LIVE
   tmux-backed seat through the frozen six-symbol ABI
