@@ -136,7 +136,7 @@ struct OPC {
             case "help", "--help", "-h":
                 print(usage())
             case "version", "--version":
-                print("opc 0.13.0")
+                print("opc 0.14.0")
             case "status":
                 try status(rest)
             case "goal":
