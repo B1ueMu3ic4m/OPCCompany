@@ -1190,6 +1190,58 @@ extension CompanyStore {
         let key = terminalLogStorageKey(productID: scopedProductID, agentID: agentID)
         productTerminalLogs[key, default: ""].append(text)
     }
+    /// v1.11 terminal_send: inject ONE line into a live tmux-backed
+    /// seat. Refuses honestly — unknown agent, no live seat on this
+    /// machine (the seat may live on another device or the agent is not
+    /// tmux-backed), or a failed tmux paste. The line is echoed into the
+    /// seat by tmux itself, so the transcript stays the single
+    /// narrative of the session. Pure input: no company state moves.
+    public func terminalSendLine(agentID: UUID, line: String) throws {
+        guard !line.isEmpty else {
+            throw OPCBridgeRefusal(message: "terminal_send: empty line")
+        }
+        guard line.utf8.count <= 4096 else {
+            throw OPCBridgeRefusal(message: "terminal_send: line exceeds 4096 bytes")
+        }
+        guard let agent = agents.first(where: { $0.id == agentID }) else {
+            throw OPCBridgeRefusal(message: "terminal_send: no agent with id \(agentID.uuidString)")
+        }
+        guard let target = preparePersistentTerminalTarget(for: agent) else {
+            throw OPCBridgeRefusal(message: "terminal_send: agent \(agent.displayName) has no live tmux seat on this machine")
+        }
+        let session = persistentTerminalSession(for: target)
+        // the session is a plain actor (not the main actor) and its
+        // plumbing is nonisolated, so waiting here on the caller's
+        // thread — the same pattern runAndWaitWithStdin uses — cannot
+        // deadlock; a tmux paste is a fast local process.
+        // Task.detached, deliberately: a plain Task {} would inherit
+        // the caller's MainActor, whose thread is exactly the one this
+        // function is about to block on the semaphore — the body would
+        // never even start. Detached means the session actor runs its
+        // plumbing on the global executor and the wait can be satisfied.
+        let box = ResultBox()
+        Task.detached {
+            let r = await session.sendInputLine(line, workingDirectory: FileManager.default.temporaryDirectory)
+            box.fill(r)
+        }
+        semaphoreWait(box)
+        guard let r = box.result, r.exitCode == 0 else {
+            throw OPCBridgeRefusal(message: "terminal_send: tmux paste failed for seat \(target.windowName)")
+        }
+    }
+
+    private nonisolated final class ResultBox: @unchecked Sendable {
+        private let sem = DispatchSemaphore(value: 0)
+        var result: PersistentTerminalProcessResult?
+        func fill(_ r: PersistentTerminalProcessResult) {
+            result = r
+            sem.signal()
+        }
+        func wait() { sem.wait() }
+    }
+
+    private func semaphoreWait(_ box: ResultBox) { box.wait() }
+
     func setTerminalLog(_ text: String, for agentID: UUID, productID: UUID? = nil) {
         let scopedProductID = productID ?? selectedProductID
         let key = terminalLogStorageKey(productID: scopedProductID, agentID: agentID)

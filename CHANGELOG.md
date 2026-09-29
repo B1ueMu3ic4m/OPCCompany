@@ -5,6 +5,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.17.0 "seat steering" (Option B phase 1)
+- **Bridge v1.11 `terminal_send`** — inject ONE line into a LIVE
+  tmux-backed seat through the frozen six-symbol ABI
+  (`{"agentID","line"}`). Honest refusals ride last_error: unknown
+  agent, empty or >4096-byte line, or **no live seat on this machine**
+  (a seat may live on another device, or the agent is not tmux-backed —
+  never a fake ack). tmux pastes the line atomically with its newline
+  and the seat echoes it, so the transcript stays the single narrative
+  of the session. Pure input on the SEAT: no company state moves.
+- The delivery path wraps the store's existing atomic paste
+  (`PersistentTerminalSession.sendInputLine`); the refusals reuse the
+  same liveness truth (`preparePersistentTerminalTarget`).
+- Regression note: the first cut deadlocked — a plain `Task {}`
+  inherits the caller's MainActor whose thread the semaphore blocks;
+  `Task.detached` is the fix, documented in place.
+
 ## [0.16.0] - 2026-09-30
 
 ### Added — v0.16.0 "the office calls"
