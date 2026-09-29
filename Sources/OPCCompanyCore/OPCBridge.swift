@@ -344,6 +344,25 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     box.lastError = store.catchUpPage(hours: hours,
                                                       overMinutes: over)
                     return 0
+                case "terminal_send":
+                    // v1.11 Option B phase 1 (see docs/TERMINAL_HALL_
+                    // OPTION_B.md): inject ONE line into a live tmux-
+                    // backed seat. Honest refusals — unknown agent, no
+                    // seat on this machine, failed paste — ride
+                    // last_error like every refusal. The line is echoed
+                    // by tmux itself; the transcript stays the single
+                    // narrative. Read-write ON THE SEAT, never on the
+                    // snapshot.
+                    guard let idString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "terminal_send requires a UUID agentID")
+                    }
+                    guard let line = payload["line"] as? String else {
+                        throw OPCBridgeRefusal(message: "terminal_send requires a line")
+                    }
+                    try store.terminalSendLine(agentID: agentID, line: line)
+                    box.lastError = ""
+                    return 0
                 case "weight_json":
                     // v1.10 the weight door: how heavy is the snapshot
                     // RIGHT NOW, which sections hold the mass, and is the

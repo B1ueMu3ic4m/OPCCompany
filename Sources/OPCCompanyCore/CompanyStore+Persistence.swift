@@ -137,6 +137,22 @@ extension CompanyStore {
         persistentTerminalSessions.count
     }
 
+    /// v1.11 testing seam: does this agent have a LIVE tmux-backed seat
+    /// right now? Same liveness truth terminal_sendLine refuses on.
+    public func hasLiveTerminalSeat(agentID: UUID) -> Bool {
+        guard let agent = agents.first(where: { $0.id == agentID }) else { return false }
+        return preparePersistentTerminalTarget(for: agent) != nil
+    }
+
+    func persistentTerminalTargetForTesting(agentID: UUID) -> PersistentTerminalTarget? {
+        guard let agent = agents.first(where: { $0.id == agentID }) else { return nil }
+        return preparePersistentTerminalTarget(for: agent)
+    }
+
+    func persistentTerminalSessionForTesting(target: PersistentTerminalTarget) -> PersistentTerminalSession {
+        persistentTerminalSession(for: target)
+    }
+
     func persistentTerminalSession(for target: PersistentTerminalTarget) -> PersistentTerminalSession {
         prunePersistentTerminalSessionCache()
         let key = PersistentTerminalSessionKey(

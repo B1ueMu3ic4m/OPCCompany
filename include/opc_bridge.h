@@ -145,6 +145,16 @@ char *opc_bridge_snapshot_json(void);
  *       and localization. "hours" (default 24, positive int) and
  *       "over_minutes" (default 30, non-negative int) are optional.
  *       Read-only, same guard silence as approvals_list.
+ *   "terminal_send" {"agentID":"<uuid>","line":"<text>"}  (v1.11)
+ *       rc=0 → the line was injected into the agent's LIVE tmux-backed
+ *       seat (tmux pastes it atomically with the newline; the seat
+ *       echoes it, so the transcript stays the single narrative).
+ *       rc=-1 with a reason in last_error: not a UUID, no such agent,
+ *       no live seat on this machine (a seat may live on another
+ *       device, or the agent is not tmux-backed — never a fake ack),
+ *       empty line, line > 4096 bytes, or a failed paste. Write ON THE
+ *       SEAT, never on the snapshot; the writer guard does not apply
+ *       (no company state changes).
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a
