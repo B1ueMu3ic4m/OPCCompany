@@ -59,6 +59,7 @@ If you want to *watch* one Claude Code session play as pixel characters inside y
 - 🌐 **Bilingual UI** — in-app switch between 简体中文 and English
 - ⌨️ **Headless CLI (`opc`, v0.2.0)** — status / goal / advance / report from the terminal, driving the same local company snapshot as the GUI
 - 🧬 **Embeddable core + Flutter desktop shell (v0.3.0)** — the company engine exports a 6-symbol C ABI; a dart:ffi shell mirrors it on macOS **and Windows** (technical preview), both packaged and launched in CI
+- ⚖️ **The weight door (v0.15)** — `opc weight`: total snapshot bytes, the heaviest sections, terminal-log share (the quantity the v0.7 slimming drained), and the maintenance advisory — the same constant the GUI enforces, so no surface has its own opinion of "heavy"
 - 🔌 **The scriptable door (v0.13/v0.14)** — every read verb accepts `--json`, printed by the same serializer the FFI bridge serves the shell, so a script, a bot and the GUI all read the same bytes
 - 🫀 **The live office (v0.12)** — the Flutter shell re-pulls the bridge every few seconds (an employee typing in a real terminal changes no snapshot field — event-driven-only meant frozen pixels), and `opc watch` gives the terminal the same live view
 - 🚪 **Five boss doors, one math (v0.8–v0.11)** — the standup (what the company did), the team door (who did it), the stall watch (what stopped moving) and the catch-up (one page: traffic, who, stuck, your desk, shelf integrity) — every door is a pure read over the same store, quoted verbatim by the GUI command center, the `opc` CLI, the C-ABI bridge and the Flutter shell, so no two surfaces can ever disagree
@@ -115,6 +116,7 @@ swift build -c release --product opc
 `.build/release/opc watch [seconds]`        # v0.12 the live office: the doors, restamped on a clock (`--once` renders one frame)
 `.build/release/opc approvals --json`       # v0.13 every read verb speaks JSON — byte-identical to the FFI bridge (pipe to jq)
 `.build/release/opc deliverables --json`    # v0.14 the family completes: history + deliverables speak it too
+`.build/release/opc weight`                 # v0.15 the weight door: how heavy the snapshot is, which sections hold the mass
 ```
 
 `opc` links only the portable core — it's also the first artifact on the

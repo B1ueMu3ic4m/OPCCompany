@@ -67,6 +67,11 @@ private func usage() -> String {
                                  GUI quotes, restamped with the wall clock.
                                  Pure read. `opc watch --once` renders one
                                  frame and exits.
+      opc weight               how heavy the snapshot is RIGHT NOW —
+                                 total bytes, the heaviest sections, and
+                                 whether the maintenance advisory is
+                                 crossed (same constant the GUI panel
+                                 enforces). Pure read.
       opc catchup [HOURS] [MINUTES]
                                  one page that brings you up to speed —
                                  traffic, who did what, what's stuck, what
@@ -161,6 +166,8 @@ struct OPC {
                 try stalls(rest)
             case "catchup":
                 try catchup(rest)
+            case "weight":
+                try weight(rest)
             case "watch":
                 try watch(rest)
             case "products":
@@ -608,6 +615,34 @@ struct OPC {
                 print(watchFrame(store))
             }
         }
+    }
+
+    /// v0.15.0 "the weight door": scale without opinions — the total is
+    /// the encoder's truth, the threshold is the maintenance panel's own
+    /// constant, and the sections just say where the mass lives.
+    @MainActor
+    static func weight(_ rest: [String]) throws {
+        try withStore { store in
+            let (json, _) = splitJSONFlag(rest)
+            let w = try store.snapshotWeightReport()
+            if json {
+                try printJSON(store, store.weightJSON())
+                return
+            }
+            let product = store.selectedProduct?.name ?? "the selected product"
+            print("Weight — \(product): \(Self.byteText(w.totalBytes))\(w.exceedsAdvisory ? "  ⚠ over advisory" : "")")
+            print("  advisory: \(Self.byteText(w.advisoryBytes)) (the maintenance panel's own constant)")
+            print("  terminal logs: \(Self.byteText(w.terminalLogBytes)) (\(w.logSharePercent)% of the snapshot)")
+            for s in w.sections.prefix(5) {
+                print("  \(Self.byteText(s.bytes).padding(toLength: 10, withPad: " ", startingAt: 0)) \(s.name)")
+            }
+            if w.sections.count > 5 { print("  ...and \(w.sections.count - 5) more sections") }
+        }
+    }
+
+    @MainActor
+    private static func byteText(_ bytes: Int) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 
     @MainActor

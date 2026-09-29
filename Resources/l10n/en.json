@@ -3004,6 +3004,9 @@
     "跟上进度（一页）": "Catch-up (one page)",
     "把交通、人头、停滞、待批、货架五门合为一页，与终端、桥、壳同源同字。": "One page from five doors — traffic, who, stuck, desk, shelf — byte-identical to the CLI, bridge and shell surfaces.",
     "复制 Catch-up 页": "Copy catch-up page",
-    "已复制": "Copied"
+    "已复制": "Copied",
+    "快照体重：": "Snapshot weight: ",
+    "（终端日志 ": " (terminal logs ",
+    "%，建议阈值 ": "%, advisory "
   }
 }

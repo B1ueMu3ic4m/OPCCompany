@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.15.0 "the weight door"
+- **`opc weight`** — how heavy the snapshot is RIGHT NOW: the total in
+  the encoder's own bytes (the same `status --json` serves), the
+  heaviest top-level sections ranked, the terminal-log share kept on
+  the gauge permanently (the exact quantity the v0.7 slimming drained),
+  and the maintenance advisory — the GUI panel's OWN constant, so no
+  surface invents a second opinion of "heavy". Sections ride the
+  sortedKeys scale and say so (their sum may differ from the total by
+  key-order overhead — honest, not fudged).
+- **Bridge v1.10 `weight_json`** — the six-key object, byte-stable on
+  repeat reads; the shell grows a weight card (warning state when the
+  advisory is crossed, honest "no weight report" on an old core) and
+  the report center quotes the same numbers.
+
 ## [0.14.0] - 2026-09-29
 
 ### Added — v0.14.0 "the json family completes"

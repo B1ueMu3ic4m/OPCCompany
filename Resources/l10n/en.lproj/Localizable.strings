@@ -306,6 +306,7 @@
 "## 近期任务" = "## Recent Tasks";
 "% · 消息 " = "% · messages ";
 "%% · 消息 " = "% · messages ";
+"%%，建议阈值 " = "%, advisory ";
 "%%，请回到任务图查清阻塞，必要时回滚或拆解新目标。" = "% — inspect the task graph for blockers; roll back or split a new goal if needed.";
 "%%，还差几步，可继续推进技术负责人调度循环。" = "% — a few steps left; keep advancing the CTO dispatch loop.";
 "%%：任务 " = "%: tasks ";
@@ -333,6 +334,7 @@
 "%lld/%lld 个任务完成，%lld 个未完成。" = "%lld/%lld tasks done, %lld outstanding.";
 "%lld完整明细" = "%@ full details";
 "%lld完整明细开关" = "%@ full-details toggle";
+"%，建议阈值 " = "%, advisory ";
 "%，请回到任务图查清阻塞，必要时回滚或拆解新目标。" = "% — inspect the task graph for blockers; roll back or split a new goal if needed.";
 "%，还差几步，可继续推进技术负责人调度循环。" = "% — a few steps left; keep advancing the CTO dispatch loop.";
 "%：任务 " = "%: tasks ";
@@ -1575,6 +1577,7 @@
 "忙碌" = "Busy";
 "忙碌中" = "Busy";
 "快照" = "snapshot";
+"快照体重：" = "Snapshot weight: ";
 "快照前归档" = "Archive before snapshot";
 "思考中" = "Thinking";
 "性别" = "Gender";
@@ -2950,6 +2953,7 @@
 "（未完成 " = "(unfinished ";
 "（未通过 " = "(failed ";
 "（状态：" = " (status: ";
+"（终端日志 " = " (terminal logs ";
 "）" = ")";
 "），最久 " = ", longest ";
 "）：状态 " = "): status ";

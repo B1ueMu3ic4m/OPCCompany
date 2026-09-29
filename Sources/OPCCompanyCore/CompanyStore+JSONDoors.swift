@@ -137,6 +137,25 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The weight door as an OBJECT (bridge v1.10 `weight_json`):
+    /// {totalBytes, sections:[{name,bytes}], advisoryBytes,
+    /// exceedsAdvisory, terminalLogBytes, logSharePercent} — sections
+    /// heaviest first; the sum can differ from totalBytes by key-order
+    /// overhead (documented, never fudged).
+    public func weightJSON() throws -> Data {
+        let w = try snapshotWeightReport()
+        let object: [String: Any] = [
+            "totalBytes": w.totalBytes,
+            "sections": w.sections.map { ["name": $0.name, "bytes": $0.bytes] },
+            "advisoryBytes": w.advisoryBytes,
+            "exceedsAdvisory": w.exceedsAdvisory,
+            "terminalLogBytes": w.terminalLogBytes,
+            "logSharePercent": w.logSharePercent,
+        ]
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
+
     /// The catch-up page wrapped for machines (bridge v1.9 `catchup_md`
     /// carries the raw page; this is the same page in an envelope —
     /// never a second derivation).
