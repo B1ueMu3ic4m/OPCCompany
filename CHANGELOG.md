@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-30
+
 ### Added — v0.16.0 "the office calls"
 - **macOS notifications when the office needs the boss**: approvals
   waiting on the desk and non-approval stalls, quoted from the EXISTING
