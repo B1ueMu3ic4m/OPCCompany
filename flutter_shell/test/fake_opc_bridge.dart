@@ -56,6 +56,11 @@ class FakeOpcBridge {
   /// true => simulate a core older than v1.9 (unknown verb, rc=-1).
   bool catchupRefused = false;
 
+  /// v1.10: weight_json object; null => the default light snapshot.
+  Map<String, dynamic>? weightResult;
+  /// true => simulate a core older than v1.10 (unknown verb, rc=-1).
+  bool weightRefused = false;
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -126,6 +131,7 @@ class FakeOpcBridge {
     if (verb == 'team_stats_list' && teamStatsRefused) return -1;
     if (verb == 'stalls_list' && stallsRefused) return -1;
     if (verb == 'catchup_md' && catchupRefused) return -1;
+    if (verb == 'weight_json' && weightRefused) return -1;
     // v1.9: the page rides the channel as a RAW string — the real bridge
     // stores it in last_error WITHOUT jsonEncode (the page IS the payload),
     // so the fake must not wrap it in quotes either.
@@ -151,6 +157,18 @@ class FakeOpcBridge {
                 'createdAt': 1757000000,
               }
             ],
+      'weight_json' => weightResult ??
+          const {
+            'totalBytes': 54024,
+            'sections': [
+              {'name': 'events', 'bytes': 34171},
+              {'name': 'productTerminalLogs', 'bytes': 10131},
+            ],
+            'advisoryBytes': 20971520,
+            'exceedsAdvisory': false,
+            'terminalLogBytes': 10131,
+            'logSharePercent': 18,
+          },
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
       // v1.6 standup: an OBJECT rides the same smuggle channel
       'stalls_list' => stallsResult ??

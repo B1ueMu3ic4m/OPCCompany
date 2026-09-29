@@ -341,6 +341,28 @@ class OpcBridge {
     return page.isEmpty ? null : page;
   }
 
+  /// v1.10 the weight door: how heavy the snapshot is RIGHT NOW as the
+  /// object {totalBytes, sections, advisoryBytes, exceedsAdvisory,
+  /// terminalLogBytes, logSharePercent}. sections heaviest first; their
+  /// sum may differ from totalBytes by key-order overhead (the contract
+  /// says so). Null = the core predates v1.10 or the verb was refused.
+  Map<String, dynamic>? weightJson() {
+    if (command('weight_json') != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    if (raw['totalBytes'] is! int || raw['advisoryBytes'] is! int) return null;
+    if (raw['terminalLogBytes'] is! int || raw['logSharePercent'] is! int) {
+      return null;
+    }
+    if (raw['exceedsAdvisory'] is! bool) return null;
+    final sections = raw['sections'];
+    if (sections is! List) return null;
+    for (final s in sections) {
+      if (s is! Map || s['name'] is! String || s['bytes'] is! int) return null;
+    }
+    return raw;
+  }
+
   /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
   /// seven integer counts {hours,newWork,decisions,deliveries,missing,
   /// risks,awaitingNow}, computed live by the store's own door. Unlike

@@ -122,6 +122,7 @@ struct OPCCliJsonTests {
         (["stalls", "--json"], "stalls_list", [:]),
         (["history", "--json"], "history_list", [:]),
         (["deliverables", "--json"], "deliverables_list", [:]),
+        (["weight", "--json"], "weight_json", [:]),
     ]
     for pair in pairs {
         let s = try runCLI(pair.args, supportDir: tmp)

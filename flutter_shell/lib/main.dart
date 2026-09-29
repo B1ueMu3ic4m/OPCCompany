@@ -100,6 +100,8 @@ class _CompanyHomeState extends State<CompanyHome> {
   String? _catchup;
   // v0.12.0 live-office heartbeat; null in widget tests (event-driven only).
   Timer? _poll;
+  // v0.15.0 the weight door: null = core predates v1.10.
+  Map<String, dynamic>? _weight;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -138,6 +140,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _team = _bridge.teamStatsList();
       _stalls = _bridge.stallsList();
       _catchup = _bridge.catchupMd();
+      _weight = _bridge.weightJson();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -168,6 +171,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _team = _bridge.teamStatsList();
       _stalls = _bridge.stallsList();
       _catchup = _bridge.catchupMd();
+      _weight = _bridge.weightJson();
       _syncTranscripts();
     });
   }
@@ -232,6 +236,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _team = _bridge.teamStatsList();
       _stalls = _bridge.stallsList();
       _catchup = _bridge.catchupMd();
+      _weight = _bridge.weightJson();
       _syncTranscripts();
     });
   }
@@ -490,6 +495,14 @@ class _CompanyHomeState extends State<CompanyHome> {
               // through catchup_md (bridge v1.9), composed by the store's
               // own doors, so the shell's page can never drift from the
               // CLI's. An old core says so; never a fabricated page.
+              Text('Snapshot weight',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _weightCard(),
+              const SizedBox(height: 12),
+              // v0.11.0 "the catch-up": ONE page that brings the boss up
+              // to speed — pulled through catchup_md (bridge v1.9), the
+              // store's own doors composed. An old core says so.
               Text('Catch-up — one page',
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -759,6 +772,36 @@ class _CompanyHomeState extends State<CompanyHome> {
     final status = row['status'] ?? '?';
     final onYou = row['waitingOnYou'] == true ? ' · WAITS ON YOU' : '';
     return '$dwell min — $status$onYou';
+  }
+
+  /// v0.15.0 weight card: one honest line — how heavy, how close to the
+  /// advisory the maintenance panel enforces. An old core says so.
+  Widget _weightCard() {
+    final w = _weight;
+    if (w == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.scale_outlined),
+              title: Text('No weight report from this core.')));
+    }
+    final total = w['totalBytes'] as int;
+    final advisory = w['advisoryBytes'] as int;
+    final over = w['exceedsAdvisory'] as bool;
+    final share = w['logSharePercent'] as int;
+    String kb(int b) => b >= 1024 * 1024
+        ? '${(b / 1024 / 1024).toStringAsFixed(1)} MB'
+        : '${(b / 1024).toStringAsFixed(0)} KB';
+    return Card(
+      child: ListTile(
+        leading: Icon(over ? Icons.warning_amber_rounded : Icons.scale_outlined,
+            color: over ? Colors.amber : null),
+        title: Text(
+            '${kb(total)} snapshot — terminal logs $share%'),
+        subtitle: Text(over
+            ? 'OVER the ${kb(advisory)} maintenance advisory — run the archive migration'
+            : 'advisory: ${kb(advisory)} (the maintenance panel\'s own constant)'),
+      ),
+    );
   }
 
   /// v0.11.0 catch-up card: the page verbatim in monospace (it IS the

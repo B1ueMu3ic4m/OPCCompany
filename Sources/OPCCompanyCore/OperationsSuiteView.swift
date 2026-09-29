@@ -2122,6 +2122,15 @@ struct BossReportCenter: View {
                 }
                 .frame(height: 220)
                 .background(CompanyTheme.terminalBackground, in: RoundedRectangle(cornerRadius: 8))
+                // v0.15.0 the weight door: scale without opinions — the
+                // SAME numbers `opc weight` prints and the shell card shows.
+                if let w = try? store.snapshotWeightReport() {
+                    Text("快照体重：".L() + ByteCountFormatter.string(fromByteCount: Int64(w.totalBytes), countStyle: .file)
+                        + "（终端日志 ".L() + "\(w.logSharePercent)"
+                        + "%，建议阈值 ".L() + ByteCountFormatter.string(fromByteCount: Int64(w.advisoryBytes), countStyle: .file) + "）".L())
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(w.exceedsAdvisory ? CompanyTheme.warning : CompanyTheme.muted)
+                }
             }
             .commandPanel()
         }

@@ -50,7 +50,7 @@ void _useBigViewport(WidgetTester tester) {
 /// listed explicitly (the v1.4 lesson: a startsWith-only filter ate a
 /// one-shot scripted rc). When a new query verb joins, audit BOTH this
 /// filter AND the boot-pump set below.
-const _queryVerbs = ['standup_window', 'catchup_md'];
+const _queryVerbs = ['standup_window', 'catchup_md', 'weight_json'];
 const _queryVerbPrefixes = ['terminal_', 'snapshot'];
 List<(String, Map<String, dynamic>)> writeCmds(FakeOpcBridge f) =>
     f.commands

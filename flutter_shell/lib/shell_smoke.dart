@@ -213,6 +213,34 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       catchup == null
           ? bridge.lastError()
           : 'bytes=${catchup.length}${catchupAgain == catchup ? ', stable' : ', UNSTABLE'}');
+  // v1.10 the weight door: the object answers with the six contract
+  // keys and heaviest-first sections, byte-stable on a repeat read.
+  final weight = bridge.weightJson();
+  final weightAgain = weight == null ? null : bridge.weightJson();
+  final wSections = weight?['sections'];
+  var wOrdered = true;
+  if (wSections is List) {
+    var last = -1;
+    for (final s in wSections) {
+      final bytes = (s as Map)['bytes'];
+      if (bytes is! int || bytes > last && last >= 0) {
+        wOrdered = false;
+        break;
+      }
+      last = bytes;
+    }
+  } else {
+    wOrdered = false;
+  }
+  add('weight_json answers the six-key object (sections heaviest first)',
+      weight != null &&
+          weight['exceedsAdvisory'] is bool &&
+          weight['logSharePercent'] is int &&
+          wOrdered &&
+          weightAgain.toString() == weight.toString(),
+      weight == null
+          ? bridge.lastError()
+          : 'total=${weight['totalBytes']}');
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

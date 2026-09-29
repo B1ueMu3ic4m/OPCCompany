@@ -344,6 +344,17 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     box.lastError = store.catchUpPage(hours: hours,
                                                       overMinutes: over)
                     return 0
+                case "weight_json":
+                    // v1.10 the weight door: how heavy is the snapshot
+                    // RIGHT NOW, which sections hold the mass, and is the
+                    // maintenance advisory crossed. totalBytes is the
+                    // encoder's truth (the same bytes snapshot_json
+                    // serves); section sizes ride the sortedKeys scale
+                    // (the sum may differ by key-order overhead — the
+                    // contract says so, nothing fudges). Read-only.
+                    let data = try store.weightJSON()
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 default:
                     throw OPCBridgeRefusal(message: "unknown bridge verb '\(verbString)'")
                 }
