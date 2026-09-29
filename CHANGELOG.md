@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-30
+
 ### Added — v0.15.0 "the weight door"
 - **`opc weight`** — how heavy the snapshot is RIGHT NOW: the total in
   the encoder's own bytes (the same `status --json` serves), the
