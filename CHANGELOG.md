@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-01
+
 ### Added — v2.1.0 "steering everywhere" (the last surface)
 - **The macOS GUI steers too**: a steering line on every terminal-hall
   agent card — the last missing surface of the v1.11 `terminal_send`
