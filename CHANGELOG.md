@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-10-01
+
 ### Fixed — v2.1.1 "no silent Chinese"
 - **The last ten interpolation-shaped l10n keys** restructured: strings
   like `"\(name) 的 ".L()` froze a runtime value INTO the lookup key, so
