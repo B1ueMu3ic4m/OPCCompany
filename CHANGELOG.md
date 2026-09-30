@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-01
+
 ### Added — v2.0.0 "the Windows office opens" (Option B phase 2)
 - **Local seats**: a machine without tmux (Windows) can now START its
   own employees — a LONG-LIVED process of the agent's CLI in
