@@ -3304,6 +3304,7 @@ private func writeCLIJobArchive(
         "OPCTerminalAgentCardPreflightButton",
         "OPCTerminalAgentCardRunButton",
         "OPCTerminalAgentCardClearLogButton",
+        "OPCTerminalAgentCardSteerSendButton",
         "OPCTerminalAgentCardSelectButton",
         "OPCCLIRuntimeIsolationAuditButton",
         "OPCTerminalWorkspaceStartButton",

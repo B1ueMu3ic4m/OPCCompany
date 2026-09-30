@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v2.1.0 "steering everywhere" (the last surface)
+- **The macOS GUI steers too**: a steering line on every terminal-hall
+  agent card — the last missing surface of the v1.11 `terminal_send`
+  door. The field, `opc tell`, and the shell input now steer the SAME
+  seat through the SAME store door (tmux paste, or the v2.0 local
+  pipe-seat fallback); refusals show verbatim, never a fake ack.
+  Boss cards refuse by design.
+
 ## [2.0.0] - 2026-10-01
 
 ### Added — v2.0.0 "the Windows office opens" (Option B phase 2)

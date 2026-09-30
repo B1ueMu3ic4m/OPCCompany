@@ -204,6 +204,8 @@ public enum OPCUIAutomationIdentifier: String, CaseIterable, Sendable {
     case terminalAgentCardRunButton = "OPCTerminalAgentCardRunButton"
     /// 终端大厅单员工卡片：清空当前员工终端可见日志的按钮
     case terminalAgentCardClearLogButton = "OPCTerminalAgentCardClearLogButton"
+    /// 终端大厅单员工卡片：把一行 steering 指令送进该员工实时席位的「发送」按钮（v2.1.0）
+    case terminalAgentCardSteerSendButton = "OPCTerminalAgentCardSteerSendButton"
     /// 终端大厅单员工卡片：把当前员工设为选中的「选中员工」按钮
     case terminalAgentCardSelectButton = "OPCTerminalAgentCardSelectButton"
     /// 本地维护详情：运行命令行与工作区隔离体检按钮

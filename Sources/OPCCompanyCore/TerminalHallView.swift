@@ -653,6 +653,13 @@ private struct TerminalAgentCard: View {
     let agent: CompanyAgent
     let prompt: String
     @State private var preflightText = ""
+    // v2.1.0 the steering line: the last surface of the v1.11
+    // terminal_send door — the macOS GUI steers the SAME seat the CLI
+    // and the shell steer (tmux-backed here; the local pipe-seat
+    // fallback rides the same verb for free).
+    @State private var steerLine = ""
+    @State private var steerStatus: String?
+    @State private var steering = false
 
     private var isRunning: Bool {
         store.isRunning(agentID: agent.id)
@@ -800,6 +807,39 @@ private struct TerminalAgentCard: View {
                     .stroke(CompanyTheme.inputBorder.opacity(0.45), lineWidth: 0.8)
             )
 
+            // v2.1.0 steering 输入行：一行进实时席位；拒绝原样可读，绝不伪造送达。
+            HStack(spacing: 8) {
+                TextField("发送一行到该席位…".L(), text: $steerLine, axis: .vertical)
+                    .lineLimit(1...3)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 11, design: .monospaced))
+                    .disabled(steering || agent.role == .boss)
+                    .onSubmit(sendSteerLine)
+
+                Button {
+                    sendSteerLine()
+                } label: {
+                    Image(systemName: "paperplane.fill")
+                }
+                .buttonStyle(.bordered)
+                .disabled(steering
+                          || steerLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                          || agent.role == .boss)
+                .help("发送到该员工的实时席位".L())
+                .accessibilityIdentifier(OPCUIAutomationIdentifier.terminalAgentCardSteerSendButton.rawValue)
+                .accessibilityLabel("发送到 ".L() + "\(agent.displayName)" + " 实时席位".L())
+                .accessibilityHint("把这一行直接注入该员工的实时终端席位；不消耗外部模型额度，拒绝会原样显示。".L())
+
+                if let steerStatus {
+                    Text(steerStatus)
+                        .font(.system(size: 9.5, weight: .regular, design: .monospaced))
+                        .foregroundStyle(CompanyTheme.muted)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .textSelection(.enabled)
+                }
+            }
+
             HStack(spacing: 8) {
                 // 「选中」按钮简化为 icon-only：保留显式入口给 Computer Use 与精确点击；
                 // 同时卡片整体加 .contentShape + .onTapGesture 兜底（见下方），减少用户必须找到按钮的成本。
@@ -878,6 +918,33 @@ private struct TerminalAgentCard: View {
         }
         .accessibilityAction(named: "选中员工".L()) {
             store.selectAgent(agent.id)
+        }
+    }
+
+    /// v2.1.0 one line into the seat. The store's door is the fully
+    /// tested terminal_send path (tmux paste, or the v2.0 local pipe
+    /// seat fallback); its honest refusals surface verbatim — never a
+    /// fake ack. A paste is a fast local process, so the brief
+    /// main-actor block matches every other sync store call here.
+    private func sendSteerLine() {
+        let line = steerLine
+        guard !steering,
+              !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              agent.role != .boss else { return }
+        steering = true
+        steerStatus = nil
+        let agentID = agent.id
+        Task { @MainActor in
+            defer { steering = false }
+            do {
+                try store.terminalSendLine(agentID: agentID, line: line)
+                steerLine = ""
+                steerStatus = "已送达该席位".L()
+            } catch let e as OPCBridgeRefusal {
+                steerStatus = e.message
+            } catch {
+                steerStatus = error.localizedDescription
+            }
         }
     }
 

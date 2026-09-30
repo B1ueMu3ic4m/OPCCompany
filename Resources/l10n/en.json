@@ -3071,6 +3071,12 @@
     "任务停滞": "Task stalled",
     " 分钟 — ": " min — ",
     "等你审批": "waits on you",
-    "menu.enableBossCalls": "Keep me posted (notifications)"
+    "menu.enableBossCalls": "Keep me posted (notifications)",
+    "发送一行到该席位…": "Send one line to this seat…",
+    "已送达该席位": "Delivered to the seat",
+    "发送到该员工的实时席位": "Send to the employee's live seat",
+    "把这一行直接注入该员工的实时终端席位；不消耗外部模型额度，拒绝会原样显示。": "Injects this line straight into the employee's live terminal seat; no external model quota is spent, and refusals are shown verbatim.",
+    "发送到 ": "Send to ",
+    " 实时席位": "'s live seat"
   }
 }
