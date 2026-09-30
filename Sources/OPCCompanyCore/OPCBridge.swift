@@ -393,7 +393,7 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
     }
 }
 
-public struct OPCBridgeRefusal: Error { let message: String }
+public struct OPCBridgeRefusal: Error { public let message: String }
 
 /// Byte-window cursor for terminal_tail, factored out so the alignment math
 /// is unit-testable without a live store. Guarantees:

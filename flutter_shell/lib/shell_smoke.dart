@@ -241,6 +241,23 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
       weight == null
           ? bridge.lastError()
           : 'total=${weight['totalBytes']}');
+  // v1.11 seat steering: two DETERMINISTIC refusals prove the write verb
+  // plumbs the real ABI — the store's own guards answer verbatim, and a
+  // refusal writes nothing (the live-seat success path is covered by the
+  // real-tmux tests on the Swift side; the empty-line guard runs before
+  // any agent lookup, so both answers hold on any machine).
+  add(
+      'terminal_send refuses an empty line',
+      bridge.terminalSend('00000000-0000-0000-0000-000000000000', '') ==
+          'terminal_send: empty line',
+      bridge.lastError());
+  add(
+      'terminal_send refuses an unknown agent',
+      bridge.terminalSend('00000000-0000-0000-0000-000000000000',
+              'echo smoke') ==
+          'terminal_send: no agent with id '
+              '00000000-0000-0000-0000-000000000000',
+      bridge.lastError());
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

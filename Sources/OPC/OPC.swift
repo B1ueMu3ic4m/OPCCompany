@@ -46,6 +46,11 @@ private func usage() -> String {
       opc decide <id> approve|reject
                                  resolve one pending approval (same store path
                                  as the GUI; refuses stale/double taps loudly)
+      opc tell <agent> <line>    inject ONE line into an agent's live tmux
+                                 seat on this machine — steer without leaving
+                                 the terminal. <agent> is the uuid or the
+                                 exact display name. Honest refusals: unknown
+                                 name, no live seat, empty/oversize line.
       opc history [n]            last decisions of the current product —
                                  who asked, what you decided, when (default
                                  10). Pure read: nothing here writes state.
@@ -154,6 +159,8 @@ struct OPC {
                 try approvals(rest)
             case "decide":
                 try decide(rest)
+            case "tell":
+                try tell(rest)
             case "history":
                 try history(rest)
             case "deliverables":
@@ -333,6 +340,44 @@ struct OPC {
             }
             store.saveSnapshot()
             print(approved ? "Approved." : "Rejected.")
+        }
+    }
+
+    /// v0.18.0 "the tell door" — seat steering from the terminal: ONE
+    /// line into an agent's live tmux seat. The same checked facade the
+    /// bridge verb calls, so refusals are the store's own, verbatim.
+    /// The agent may be named by uuid or exact display name
+    /// (case-insensitive); ambiguity refuses rather than guesses.
+    @MainActor
+    static func tell(_ rest: [String]) throws {
+        guard rest.count >= 2 else {
+            throw CLIError(message: "usage: opc tell <agent> <line>  (agent: uuid or exact display name; roster: opc team)")
+        }
+        let key = rest[0]
+        let line = rest.dropFirst().joined(separator: " ")
+        try guardNoConcurrentWriter()
+        try withStore { store in
+            let agent: CompanyAgent
+            if let id = UUID(uuidString: key),
+               let known = store.agents.first(where: { $0.id == id }) {
+                agent = known
+            } else {
+                let matches = store.agents.filter {
+                    $0.displayName.caseInsensitiveCompare(key) == .orderedSame
+                }
+                guard matches.count == 1 else {
+                    throw CLIError(message: matches.isEmpty
+                        ? "opc tell: no employee named '\(key)'  (roster: opc team)"
+                        : "opc tell: '\(key)' is ambiguous — \(matches.count) employees share that name")
+                }
+                agent = matches[0]
+            }
+            do {
+                try store.terminalSendLine(agentID: agent.id, line: line)
+            } catch let e as OPCBridgeRefusal {
+                throw CLIError(message: e.message)
+            }
+            print("→ \(agent.displayName)")
         }
     }
 

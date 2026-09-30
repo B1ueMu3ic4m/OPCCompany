@@ -102,6 +102,12 @@ class _CompanyHomeState extends State<CompanyHome> {
   Timer? _poll;
   // v0.15.0 the weight door: null = core predates v1.10.
   Map<String, dynamic>? _weight;
+  // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
+  // per selected seat, sent synchronously on the platform thread like
+  // every other bridge call. '' result = sent; a refusal shows verbatim.
+  final TextEditingController _steerField = TextEditingController();
+  bool _steering = false;
+  String? _steerStatus;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -157,6 +163,7 @@ class _CompanyHomeState extends State<CompanyHome> {
     _poll?.cancel();
     _goalController.dispose();
     _goalFocus.dispose();
+    _steerField.dispose();
     _transcriptScroll.dispose();
     _bridge.stop();
     super.dispose();
@@ -399,6 +406,7 @@ class _CompanyHomeState extends State<CompanyHome> {
                                 '$name · $status${_pendingBadge(snap, id, status)}'),
                             onSelected: (_) => setState(() {
                               _selectedAgentID = id.toLowerCase();
+                              _steerStatus = null;
                               _syncTranscripts();
                             }),
                           ),
@@ -610,6 +618,22 @@ class _CompanyHomeState extends State<CompanyHome> {
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                 ),
+                if (_steerStatus != null)
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        _steerStatus!,
+                        key: const ValueKey('steer-status'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(
+                                color:
+                                    Theme.of(context).colorScheme.primary),
+                      ),
+                    ),
+                  ),
                 if (agentID != null)
                   TextButton(
                     onPressed: () => setState(() {
@@ -641,9 +665,63 @@ class _CompanyHomeState extends State<CompanyHome> {
               ),
             ),
           ),
+          if (agentID != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const ValueKey('steer-input'),
+                      controller: _steerField,
+                      enabled: !_steering,
+                      style: const TextStyle(fontSize: 12),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                        hintText: 'Send one line to this seat…',
+                      ),
+                      onSubmitted: (_) => _sendSteerLine(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    key: const ValueKey('steer-send'),
+                    onPressed: _steering ? null : _sendSteerLine,
+                    icon: const Icon(Icons.send, size: 18),
+                    tooltip: 'Send to seat',
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  /// v0.18.0 the tell door: one line from the shell into the selected
+  /// seat. The ABI call is synchronous and fast (a local tmux paste);
+  /// the honest refusal — unknown agent, no live seat on this machine,
+  /// a failed paste — shows verbatim, never dressed up as an ack.
+  void _sendSteerLine() {
+    final agentID = _selectedAgentID;
+    final line = _steerField.text;
+    if (agentID == null || line.trim().isEmpty || _steering) return;
+    setState(() {
+      _steering = true;
+      _steerStatus = null;
+    });
+    final reason = _bridge.terminalSend(agentID, line);
+    setState(() {
+      _steering = false;
+      if (reason.isEmpty) {
+        _steerField.clear();
+        _steerStatus = '✓ sent to seat';
+      } else {
+        _steerStatus = reason;
+      }
+    });
+    if (reason.isEmpty) _syncTranscripts();
   }
 
   IconData _taskIcon(String status) => switch (status) {
