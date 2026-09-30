@@ -154,7 +154,26 @@ char *opc_bridge_snapshot_json(void);
  *       device, or the agent is not tmux-backed — never a fake ack),
  *       empty line, line > 4096 bytes, or a failed paste. Write ON THE
  *       SEAT, never on the snapshot; the writer guard does not apply
- *       (no company state changes).
+ *       (no company state changes). Since v1.12 a machine without a
+ *       tmux seat falls back to the agent's LOCAL pipe seat (see
+ *       seat_spawn) — one verb, whichever office you're in; the
+ *       refusal wording stays v1.11-stable.
+ *   "seat_spawn" {"agentID":"<uuid>"}    (v1.12)
+ *       rc=0 → a LONG-LIVED local seat started for the agent: its CLI
+ *       in interactive mode, stdin kept open (pipe-mode — no tmux, no
+ *       ConPTY), output streaming into the SAME per-seat transcript
+ *       keys tmux seats write, so terminal_digest/terminal_tail
+ *       surfaces work unchanged. rc=-1 with a reason in last_error:
+ *       not a UUID, no such agent, the employee is not a CLI (API/
+ *       local), the backend is one-shot-only (codex's TUI needs a real
+ *       TTY), the command is not installed, or the agent already has a
+ *       live local seat. The registry is a RUNTIME fact — never
+ *       persisted, never guessed across restarts.
+ *   "seat_stop" {"agentID":"<uuid>"}     (v1.12)
+ *       rc=0 → the agent's local seat was stopped (stdin EOF, then
+ *       SIGINT → SIGTERM with a grace window). rc=-1: not a UUID or
+ *       no local seat for this agent. Write on the PROCESS, never on
+ *       the snapshot.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

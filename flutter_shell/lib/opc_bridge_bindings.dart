@@ -375,6 +375,24 @@ class OpcBridge {
     return reason.isEmpty ? 'terminal_send refused' : reason;
   }
 
+  /// v1.12 seat lifecycle from the shell: start/stop a LONG-LIVED local
+  /// seat (the agent's CLI in interactive mode, stdin kept open — the
+  /// seat shape machines without tmux use). Same write contract as
+  /// [terminalSend]: '' = success, otherwise the verbatim refusal. The
+  /// seat's output arrives through the SAME transcript surface
+  /// (terminal_digest/terminal_tail) — no new read path.
+  String seatSpawn(String agentID) => _seatWrite('seat_spawn', agentID);
+
+  /// v1.12: stop the agent's local seat. '' = success, else the reason.
+  String seatStop(String agentID) => _seatWrite('seat_stop', agentID);
+
+  String _seatWrite(String verb, String agentID) {
+    final rc = command(verb, {'agentID': agentID});
+    if (rc == ok) return '';
+    final reason = lastError();
+    return reason.isEmpty ? '$verb refused' : reason;
+  }
+
   /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
   /// seven integer counts {hours,newWork,decisions,deliveries,missing,
   /// risks,awaitingNow}, computed live by the store's own door. Unlike

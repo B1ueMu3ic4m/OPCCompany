@@ -357,21 +357,7 @@ struct OPC {
         let line = rest.dropFirst().joined(separator: " ")
         try guardNoConcurrentWriter()
         try withStore { store in
-            let agent: CompanyAgent
-            if let id = UUID(uuidString: key),
-               let known = store.agents.first(where: { $0.id == id }) {
-                agent = known
-            } else {
-                let matches = store.agents.filter {
-                    $0.displayName.caseInsensitiveCompare(key) == .orderedSame
-                }
-                guard matches.count == 1 else {
-                    throw CLIError(message: matches.isEmpty
-                        ? "opc tell: no employee named '\(key)'  (roster: opc team)"
-                        : "opc tell: '\(key)' is ambiguous — \(matches.count) employees share that name")
-                }
-                agent = matches[0]
-            }
+            let agent = try resolveAgent(store, key)
             do {
                 try store.terminalSendLine(agentID: agent.id, line: line)
             } catch let e as OPCBridgeRefusal {
@@ -379,6 +365,26 @@ struct OPC {
             }
             print("→ \(agent.displayName)")
         }
+    }
+
+    /// Shared agent resolution for the steering verbs (tell): uuid
+    /// first, then exact display name (case-insensitive); an ambiguous
+    /// name refuses rather than guessing.
+    @MainActor
+    static func resolveAgent(_ store: CompanyStore, _ key: String) throws -> CompanyAgent {
+        if let id = UUID(uuidString: key),
+           let known = store.agents.first(where: { $0.id == id }) {
+            return known
+        }
+        let matches = store.agents.filter {
+            $0.displayName.caseInsensitiveCompare(key) == .orderedSame
+        }
+        guard matches.count == 1 else {
+            throw CLIError(message: matches.isEmpty
+                ? "opc: no employee named '\(key)'  (roster: opc team)"
+                : "opc: '\(key)' is ambiguous — \(matches.count) employees share that name")
+        }
+        return matches[0]
     }
 
     /// v0.6.0 "every hand leaves a receipt": the terminal's decision

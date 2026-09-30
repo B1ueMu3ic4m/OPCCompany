@@ -258,6 +258,20 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
           'terminal_send: no agent with id '
               '00000000-0000-0000-0000-000000000000',
       bridge.lastError());
+  // v1.12 seat lifecycle: the refusal path is deterministic on any
+  // machine (unknown agent), proving the write verbs plumb the ABI.
+  add(
+      'seat_spawn refuses an unknown agent',
+      bridge.seatSpawn('00000000-0000-0000-0000-000000000000') ==
+          'seat_spawn: no agent with id '
+              '00000000-0000-0000-0000-000000000000',
+      bridge.lastError());
+  add(
+      'seat_stop refuses an unknown agent',
+      bridge.seatStop('00000000-0000-0000-0000-000000000000') ==
+          'seat_stop: no local seat for '
+              '00000000-0000-0000-0000-000000000000',
+      bridge.lastError());
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

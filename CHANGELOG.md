@@ -5,6 +5,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v2.0.0 "the Windows office opens" (Option B phase 2)
+- **Local seats**: a machine without tmux (Windows) can now START its
+  own employees — a LONG-LIVED process of the agent's CLI in
+  interactive mode, stdin kept open, no tmux, no ConPTY. `seat_spawn` /
+  `seat_stop` ride the frozen six-symbol ABI (contract **v1.12**).
+- **The transcript just works**: seat output streams into the SAME
+  per-seat log keys tmux seats write — `terminal_digest`,
+  `terminal_tail`, the weight door and every transcript surface see
+  local-seat traffic with zero new read path.
+- **One verb, whichever office**: `terminal_send` steers the tmux seat
+  when there is one, and falls back to the local pipe seat otherwise —
+  the refusal wording stays v1.11-stable.
+- **The shell toggles seats**: `start seat` / `stop seat` on the
+  selected employee; the shell tracks only what IT spawned this
+  session — a seat it didn't spawn is honestly "no local seat", never
+  a guessed toggle.
+- Honest refusals end to end: unknown agent, non-CLI employee (API/
+  local), one-shot-only backend (codex's TUI needs a real TTY),
+  missing command, double spawn. The seat registry is a RUNTIME fact —
+  never persisted, never guessed across restarts.
+- Deliberately NOT a CLI verb: pipe seats belong to a long-lived
+  office (the shell/bridge process). A `opc seat` verb would orphan
+  the process and lose the transcript when the CLI exits — dishonest
+  capability, so it does not exist.
+
 ## [0.18.0] - 2026-10-01
 
 ### Added — v0.18.0 "the tell door"

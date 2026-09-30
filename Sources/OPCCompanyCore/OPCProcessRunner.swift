@@ -502,3 +502,179 @@ enum OPCProcessRunner {
         return OPCProcessRunResult(exitCode: process.terminationStatus, output: [output, error].filter { !$0.isEmpty }.joined(separator: "\n"))
     }
 }
+
+// ═══ v2.0.0 the keep-stdin seat ═════════════════════════════════════════
+// A LONG-LIVED agent process: the employee's CLI in its interactive mode,
+// stdin kept open so the boss can steer it line by line, stdout+stderr
+// streamed chunk-by-chunk into a caller-supplied sink (the store appends
+// to the SAME per-seat transcript keys tmux seats write —
+// productTerminalLogs — so terminal_digest / terminal_tail / the weight
+// door see local-seat traffic with zero new surface).
+//
+// Process() construction stays in this file per the seam contract above,
+// and the Windows .cmd-shim translation applies here too: a local seat on
+// Windows is `cmd /c claude.cmd …` exactly like a one-shot run.
+// Chunk decoding is `String(decoding:as:)` per read — a multibyte
+// character split across pipe chunks degrades at the split, the same
+// tolerance the one-shot drain has; the store persists whatever it
+// receives, so cursors stay consistent with the stored bytes.
+//
+// LIMITATION-UNCHECKED-SENDABLE-LOCK-PROTECTED-SEAT（v2.0.0 标记）：
+// `@unchecked Sendable` 在此**不是技术债** —— mutable state（process、stdin
+// 句柄、退出码）都由同一把 NSLock 保护，是「程序员承诺 thread-safe，编译器
+// 看不到 lock 语义」的正确声明模式。新增字段时必须同样入锁。
+public final class OPCLocalSeatProcess: @unchecked Sendable {
+    /// Why a seat could not start. The store wraps the message into an
+    /// OPCBridgeRefusal verbatim — the boss reads it as-is.
+    public struct SpawnFailure: Error { public let message: String }
+
+    private let lock = NSLock()
+    private let command: [String]
+    private let workingDirectory: URL?
+    private let environmentOverrides: [String: String]
+    private var process: Process?
+    private var stdinHandle: FileHandle?
+    private var exitStatus: Int32?
+    /// Called on an arbitrary queue as output arrives — the sink hops
+    /// itself (the store hops to the main actor before touching state).
+    private let onOutput: @Sendable (String) -> Void
+
+    public init(command: [String],
+                workingDirectory: URL?,
+                environmentOverrides: [String: String] = [:],
+                onOutput: @escaping @Sendable (String) -> Void) {
+        self.command = command
+        self.workingDirectory = workingDirectory
+        self.environmentOverrides = environmentOverrides
+        self.onOutput = onOutput
+    }
+
+    public var isAlive: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return process?.isRunning ?? false
+    }
+
+    public var exitCode: Int32? {
+        lock.lock(); defer { lock.unlock() }
+        return exitStatus
+    }
+
+    public func spawn() throws {
+        let sink = onOutput
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        let inputPipe = Pipe()
+
+        lock.lock(); defer { lock.unlock() }
+        guard process == nil else {
+            throw SpawnFailure(message: "seat already spawned")
+        }
+        guard let executable = command.first, !executable.isEmpty else {
+            throw SpawnFailure(message: "seat: empty command")
+        }
+        let resolvedExecutable = OPCProcessRunner.resolveExecutable(executable)
+        guard OPCProcessRunner.probeExecutableFile(resolvedExecutable) else {
+            throw SpawnFailure(message: "seat: command not found: \(executable)")
+        }
+
+        // Windows: npm-shipped agents resolve to *.cmd shims; CreateProcess
+        // cannot exec those, so route them through cmd /c exactly once.
+        var launchExecutable = resolvedExecutable
+        var launchArguments = Array(command.dropFirst())
+        #if os(Windows)
+        if OPCProcessRunner.isWindowsBatchScript(resolvedExecutable) {
+            let wrapped = OPCProcessRunner.windowsBatchLaunch(
+                scriptPath: resolvedExecutable,
+                arguments: launchArguments,
+                environment: OPCProcessRunner.mergedEnvironment(overrides: environmentOverrides))
+            launchExecutable = wrapped.executable
+            launchArguments = wrapped.arguments
+        }
+        #endif
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: launchExecutable)
+        process.arguments = launchArguments
+        if let workingDirectory {
+            process.currentDirectoryURL = workingDirectory
+        }
+        process.environment = OPCProcessRunner.mergedEnvironment(overrides: environmentOverrides)
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
+        process.standardInput = inputPipe
+
+        outputPipe.fileHandleForReading.readabilityHandler = { handle in
+            let data = handle.availableData
+            guard !data.isEmpty else { return }
+            sink(String(decoding: data, as: UTF8.self))
+        }
+        errorPipe.fileHandleForReading.readabilityHandler = { handle in
+            let data = handle.availableData
+            guard !data.isEmpty else { return }
+            sink(String(decoding: data, as: UTF8.self))
+        }
+        process.terminationHandler = { [weak self] terminated in
+            guard let self else { return }
+            self.lock.lock()
+            self.exitStatus = terminated.terminationStatus
+            let stdin = self.stdinHandle
+            self.stdinHandle = nil
+            self.lock.unlock()
+            outputPipe.fileHandleForReading.readabilityHandler = nil
+            errorPipe.fileHandleForReading.readabilityHandler = nil
+            // final drain: the handlers are off, read what's left in the pipes
+            let restOut = outputPipe.fileHandleForReading.readDataToEndOfFile()
+            if !restOut.isEmpty { sink(String(decoding: restOut, as: UTF8.self)) }
+            let restErr = errorPipe.fileHandleForReading.readDataToEndOfFile()
+            if !restErr.isEmpty { sink(String(decoding: restErr, as: UTF8.self)) }
+            try? stdin?.close()
+        }
+
+        do {
+            try process.run()
+        } catch {
+            throw SpawnFailure(message: "seat: launch failed: \(error.localizedDescription)")
+        }
+        self.process = process
+        self.stdinHandle = inputPipe.fileHandleForWriting
+    }
+
+    /// One line into the live seat (newline appended, like a terminal).
+    public func writeLine(_ line: String) throws {
+        let data = Data((line + "\n").utf8)
+        lock.lock()
+        let stdin = stdinHandle
+        let running = process?.isRunning ?? false
+        lock.unlock()
+        guard running, let stdin else {
+            throw SpawnFailure(message: "seat: not running")
+        }
+        do {
+            try stdin.write(contentsOf: data)
+        } catch {
+            throw SpawnFailure(message: "seat: stdin write failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Close stdin first (REPLs exit cleanly on EOF), then SIGINT →
+    /// SIGTERM with a grace window between. Foundation has no SIGKILL
+    /// handle; a process that survives both gets reaped whenever the OS
+    /// gets around to it — the registry has already forgotten it.
+    public func stop(graceSeconds: TimeInterval = 2) {
+        lock.lock()
+        let stdin = stdinHandle
+        stdinHandle = nil
+        let process = self.process
+        lock.unlock()
+        try? stdin?.close()
+        guard let process, process.isRunning else { return }
+        process.interrupt()
+        let deadline = Date().addingTimeInterval(graceSeconds)
+        while process.isRunning && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        if process.isRunning {
+            process.terminate()
+        }
+    }
+}
