@@ -363,6 +363,35 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     try store.terminalSendLine(agentID: agentID, line: line)
                     box.lastError = ""
                     return 0
+                case "seat_spawn":
+                    // v1.12 Option B phase 2 (see docs/TERMINAL_HALL_
+                    // OPTION_B.md): start a LONG-LIVED local seat — the
+                    // agent's CLI in interactive mode, stdin kept open —
+                    // so a shell on a machine without tmux (Windows) can
+                    // open its own seats. Output streams into the same
+                    // per-seat transcript keys tmux seats write, so
+                    // digest/tail surfaces work unchanged. Honest
+                    // refusals: unknown agent, non-CLI employee,
+                    // one-shot-only backend (codex), missing command,
+                    // double spawn.
+                    guard let idString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "seat_spawn requires a UUID agentID")
+                    }
+                    try store.spawnLocalSeat(agentID: agentID)
+                    box.lastError = ""
+                    return 0
+                case "seat_stop":
+                    // v1.12: stop the agent's local seat (stdin EOF, then
+                    // SIGINT → SIGTERM). Write on the PROCESS, never on
+                    // the snapshot; the registry is a runtime fact.
+                    guard let idString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "seat_stop requires a UUID agentID")
+                    }
+                    try store.stopLocalSeat(agentID: agentID)
+                    box.lastError = ""
+                    return 0
                 case "weight_json":
                     // v1.10 the weight door: how heavy is the snapshot
                     // RIGHT NOW, which sections hold the mass, and is the

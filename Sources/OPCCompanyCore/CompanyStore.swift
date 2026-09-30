@@ -132,6 +132,11 @@ static let agentMessageBodyTextLimit = 2_400
     var inboundCommandNonces: Set<String>
     var cachedTerminalWorkspaceHealthSnapshot: TerminalWorkspaceHealthSnapshot?
     var persistentTerminalSessions: [PersistentTerminalSessionKey: PersistentTerminalSession] = [:]
+    /// v2.0.0 local seats (Option B phase 2): LONG-LIVED agent processes
+    /// this machine spawned (interactive CLI, stdin kept open). Runtime
+    /// fact ONLY — never persisted, never guessed across restarts; the
+    /// transcript persists separately via the per-seat log keys.
+    var localSeatProcesses: [UUID: OPCLocalSeatProcess] = [:]
     var persistSnapshot: (CompanySnapshot) -> Result<Void, Error> = CompanyPersistence.save
     /// 测试可注入的 Keychain 写入闭包，默认走真实 `OPCKeychainStore.saveAPIKey`。
     /// 与 `persistSnapshot` 同模式：把 OSStatus 透出后，store 把非 `errSecSuccess` 转换成

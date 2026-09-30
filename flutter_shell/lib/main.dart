@@ -108,6 +108,11 @@ class _CompanyHomeState extends State<CompanyHome> {
   final TextEditingController _steerField = TextEditingController();
   bool _steering = false;
   String? _steerStatus;
+  // v2.0.0 the seat lifecycle: the local seats THIS shell spawned this
+  // session. Liveness beyond that is the refusal channel's job — the
+  // registry is a runtime fact of the bridge's process, never guessed.
+  final Set<String> _localSeats = {};
+  bool _seatBusy = false;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
   // Deliberately event-driven (no timer): every snapshot refresh — manual
@@ -642,6 +647,15 @@ class _CompanyHomeState extends State<CompanyHome> {
                     }),
                     child: Text(_followTail ? 'following' : 'paused'),
                   ),
+                if (agentID != null)
+                  TextButton(
+                    key: const ValueKey('seat-toggle'),
+                    onPressed:
+                        _seatBusy ? null : () => _toggleLocalSeat(agentID),
+                    child: Text(_localSeats.contains(agentID)
+                        ? 'stop seat'
+                        : 'start seat'),
+                  ),
               ],
             ),
           ),
@@ -722,6 +736,31 @@ class _CompanyHomeState extends State<CompanyHome> {
       }
     });
     if (reason.isEmpty) _syncTranscripts();
+  }
+
+  /// v2.0.0 the seat lifecycle: start/stop a LONG-LIVED local seat for
+  /// the selected agent. The shell tracks what IT spawned this session;
+  /// every refusal shows verbatim — a seat this shell didn't spawn is
+  /// honestly "no local seat", never a guessed toggle.
+  void _toggleLocalSeat(String agentID) {
+    if (_seatBusy) return;
+    final starting = !_localSeats.contains(agentID);
+    setState(() => _seatBusy = true);
+    final reason =
+        starting ? _bridge.seatSpawn(agentID) : _bridge.seatStop(agentID);
+    setState(() {
+      _seatBusy = false;
+      if (reason.isEmpty) {
+        if (starting) {
+          _localSeats.add(agentID);
+        } else {
+          _localSeats.remove(agentID);
+        }
+        _steerStatus = starting ? '✓ seat started' : '✓ seat stopped';
+      } else {
+        _steerStatus = reason;
+      }
+    });
   }
 
   IconData _taskIcon(String status) => switch (status) {

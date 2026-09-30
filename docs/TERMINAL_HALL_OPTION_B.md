@@ -92,9 +92,20 @@ per-seat keys.
 
 ## Sequencing (each shippable alone)
 
-1. **v-next: `terminal_send` + input box** (macOS first — the seats
-   exist there). Boss can steer a running seat from the shell.
-2. **Windows seat spawning** (`CLIAgentRunner` keep-stdin mode + seat
-   registry parity). The Windows shell starts its own employees.
+1. **SHIPPED v0.17.0: `terminal_send`** (contract v1.11) — steer a
+   live tmux seat. **Completed v0.18.0**: the surfaces — `opc tell`
+   and the shell's steering input.
+2. **SHIPPED v2.0.0: Windows seat spawning** (contract v1.12) —
+   `OPCLocalSeatProcess` (keep-stdin, lives in the process seam file),
+   `CLIAgentCommandBuilder.interactiveCommand` (codex honestly refused:
+   its TUI needs a real TTY), the store's `spawnLocalSeat`/`stopLocalSeat`
+   doors, and the shell's start/stop toggle. Seat output streams into
+   the SAME per-seat transcript keys tmux seats write, so every read
+   surface works unchanged; `terminal_send` falls back to the local
+   seat — one verb, whichever office.
+   Deliberately NOT a CLI verb: pipe seats belong to a long-lived
+   office (the shell/bridge process). A `opc seat` verb would orphan
+   the process and lose the transcript when the CLI exits — dishonest
+   capability, so it does not exist.
 3. **xterm.js rendering** (cosmetic polish — colors; the read path
    already works without it).

@@ -200,6 +200,36 @@ public enum CLIAgentCommandBuilder {
         }
     }
 
+    /// v2.0.0 the interactive seat command: the LONG-LIVED form of the
+    /// employee's CLI (REPL/prompt loop reading stdin), as opposed to the
+    /// one-shot `command(for:prompt:)` above. nil = this backend has no
+    /// pipe-friendly interactive mode — codex's TUI needs a real TTY, and
+    /// API/local employees are not CLI processes at all. The store turns
+    /// a nil into an honest refusal, never a seat that can't talk.
+    public static func interactiveCommand(for agent: CompanyAgent) -> [String]? {
+        guard agent.backend.type == .subscriptionCLI else { return nil }
+        switch agent.backend.command {
+        case "codex":
+            // TUI needs a TTY; pipe seats refuse it honestly
+            return nil
+        case "claude":
+            if agent.backend.model.isEmpty {
+                return ["claude", "--permission-mode", "auto"]
+            }
+            return ["claude", "--permission-mode", "auto", "--model", agent.backend.model]
+        case "gemini":
+            if agent.backend.model.isEmpty || agent.backend.model == "gemini-cli" {
+                return ["gemini"]
+            }
+            return ["gemini", "--model", agent.backend.model]
+        default:
+            // a custom command is the boss's own configuration: run it
+            // bare and interactive — the seat is whatever it is
+            let command = agent.backend.command.trimmingCharacters(in: .whitespacesAndNewlines)
+            return command.isEmpty ? nil : [command]
+        }
+    }
+
     public static func runtimeCapability(for agent: CompanyAgent) -> AgentRuntimeCapability {
         switch agent.backend.type {
         case .api:

@@ -67,6 +67,12 @@ class FakeOpcBridge {
   String? terminalSendRefusal;
   final List<(String agentID, String line)> terminalSends = [];
 
+  /// v1.12 seat lifecycle: per-verb refusal knobs (null => success),
+  /// every start/stop recorded in [seatCommands].
+  String? seatSpawnRefusal;
+  String? seatStopRefusal;
+  final List<(String verb, String agentID)> seatCommands = [];
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -138,6 +144,22 @@ class FakeOpcBridge {
     if (verb == 'stalls_list' && stallsRefused) return -1;
     if (verb == 'catchup_md' && catchupRefused) return -1;
     if (verb == 'weight_json' && weightRefused) return -1;
+    // v1.12: seat lifecycle writes — same contract as terminal_send.
+    if (verb == 'seat_spawn' || verb == 'seat_stop') {
+      final agentID = payload['agentID'];
+      if (agentID is! String) {
+        nextError = '$verb requires agentID';
+        return -1;
+      }
+      seatCommands.add((verb, agentID));
+      final refusal = verb == 'seat_spawn' ? seatSpawnRefusal : seatStopRefusal;
+      if (refusal != null) {
+        nextError = refusal;
+        return -1;
+      }
+      nextError = '';
+      return rc;
+    }
     // v1.11: a WRITE — success is lastError reset to '', a refusal rides
     // its reason verbatim; the attempt is recorded either way.
     if (verb == 'terminal_send') {

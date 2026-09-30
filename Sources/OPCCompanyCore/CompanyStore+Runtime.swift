@@ -1206,27 +1206,33 @@ extension CompanyStore {
         guard let agent = agents.first(where: { $0.id == agentID }) else {
             throw OPCBridgeRefusal(message: "terminal_send: no agent with id \(agentID.uuidString)")
         }
-        guard let target = preparePersistentTerminalTarget(for: agent) else {
+        if let target = preparePersistentTerminalTarget(for: agent) {
+            let session = persistentTerminalSession(for: target)
+            // the session is a plain actor (not the main actor) and its
+            // plumbing is nonisolated, so waiting here on the caller's
+            // thread — the same pattern runAndWaitWithStdin uses — cannot
+            // deadlock; a tmux paste is a fast local process.
+            // Task.detached, deliberately: a plain Task {} would inherit
+            // the caller's MainActor, whose thread is exactly the one this
+            // function is about to block on the semaphore — the body would
+            // never even start. Detached means the session actor runs its
+            // plumbing on the global executor and the wait can be satisfied.
+            let box = ResultBox()
+            Task.detached {
+                let r = await session.sendInputLine(line, workingDirectory: FileManager.default.temporaryDirectory)
+                box.fill(r)
+            }
+            semaphoreWait(box)
+            guard let r = box.result, r.exitCode == 0 else {
+                throw OPCBridgeRefusal(message: "terminal_send: tmux paste failed for seat \(target.windowName)")
+            }
+        } else if hasLiveLocalSeat(agentID: agentID) {
+            // v2.0.0: no tmux seat here (Windows, or tmux is dead) — steer
+            // the LOCAL pipe seat if one is live. One verb, whichever
+            // office you're in; the refusal wording stays v1.11-stable.
+            try sendLocalSeatLine(agentID: agentID, line: line)
+        } else {
             throw OPCBridgeRefusal(message: "terminal_send: agent \(agent.displayName) has no live tmux seat on this machine")
-        }
-        let session = persistentTerminalSession(for: target)
-        // the session is a plain actor (not the main actor) and its
-        // plumbing is nonisolated, so waiting here on the caller's
-        // thread — the same pattern runAndWaitWithStdin uses — cannot
-        // deadlock; a tmux paste is a fast local process.
-        // Task.detached, deliberately: a plain Task {} would inherit
-        // the caller's MainActor, whose thread is exactly the one this
-        // function is about to block on the semaphore — the body would
-        // never even start. Detached means the session actor runs its
-        // plumbing on the global executor and the wait can be satisfied.
-        let box = ResultBox()
-        Task.detached {
-            let r = await session.sendInputLine(line, workingDirectory: FileManager.default.temporaryDirectory)
-            box.fill(r)
-        }
-        semaphoreWait(box)
-        guard let r = box.result, r.exitCode == 0 else {
-            throw OPCBridgeRefusal(message: "terminal_send: tmux paste failed for seat \(target.windowName)")
         }
     }
 
