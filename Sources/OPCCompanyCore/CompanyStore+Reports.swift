@@ -448,16 +448,27 @@ extension CompanyStore {
             "- " + "\(task.title)" + "：".L() + "\(task.status.title)" + "，负责人 " + "\(task.ownerID.map(agentName) ?? "未分配")" + "。" + "\(task.successCriteria)"
         }
         let taskEdges = taskGraph.edges.map { edge in
-            "- " + (taskTitlesByID[edge.fromTaskID] ?? "未知任务".L()) + " → ".L() + (taskTitlesByID[edge.toTaskID] ?? "未知任务".L()) + "：".L() + "\(edge.relation)，\(edge.status.title)。\(edge.evidence)"
+            // locals, deliberately: the flat concatenation chain (two
+            // optional-coalescing lookups + lookups + interpolation) sent
+            // CI's type-checker into "unable to type-check in reasonable
+            // time" — the v0.15 lesson, split into named sub-expressions
+            let fromTitle = taskTitlesByID[edge.fromTaskID] ?? "未知任务".L()
+            let toTitle = taskTitlesByID[edge.toTaskID] ?? "未知任务".L()
+            let edgeTail = "\(edge.relation)，\(edge.status.title)。\(edge.evidence)"
+            return "- " + fromTitle + " → ".L() + toTitle + "：".L() + edgeTail
         }
         let messages = closureTraceMessages(trace).map { message in
-            "- " + AgentMessageDisplay.title(for: message.kind) + "：".L() + "\(message.subject)（\(agentName(message.fromAgentID)) → \(message.toAgentID.map(agentName) ?? "全员".L())，\(AgentMessageDisplay.statusTitle(for: message.status))）"
+            let messageHead = "- " + AgentMessageDisplay.title(for: message.kind) + "：".L()
+            let messageTail = "（\(agentName(message.fromAgentID)) → \(message.toAgentID.map(agentName) ?? "全员".L())，\(AgentMessageDisplay.statusTitle(for: message.status))）"
+            return messageHead + "\(message.subject)" + messageTail
         }
         let approvals = closureTraceApprovals(trace).map { approval in
             "- \(approval.title)：\(approval.status.title)。\(approval.reason)"
         }
         let gates = closureTraceReviewGates(trace).map { gate in
-            "- " + (taskTitlesByID[gate.taskID] ?? "未知任务".L()) + "：".L() + "\(gate.status.title)。\(gate.summary)"
+            let gateTitle = taskTitlesByID[gate.taskID] ?? "未知任务".L()
+            let gateTail = "\(gate.status.title)。\(gate.summary)"
+            return "- " + gateTitle + "：".L() + gateTail
         }
         let artifactsList = closureTraceArtifacts(trace).map { artifact in
             "- \(artifact.title)：\(artifact.kind.title)，\(artifact.path)。\(artifact.summary)"
