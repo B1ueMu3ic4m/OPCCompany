@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-01
+
 ### Added — v0.18.0 "the tell door"
 - **`opc tell <agent> <line>`** — seat steering reaches the terminal:
   ONE line into an agent's live tmux seat, by uuid or exact display
