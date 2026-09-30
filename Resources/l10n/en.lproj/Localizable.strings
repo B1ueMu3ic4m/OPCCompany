@@ -13,6 +13,7 @@
 "\n[OPC 上下文已重置]\n当前产品的上一轮上下文连续不可用 " = "\n[OPC context reset]\nThe previous context for the current product failed repeatedly (";
 "\n[OPC 交互状态]\n状态：" = "\n[OPC interaction state]\nState: ";
 "\n[OPC 会话预热]\n原因：" = "\n[OPC session warmup]\nReason: ";
+"\n[OPC 已阻止运行] " = "\n[OPC blocked the run] ";
 "\n[OPC 真实终端工作区]\n员工终端席位已创建。\n" = "\n[OPC real terminal workspace]\nEmployee terminal seat created.\n";
 "\n[OPC 真实终端日志刷新]\n员工终端席位已刷新。\n" = "\n[OPC real terminal log refresh]\nEmployee terminal seat refreshed.\n";
 "\n[OPC 聊天修正]\n" = "\n[OPC chat correction]\n";
@@ -73,6 +74,7 @@
 " · 队列 " = " · Queue ";
 " · 阻塞/失败 " = " · blocked/failed ";
 " · 需要接口地址" = " · endpoint required";
+" → " = " → ";
 " ≠ 当前 " = " ≠ current ";
 " 上下文已重置" = " context reset";
 " 不在 " = " not in ";
@@ -650,6 +652,7 @@
 "。当前未调用真实模型，等待人工运行或配置模型来源。" = " No real model called yet; waiting for a manual run or a configured model source.";
 "。技术负责人和该产品员工团队已重新开启，请按该产品上下文工作。" = " The CTO and this product’s team reopened — work within this product’s context.";
 "。本次输入的 Key 仍在内存中可用，但应用重启后会丢失，需要重新填写并确认 Keychain 是否被锁定或权限受限。" = ". This key stays in memory for now but will be lost on restart; re-enter it and check whether the Keychain is locked or restricted.";
+"。终端工具 " = ". Terminal tool ";
 "。请技术负责人继续调度并记录结果。" = " The CTO continues dispatching and records the results.";
 "。请检查命令行工具安装路径。" = " Check the CLI installation path.";
 "。请重新拆解方案，不要继续原执行路径。" = " Re-break-down the proposal; do not continue the original execution path.";
@@ -2299,6 +2302,7 @@
 "界面设计师" = "UI Designer";
 "登录失败" = "Login failed";
 "白人" = "White";
+"的 " = "'s ";
 "目录状态：" = "Directory status: ";
 "目标" = "Goal";
 "目标产品" = "Target product";
@@ -3030,6 +3034,7 @@
 "）：状态 " = "): status ";
 "，" = ", ";
 "，不在已登记工作区根白名单。" = ", not in the registered workspace-root allowlist.";
+"，不能启动当前产品命令行任务。\n" = " and cannot run the current product's command-line tasks.\n";
 "，不能挂到该产品的员工交接消息。" = ", cannot attach to this product’s handover messages.";
 "，不能接收该产品任务。" = ", cannot receive tasks for this product.";
 "，产品工作区配置已保存。" = ", product workspace config saved.";
@@ -3039,14 +3044,17 @@
 "，分支 " = ", branch ";
 "，分支计划 " = ", branch plan ";
 "，原因：" = ", reason: ";
+"，员工席位 " = ", employee seats ";
 "，回传 " = ", return ";
 "，审批 " = ", approvals ";
 "，尝试 " = ", attempts: ";
+"，工作区会话 " = ", workspace session ";
 "，已提交 " = " submitted to ";
 "，已重新开启技术负责人和产品员工团队。" = ", and reopened the CTO and product team.";
 "，并给出是否可交付的结论。" = ", and state a deliverability verdict.";
 "，当前团队成员：" = ", current team: ";
 "，执行员工 " = ", execution employee ";
+"，控制窗口 " = ", control window ";
 "，未完成任务 " = ", unfinished tasks ";
 "，消息 " = ", messages ";
 "，缺少产品归属。" = ", missing product ownership.";

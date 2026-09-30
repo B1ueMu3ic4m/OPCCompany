@@ -448,16 +448,16 @@ extension CompanyStore {
             "- " + "\(task.title)" + "：".L() + "\(task.status.title)" + "，负责人 " + "\(task.ownerID.map(agentName) ?? "未分配")" + "。" + "\(task.successCriteria)"
         }
         let taskEdges = taskGraph.edges.map { edge in
-            "- \(taskTitlesByID[edge.fromTaskID] ?? "未知任务".L()) → \(taskTitlesByID[edge.toTaskID] ?? "未知任务".L())：".L() + "\(edge.relation)，\(edge.status.title)。\(edge.evidence)"
+            "- " + (taskTitlesByID[edge.fromTaskID] ?? "未知任务".L()) + " → ".L() + (taskTitlesByID[edge.toTaskID] ?? "未知任务".L()) + "：".L() + "\(edge.relation)，\(edge.status.title)。\(edge.evidence)"
         }
         let messages = closureTraceMessages(trace).map { message in
-            "- \(AgentMessageDisplay.title(for: message.kind))：".L() + "\(message.subject)（\(agentName(message.fromAgentID)) → \(message.toAgentID.map(agentName) ?? "全员".L())，\(AgentMessageDisplay.statusTitle(for: message.status))）"
+            "- " + AgentMessageDisplay.title(for: message.kind) + "：".L() + "\(message.subject)（\(agentName(message.fromAgentID)) → \(message.toAgentID.map(agentName) ?? "全员".L())，\(AgentMessageDisplay.statusTitle(for: message.status))）"
         }
         let approvals = closureTraceApprovals(trace).map { approval in
             "- \(approval.title)：\(approval.status.title)。\(approval.reason)"
         }
         let gates = closureTraceReviewGates(trace).map { gate in
-            "- \(taskTitlesByID[gate.taskID] ?? "未知任务".L())：".L() + "\(gate.status.title)。\(gate.summary)"
+            "- " + (taskTitlesByID[gate.taskID] ?? "未知任务".L()) + "：".L() + "\(gate.status.title)。\(gate.summary)"
         }
         let artifactsList = closureTraceArtifacts(trace).map { artifact in
             "- \(artifact.title)：\(artifact.kind.title)，\(artifact.path)。\(artifact.summary)"
