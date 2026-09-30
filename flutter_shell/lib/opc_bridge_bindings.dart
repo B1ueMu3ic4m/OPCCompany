@@ -363,6 +363,18 @@ class OpcBridge {
     return raw;
   }
 
+  /// v1.11 seat steering from the shell: ONE line into an agent's live
+  /// tmux seat. Returns '' on success — a WRITE rides the same channel,
+  /// so silence IS success — and the verbatim refusal reason otherwise
+  /// (unknown agent / no live seat on this machine / empty or oversize
+  /// line / paste failed). Never throws; call on the platform thread.
+  String terminalSend(String agentID, String line) {
+    final rc = command('terminal_send', {'agentID': agentID, 'line': line});
+    if (rc == ok) return '';
+    final reason = lastError();
+    return reason.isEmpty ? 'terminal_send refused' : reason;
+  }
+
   /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
   /// seven integer counts {hours,newWork,decisions,deliveries,missing,
   /// risks,awaitingNow}, computed live by the store's own door. Unlike

@@ -61,6 +61,12 @@ class FakeOpcBridge {
   /// true => simulate a core older than v1.10 (unknown verb, rc=-1).
   bool weightRefused = false;
 
+  /// v1.11 seat steering: null => success (lastError reset to ''); a
+  /// string => the verbatim refusal the next terminal_send returns.
+  /// Every attempt is recorded in [terminalSends].
+  String? terminalSendRefusal;
+  final List<(String agentID, String line)> terminalSends = [];
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -132,6 +138,23 @@ class FakeOpcBridge {
     if (verb == 'stalls_list' && stallsRefused) return -1;
     if (verb == 'catchup_md' && catchupRefused) return -1;
     if (verb == 'weight_json' && weightRefused) return -1;
+    // v1.11: a WRITE — success is lastError reset to '', a refusal rides
+    // its reason verbatim; the attempt is recorded either way.
+    if (verb == 'terminal_send') {
+      final agentID = payload['agentID'];
+      final line = payload['line'];
+      if (agentID is! String || line is! String) {
+        nextError = 'terminal_send requires agentID and line';
+        return -1;
+      }
+      terminalSends.add((agentID, line));
+      if (terminalSendRefusal != null) {
+        nextError = terminalSendRefusal!;
+        return -1;
+      }
+      nextError = '';
+      return rc;
+    }
     // v1.9: the page rides the channel as a RAW string — the real bridge
     // stores it in last_error WITHOUT jsonEncode (the page IS the payload),
     // so the fake must not wrap it in quotes either.

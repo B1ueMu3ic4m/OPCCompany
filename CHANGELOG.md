@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v0.18.0 "the tell door"
+- **`opc tell <agent> <line>`** — seat steering reaches the terminal:
+  ONE line into an agent's live tmux seat, by uuid or exact display
+  name (an ambiguous name refuses rather than guesses). Refusals are
+  the store's own, verbatim.
+- **The Flutter shell can steer too** (bridge v1.11 `terminal_send`):
+  an input line under the selected seat's transcript; the `terminalSend`
+  wrapper returns '' on success and the verbatim refusal otherwise.
+  Windows shells see the honest "no live seat on this machine" — never
+  a fake ack.
+
 ## [0.17.0] - 2026-10-01
 
 ### Added — v0.17.0 "seat steering" (Option B phase 1)
