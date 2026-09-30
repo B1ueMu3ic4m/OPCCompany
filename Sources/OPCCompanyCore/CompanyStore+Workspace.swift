@@ -227,7 +227,7 @@ extension CompanyStore {
         for agent in selectedProductAgents {
             syncAgentWorkspace(for: agent.id)
         }
-        appendEvent(kind: .artifactCreated, title: "产品团队工作区已同步".L(), detail: "\(selectedProduct?.name ?? "当前产品") 的 ".L() + "\(selectedProductAgents.count)" + " 个员工工作区已写出。".L(), agentID: ctoID)
+        appendEvent(kind: .artifactCreated, title: "产品团队工作区已同步".L(), detail: (selectedProduct?.name ?? "当前产品".L()) + " 的 ".L() + "\(selectedProductAgents.count)" + " 个员工工作区已写出。".L(), agentID: ctoID)
         saveSnapshot()
     }
 

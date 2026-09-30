@@ -105,7 +105,7 @@ extension CompanyStore {
             appendEvent(
                 kind: .statusChanged,
                 title: "员工协作消息已标记已读".L(),
-                detail: "\(selectedProduct?.name ?? "当前产品") 的 ".L() + "\(count)" + " 条员工消息已标记为已读。".L(),
+                detail: (selectedProduct?.name ?? "当前产品".L()) + " 的 ".L() + "\(count)" + " 条员工消息已标记为已读。".L(),
                 agentID: ctoID
             )
             saveSnapshot()

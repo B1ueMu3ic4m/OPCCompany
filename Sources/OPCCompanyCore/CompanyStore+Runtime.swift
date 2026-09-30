@@ -621,12 +621,24 @@ extension CompanyStore {
         case .failed:
             status = .failed
         }
+        // locals, deliberately: this chain (three ternaries + lookups +
+        // interpolation) is the same shape that sent CI's type-checker
+        // into "unable to type-check in reasonable time" on the v2.1.1
+        // round — split into named sub-expressions before it draws again
+        let tmuxText = snapshot.tmuxReady ? "已就绪".L() : "未找到".L()
+        let sessionText = snapshot.sessionExists ? "已存在".L() : "未启动".L()
+        let windowText = snapshot.hasControlWindow ? "已连接".L() : "未连接".L()
+        let seatText = "，员工席位 ".L() + "\(snapshot.connectedAgentCount)"
+            + "/".L() + "\(snapshot.totalAgentCount)" + "。".L()
+        let knownDetail = "主要待处理：".L() + snapshot.primaryIssue
+            + "。终端工具 ".L() + tmuxText + "，工作区会话 ".L() + sessionText
+            + "，控制窗口 ".L() + windowText + seatText
         return MultiAgentArchitectureCheck(
             id: "terminal-workspace",
             title: "持久终端可用性".L(),
             status: status,
             detail: snapshot.isKnown
-                ? "主要待处理：\(snapshot.primaryIssue)。终端工具 \(snapshot.tmuxReady ? "已就绪" : "未找到")，工作区会话 \(snapshot.sessionExists ? "已存在" : "未启动")，控制窗口 \(snapshot.hasControlWindow ? "已连接" : "未连接")，员工席位 ".L() + "\(snapshot.connectedAgentCount)" + "/".L() + "\(snapshot.totalAgentCount)" + "。".L()
+                ? knownDetail
                 : "主要待处理：尚未巡检。请运行「持久终端可用性巡检」或启动真实终端工作区后复查；当前不会在界面刷新时读取终端状态。".L()
         )
     }
@@ -1375,7 +1387,7 @@ extension CompanyStore {
                         let normalized = body
                             .replacingOccurrences(of: "App 启动后预热当前产品团队", with: "应用启动后预热当前产品团队")
                             .replacingOccurrences(of: "Warm up the current product team after launch", with: "应用启动后预热当前产品团队")
-                        return "原因：".L() + "\(normalized)".L()
+                        return "原因：".L() + normalized
                     }),
                     ([ "持续协作：", "Continuous collaboration: " ], { body in
                         "持续协作：".L() + "\(body)"

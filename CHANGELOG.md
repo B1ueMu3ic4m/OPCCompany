@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed — v2.1.1 "no silent Chinese"
+- **The last ten interpolation-shaped l10n keys** restructured: strings
+  like `"\(name) 的 ".L()` froze a runtime value INTO the lookup key, so
+  the lookup always missed and English mode silently rendered Chinese.
+  All ten sites now keep values OUTSIDE the lookup (the house pattern:
+  fragments are keys, numbers and names ride between them); 8 new
+  fragment keys translated, strings regenerated, interpolation-shaped
+  keys in `Sources/` now measure **zero** by audit grep.
+- Two of the ten already had their fragments translated and waiting in
+  en.json — the code just never called them.
+
 ## [2.1.0] - 2026-10-01
 
 ### Added — v2.1.0 "steering everywhere" (the last surface)

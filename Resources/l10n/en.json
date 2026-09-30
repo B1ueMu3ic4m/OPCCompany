@@ -3077,6 +3077,14 @@
     "发送到该员工的实时席位": "Send to the employee's live seat",
     "把这一行直接注入该员工的实时终端席位；不消耗外部模型额度，拒绝会原样显示。": "Injects this line straight into the employee's live terminal seat; no external model quota is spent, and refusals are shown verbatim.",
     "发送到 ": "Send to ",
-    " 实时席位": "'s live seat"
+    " 实时席位": "'s live seat",
+    "的 ": "'s ",
+    " → ": " → ",
+    "。终端工具 ": ". Terminal tool ",
+    "，工作区会话 ": ", workspace session ",
+    "，控制窗口 ": ", control window ",
+    "，员工席位 ": ", employee seats ",
+    "\n[OPC 已阻止运行] ": "\n[OPC blocked the run] ",
+    "，不能启动当前产品命令行任务。\n": " and cannot run the current product's command-line tasks.\n"
   }
 }
