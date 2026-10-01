@@ -94,6 +94,20 @@ extension CompanyStore {
         localSeatProcesses[agentID]?.isAlive == true
     }
 
+    /// v1.13 the seat roster: every local seat this process spawned,
+    /// with its liveness AS OF THIS INSTANT (`true` running, `false`
+    /// exited but not yet explicitly stopped). Pure read over the
+    /// runtime registry — an explicitly stopped seat has no entry at
+    /// all, and a seat another process spawned was never this store's
+    /// fact to report.
+    public func localSeatStatuses() -> [UUID: Bool] {
+        var statuses: [UUID: Bool] = [:]
+        for (agentID, process) in localSeatProcesses {
+            statuses[agentID] = process.isAlive
+        }
+        return statuses
+    }
+
     /// One steering line into the agent's live LOCAL seat. The same
     /// guards terminal_send applies (empty / >4096 bytes / liveness),
     /// answered with the same honest refusals.

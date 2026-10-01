@@ -108,10 +108,11 @@ class _CompanyHomeState extends State<CompanyHome> {
   final TextEditingController _steerField = TextEditingController();
   bool _steering = false;
   String? _steerStatus;
-  // v2.0.0 the seat lifecycle: the local seats THIS shell spawned this
-  // session. Liveness beyond that is the refusal channel's job — the
-  // registry is a runtime fact of the bridge's process, never guessed.
-  final Set<String> _localSeats = {};
+  // v2.0.0 the seat lifecycle; v2.3.0 the roster: the toggle is driven
+  // by RUNTIME TRUTH from the bridge's seat_list (liveness as of the
+  // last refresh), synced on every pull — not by what this session
+  // happened to spawn. The registry is a fact of the bridge's process.
+  Set<String> _seatAlive = {};
   bool _seatBusy = false;
 
   // ── transcript surface (#70 option A) ─────────────────────────────
@@ -230,6 +231,17 @@ class _CompanyHomeState extends State<CompanyHome> {
           _transcriptScroll.jumpTo(_transcriptScroll.position.maxScrollExtent);
         }
       });
+    }
+    // v2.3.0 the seat roster: runtime liveness from the bridge, synced
+    // every pull — the toggle reflects the office AS OF NOW, not what
+    // this session happened to spawn. null (old core / refused) keeps
+    // the previous roster honestly: no answer is not a guess.
+    final seats = _bridge.seatList();
+    if (seats != null) {
+      _seatAlive = {
+        for (final e in seats.entries)
+          if (e.value) e.key.toLowerCase(),
+      };
     }
   }
 
@@ -652,7 +664,7 @@ class _CompanyHomeState extends State<CompanyHome> {
                     key: const ValueKey('seat-toggle'),
                     onPressed:
                         _seatBusy ? null : () => _toggleLocalSeat(agentID),
-                    child: Text(_localSeats.contains(agentID)
+                    child: Text(_seatAlive.contains(agentID)
                         ? 'stop seat'
                         : 'start seat'),
                   ),
@@ -738,13 +750,14 @@ class _CompanyHomeState extends State<CompanyHome> {
     if (reason.isEmpty) _syncTranscripts();
   }
 
-  /// v2.0.0 the seat lifecycle: start/stop a LONG-LIVED local seat for
-  /// the selected agent. The shell tracks what IT spawned this session;
-  /// every refusal shows verbatim — a seat this shell didn't spawn is
-  /// honestly "no local seat", never a guessed toggle.
+  /// v2.0.0 the seat lifecycle; v2.3.0 driven by the runtime roster
+  /// (seat_list), not session memory. The roster syncs on every refresh;
+  /// a successful toggle updates it optimistically until the next pull
+  /// re-syncs. Refusals show verbatim — a seat this bridge never
+  /// spawned is honestly "no local seat", never a guessed toggle.
   void _toggleLocalSeat(String agentID) {
     if (_seatBusy) return;
-    final starting = !_localSeats.contains(agentID);
+    final starting = !_seatAlive.contains(agentID);
     setState(() => _seatBusy = true);
     final reason =
         starting ? _bridge.seatSpawn(agentID) : _bridge.seatStop(agentID);
@@ -752,9 +765,9 @@ class _CompanyHomeState extends State<CompanyHome> {
       _seatBusy = false;
       if (reason.isEmpty) {
         if (starting) {
-          _localSeats.add(agentID);
+          _seatAlive.add(agentID);
         } else {
-          _localSeats.remove(agentID);
+          _seatAlive.remove(agentID);
         }
         _steerStatus = starting ? '✓ seat started' : '✓ seat stopped';
       } else {

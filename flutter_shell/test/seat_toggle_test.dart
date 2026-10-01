@@ -60,6 +60,25 @@ void main() {
     expect(fake.unfreed, isEmpty);
   });
 
+  test('seatList wrapper: bool object or refuse wholesale', () {
+    final fake = FakeOpcBridge();
+    final bridge = fake.asBridge();
+    // the default honest empty office
+    expect(bridge.seatList(), <String, bool>{});
+    expect(fake.commands.map((c) => c.$1), contains('seat_list'));
+
+    fake.seatListResult = {
+      '11111111-1111-1111-1111-111111111111': true,
+    };
+    expect(bridge.seatList(),
+        {'11111111-1111-1111-1111-111111111111': true});
+
+    // a non-bool value refuses WHOLESALE — never half a roster
+    fake.seatListResult = {'x': 'yes'};
+    expect(bridge.seatList(), isNull);
+    expect(fake.unfreed, isEmpty);
+  });
+
   testWidgets('start seat records the spawn and flips the toggle',
       (tester) async {
     _wide(tester);
@@ -100,6 +119,25 @@ void main() {
     expect(find.textContaining('did not exit'), findsOneWidget);
     // the failed stop keeps the seat tracked — the shell never guesses
     expect(find.text('stop seat'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('the roster drives the toggle (runtime truth, not memory)',
+      (tester) async {
+    _wide(tester);
+    final fake = FakeOpcBridge(initialSnapshot: _snap());
+    fake.seatListResult = {'11111111-1111-1111-1111-111111111111': true};
+    await _pump(tester, fake);
+
+    // the seat is ALIVE per the bridge — the toggle says so without this
+    // session having spawned anything
+    expect(find.text('stop seat'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('seat-toggle')));
+    await tester.pumpAndSettle();
+    expect(fake.seatCommands.single.$1, 'seat_stop');
+    expect(find.text('start seat'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

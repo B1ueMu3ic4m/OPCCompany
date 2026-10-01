@@ -272,6 +272,12 @@ Future<List<SmokeResult>> runShellSmoke(OpcBridge bridge) async {
           'seat_stop: no local seat for '
               '00000000-0000-0000-0000-000000000000',
       bridge.lastError());
+  // v1.13 seat roster: the object channel answers — shape pinned, count
+  // is not (an office with no local seats answers {} honestly).
+  final seats = bridge.seatList();
+  add('seat_list answers the roster object',
+      seats != null,
+      seats == null ? bridge.lastError() : 'seats=${seats.length}');
   final rosterIDs = snap?.roster ?? const [];
   if (digest != null && rosterIDs.isNotEmpty) {
     final agentID = rosterIDs.first.$1;

@@ -392,6 +392,26 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     try store.stopLocalSeat(agentID: agentID)
                     box.lastError = ""
                     return 0
+                case "seat_list":
+                    // v1.13 the seat roster: the CURRENT process's local
+                    // seats and their liveness AS OF THIS INSTANT, riding
+                    // the smuggle channel as a JSON OBJECT
+                    // {"<uuid>": true|false} (.sortedKeys byte-stable).
+                    // Pure read over the runtime registry: an explicitly
+                    // stopped seat has no entry, a seat another process
+                    // spawned was never this store's fact, and an empty
+                    // office answers {} honestly.
+                    let statuses = store.localSeatStatuses()
+                    var pairs: [String: Bool] = [:]
+                    for (agentID, alive) in statuses {
+                        pairs[agentID.uuidString] = alive
+                    }
+                    guard let data = try? JSONSerialization.data(
+                        withJSONObject: pairs, options: [.sortedKeys]) else {
+                        throw OPCBridgeRefusal(message: "seat_list: serialization failed")
+                    }
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "weight_json":
                     // v1.10 the weight door: how heavy is the snapshot
                     // RIGHT NOW, which sections hold the mass, and is the
