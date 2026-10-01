@@ -538,15 +538,20 @@ public final class OPCLocalSeatProcess: @unchecked Sendable {
     /// Called on an arbitrary queue as output arrives — the sink hops
     /// itself (the store hops to the main actor before touching state).
     private let onOutput: @Sendable (String) -> Void
+    /// Called exactly once in the termination handler, AFTER the final
+    /// pipe drain — the normalizer's flush point.
+    private let onEnd: @Sendable () -> Void
 
     public init(command: [String],
                 workingDirectory: URL?,
                 environmentOverrides: [String: String] = [:],
-                onOutput: @escaping @Sendable (String) -> Void) {
+                onOutput: @escaping @Sendable (String) -> Void,
+                onEnd: @escaping @Sendable () -> Void = {}) {
         self.command = command
         self.workingDirectory = workingDirectory
         self.environmentOverrides = environmentOverrides
         self.onOutput = onOutput
+        self.onEnd = onEnd
     }
 
     public var isAlive: Bool {
@@ -628,6 +633,7 @@ public final class OPCLocalSeatProcess: @unchecked Sendable {
             let restErr = errorPipe.fileHandleForReading.readDataToEndOfFile()
             if !restErr.isEmpty { sink(String(decoding: restErr, as: UTF8.self)) }
             try? stdin?.close()
+            self.onEnd()
         }
 
         do {
@@ -675,6 +681,90 @@ public final class OPCLocalSeatProcess: @unchecked Sendable {
         }
         if process.isRunning {
             process.terminate()
+        }
+    }
+}
+
+// ═══ v2.2.0 the readable seat ══════════════════════════════════════════
+// Interactive CLIs speak ANSI: SGR colors, spinner redraws via CR, cursor
+// moves, window titles via OSC. The tmux seats never see it —
+// `capture-pane -p` strips escapes — but a LOCAL pipe seat streams the
+// process's raw bytes, and 2.0.0 appended them verbatim: a claude REPL
+// turned the transcript into escape garbage. This wrapper feeds chunks
+// through CLIInteractionProfile.normalizedForPromptMatching (the
+// cursor-aware normalizer the preflight matchers already trust: CR
+// overwrites, BS, CSI-K erases, OSC stripped, \n and \t kept), holding
+// back a trailing PARTIAL escape sequence so one split across pipe
+// chunks degrades into nothing instead of garbage. flush() drains the
+// carry at end-of-stream.
+public final class ANSIStreamNormalizer: @unchecked Sendable {
+    private let lock = NSLock()
+    private var carry = ""
+
+    public init() {}
+
+    /// Normalize one streamed chunk; returns the text safe to append.
+    public func feed(_ chunk: String) -> String {
+        lock.lock()
+        let pending = carry + chunk
+        carry = ""
+        lock.unlock()
+
+        let holdCount = partialEscapeSuffixCount(pending)
+        let emitEnd = pending.index(pending.endIndex, offsetBy: -holdCount)
+        let emit = String(pending[..<emitEnd])
+
+        lock.lock()
+        carry = String(pending[emitEnd...])
+        lock.unlock()
+
+        guard !emit.isEmpty else { return "" }
+        return CLIInteractionProfile.normalizedForPromptMatching(emit)
+    }
+
+    /// Drain the held-back carry (call once at end-of-stream).
+    public func flush() -> String {
+        lock.lock()
+        let rest = carry
+        carry = ""
+        lock.unlock()
+        guard !rest.isEmpty else { return "" }
+        return CLIInteractionProfile.normalizedForPromptMatching(rest)
+    }
+
+    /// Length of the trailing INCOMPLETE escape sequence (ESC dangling,
+    /// or a CSI/OSC still waiting on its terminator). A complete sequence
+    /// at the tail holds nothing — the normalizer can handle it whole.
+    private func partialEscapeSuffixCount(_ s: String) -> Int {
+        guard let lastESC = s.lastIndex(of: "\u{1B}") else { return 0 }
+        let after = s.index(after: lastESC)
+        guard after < s.endIndex else { return s.distance(from: lastESC, to: s.endIndex) }
+        switch s[after] {
+        case "[":
+            // CSI: params 0x30–0x3F, intermediates 0x20–0x2F, final 0x40–0x7E
+            var i = s.index(after: after)
+            while i < s.endIndex {
+                let scalar = s[i]
+                let value = scalar.unicodeScalars.first?.value ?? 0
+                if (0x40...0x7E).contains(value) { return 0 } // final byte: complete
+                if (0x20...0x3F).contains(value) { i = s.index(after: i); continue }
+                return 0 // anything else: not a CSI we track — let it through
+            }
+            return s.distance(from: lastESC, to: s.endIndex) // dangling CSI
+        case "]":
+            // OSC: terminated by BEL or ESC \
+            var i = s.index(after: after)
+            while i < s.endIndex {
+                if s[i] == "\u{07}" { return 0 } // BEL: complete
+                if s[i] == "\u{1B}" {
+                    let next = s.index(after: i)
+                    if next < s.endIndex, s[next] == "\\" { return 0 } // ST: complete
+                }
+                i = s.index(after: i)
+            }
+            return s.distance(from: lastESC, to: s.endIndex) // dangling OSC
+        default:
+            return 0 // two-byte single escapes complete inline
         }
     }
 }

@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed — v2.2.0 "the readable seat"
+- **Local-seat transcripts no longer collect ANSI garbage.** The tmux
+  seats never had this problem (`capture-pane -p` strips escapes), but
+  a v2.0 local pipe seat streams the process's RAW bytes — an
+  interactive CLI's SGR colors, CR spinner redraws, OSC titles went
+  verbatim into the transcript. Chunks now pass through the cursor-aware
+  normalizer the preflight matchers already trust (CR overwrites, BS,
+  CSI-K erases and OSC stripped; `\n`/`\t` kept), with a carry that
+  holds back an escape sequence split across pipe reads and flushes it
+  at end-of-stream. End-to-end test: a seat ECHOING an ANSI-wrapped
+  marker lands readable — zero escape bytes in the transcript.
+
 ## [2.1.1] - 2026-10-01
 
 ### Fixed — v2.1.1 "no silent Chinese"
