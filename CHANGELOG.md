@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-02
+
 ### Added — v2.3.0 "who's actually at their desk"
 - **The seat roster (bridge v1.13 `seat_list`)**: the CURRENT process's
   local seats with their liveness AS OF THIS INSTANT, as
