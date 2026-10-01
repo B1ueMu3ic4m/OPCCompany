@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-02
+
 ### Fixed — v2.2.0 "the readable seat"
 - **Local-seat transcripts no longer collect ANSI garbage.** The tmux
   seats never had this problem (`capture-pane -p` strips escapes), but
