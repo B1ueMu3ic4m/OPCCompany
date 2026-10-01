@@ -235,3 +235,55 @@ private func makeSeatAgent(_ store: CompanyStore, name: String,
     #expect(again.rc == -1 && again.reason.contains("no local seat"),
             "stopping twice must refuse: \(again.reason)")
 }
+
+// MARK: - v2.2.0 the readable seat
+
+@Test func ansiNormalizerStripsEscapeSequencesAndCarriesPartialOnes() {
+    let normalizer = ANSIStreamNormalizer()
+
+    // SGR colors stripped, text kept
+    #expect(normalizer.feed("\u{1B}[31mred\u{1B}[0m plain\n") == "red plain\n")
+
+    // OSC window title stripped whole
+    #expect(normalizer.feed("\u{1B}]0;my title\u{07}body\n") == "body\n")
+
+    // a CSI split across pipe chunks degrades into nothing, not garbage
+    #expect(normalizer.feed("ok \u{1B}[3") == "ok ")
+    #expect(normalizer.feed("3mhidden\u{1B}[0m tail\n") == "hidden tail\n")
+
+    // C0 control bytes (BEL etc.) dropped, \n and \t kept
+    #expect(normalizer.feed("a\u{07}b\tc\nd\n") == "ab\tc\nd\n")
+
+    // flush drains the carry (a dangling ESC at end-of-stream)
+    #expect(normalizer.feed("tail \u{1B}") == "tail ")
+    #expect(normalizer.flush() == "")
+    #expect(normalizer.feed("after\n") == "after\n")
+}
+
+@MainActor @Test func localSeatTranscriptStaysReadableThroughANSI() async throws {
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    var draft = EmployeeDraft()
+    draft.displayName = "AnsiCat"
+    draft.command = "/bin/cat"
+    store.addEmployee(from: draft)
+    guard let agent = store.agents.first(where: { $0.displayName == "AnsiCat" }) else {
+        Issue.record("seed failed")
+        return
+    }
+
+    try store.spawnLocalSeat(agentID: agent.id)
+    // the seat ECHOES what we steer: feed it ANSI exactly like a real
+    // interactive CLI would emit — the transcript must stay readable
+    try store.sendLocalSeatLine(agentID: agent.id, line: "\u{1B}[32mansi-marker\u{1B}[0m done")
+    var transcript = ""
+    for _ in 0..<50 {
+        transcript = store.currentProductTerminalLog(for: agent.id)
+        if transcript.contains("ansi-marker") { break }
+        try await Task.sleep(nanoseconds: 100_000_000)
+    }
+    #expect(transcript.contains("ansi-marker"),
+            "the marker must survive: \(transcript.suffix(300))")
+    #expect(!transcript.contains("\u{1B}"),
+            "no escape byte may reach the transcript: \(transcript.suffix(300))")
+    try store.stopLocalSeat(agentID: agent.id)
+}

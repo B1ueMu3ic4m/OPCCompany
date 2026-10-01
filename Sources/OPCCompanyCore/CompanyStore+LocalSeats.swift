@@ -45,13 +45,30 @@ extension CompanyStore {
         let root = rootDirectory.isEmpty
             ? nil
             : URL(fileURLWithPath: rootDirectory)
+        // v2.2.0 the readable seat: interactive CLIs speak ANSI and a raw
+        // pipe stream would turn the transcript into escape garbage (the
+        // tmux seats never had this problem — `capture-pane -p` strips
+        // escapes). Chunks go through the cursor-aware normalizer with a
+        // carry for escapes split across pipe reads; the carry flushes
+        // once at end-of-stream.
+        let normalizer = ANSIStreamNormalizer()
+        let appendText: @Sendable (String) -> Void = { [weak self] text in
+            Task { @MainActor in
+                self?.appendTerminalLog(text, for: agentID, productID: scopedProductID)
+            }
+        }
         let process = OPCLocalSeatProcess(
             command: command,
             workingDirectory: root,
-            onOutput: { [weak self] text in
-                Task { @MainActor in
-                    self?.appendTerminalLog(text, for: agentID, productID: scopedProductID)
-                }
+            onOutput: { raw in
+                let text = normalizer.feed(raw)
+                guard !text.isEmpty else { return }
+                appendText(text)
+            },
+            onEnd: {
+                let rest = normalizer.flush()
+                guard !rest.isEmpty else { return }
+                appendText(rest)
             })
         do {
             try process.spawn()
