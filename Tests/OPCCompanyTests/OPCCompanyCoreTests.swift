@@ -2740,8 +2740,24 @@ private func writeCLIJobArchive(
         try await Task.sleep(nanoseconds: 100_000_000)
     }
 
+    // readiness poll, deliberately: runningAgentIDs clearing does NOT
+    // mean the transcript file has landed (one full-suite run raced it
+    // and read an empty transcript). Poll until the job's transcript
+    // actually carries the prompt — the same discipline the tmux echo
+    // tests use — instead of trusting timing luck.
     let jobsRoot = root.appendingPathComponent(".opc/jobs", isDirectory: true)
-    let jobDirectories = try FileManager.default.contentsOfDirectory(at: jobsRoot, includingPropertiesForKeys: nil)
+    var jobDirectories: [URL] = []
+    for _ in 0..<100 {
+        jobDirectories = (try? FileManager.default.contentsOfDirectory(
+            at: jobsRoot, includingPropertiesForKeys: nil)) ?? []
+        if let candidate = jobDirectories.first,
+           let transcript = try? String(
+                contentsOf: candidate.appendingPathComponent("transcript.log")),
+           transcript.contains("job smoke") {
+            break
+        }
+        try await Task.sleep(nanoseconds: 100_000_000)
+    }
     let job = try #require(jobDirectories.first)
     #expect(FileManager.default.fileExists(atPath: job.appendingPathComponent("brief.md").path))
     #expect(FileManager.default.fileExists(atPath: job.appendingPathComponent("agent-task.md").path))
