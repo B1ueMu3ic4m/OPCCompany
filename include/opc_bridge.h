@@ -174,6 +174,15 @@ char *opc_bridge_snapshot_json(void);
  *       SIGINT → SIGTERM with a grace window). rc=-1: not a UUID or
  *       no local seat for this agent. Write on the PROCESS, never on
  *       the snapshot.
+ *   "seat_list" {}                        (v1.13)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       {"<uuid>": true|false} (.sortedKeys byte-stable): every local
+ *       seat the CURRENT process spawned, with its liveness AS OF THIS
+ *       INSTANT — true running, false exited but not yet explicitly
+ *       stopped. A stopped seat has no entry; a seat another process
+ *       spawned was never this store's fact to report; an empty office
+ *       answers {}. Pure read over the runtime registry — never
+ *       persisted, never guessed across restarts.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

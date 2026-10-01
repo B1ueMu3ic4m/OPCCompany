@@ -73,6 +73,11 @@ class FakeOpcBridge {
   String? seatStopRefusal;
   final List<(String verb, String agentID)> seatCommands = [];
 
+  /// v1.13 seat roster: null => the default honest empty office {}.
+  /// Typed dynamic so tests can script a MALFORMED payload (a non-bool
+  /// value) and pin the wrapper's wholesale refusal.
+  Map<String, dynamic>? seatListResult;
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -215,6 +220,8 @@ class FakeOpcBridge {
             'logSharePercent': 18,
           },
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
+      // v1.13 seat roster: a {uuid: bool} object rides the smuggle channel
+      'seat_list' => seatListResult ?? const <String, bool>{},
       // v1.6 standup: an OBJECT rides the same smuggle channel
       'stalls_list' => stallsResult ??
           const [

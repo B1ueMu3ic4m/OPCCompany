@@ -393,6 +393,23 @@ class OpcBridge {
     return reason.isEmpty ? '$verb refused' : reason;
   }
 
+  /// v1.13 the seat roster: the CURRENT process's local seats with their
+  /// liveness as of this instant, as {"<uuid>": bool}. Null = the core
+  /// predates v1.13 or the verb was refused — the caller keeps its
+  /// previous roster (no answer is not a guess). A malformed payload
+  /// (any non-bool value) refuses WHOLESALE.
+  Map<String, bool>? seatList() {
+    if (command('seat_list') != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    final result = <String, bool>{};
+    for (final entry in raw.entries) {
+      if (entry.value is! bool) return null;
+      result[entry.key] = entry.value as bool;
+    }
+    return result;
+  }
+
   /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
   /// seven integer counts {hours,newWork,decisions,deliveries,missing,
   /// risks,awaitingNow}, computed live by the store's own door. Unlike

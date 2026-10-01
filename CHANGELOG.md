@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v2.3.0 "who's actually at their desk"
+- **The seat roster (bridge v1.13 `seat_list`)**: the CURRENT process's
+  local seats with their liveness AS OF THIS INSTANT, as
+  `{"<uuid>": true|false}` over the same smuggle channel — pure read,
+  `.sortedKeys` byte-stable. A stopped seat has no entry; a seat
+  another process spawned was never this store's fact to report; an
+  empty office answers `{}`.
+- **The shell's seat toggle is driven by runtime truth**: the roster
+  syncs on every refresh, so `stop seat` shows for a seat that is
+  ALIVE — whether this session spawned it or not — and `start seat`
+  for one that died. No answer (old core, refused verb) keeps the
+  previous roster honestly: no answer is not a guess.
+
 ## [2.2.0] - 2026-10-02
 
 ### Fixed — v2.2.0 "the readable seat"

@@ -287,3 +287,76 @@ private func makeSeatAgent(_ store: CompanyStore, name: String,
             "no escape byte may reach the transcript: \(transcript.suffix(300))")
     try store.stopLocalSeat(agentID: agent.id)
 }
+
+// MARK: - v2.3.0 the seat roster
+
+@MainActor @Test func localSeatRosterReportsLivenessAndForgetStops() throws {
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    let agent = try makeSeatAgent(store, name: "RosterCat", command: "/bin/cat")
+
+    // no seats: the honest empty office
+    #expect(store.localSeatStatuses().isEmpty)
+
+    try store.spawnLocalSeat(agentID: agent.id)
+    #expect(store.localSeatStatuses() == [agent.id: true])
+
+    // an exited-but-not-stopped seat stays in the roster, honestly false
+    if let process = store.localSeatProcesses[agent.id] {
+        process.stop()
+    }
+    #expect(store.localSeatStatuses() == [agent.id: false])
+
+    // an explicit stop forgets the entry entirely
+    try store.stopLocalSeat(agentID: agent.id)
+    #expect(store.localSeatStatuses().isEmpty)
+}
+
+@MainActor @Test func bridgeSeatRosterOverRealABI() throws {
+    let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("opc-seatlist-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
+    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+
+    let seedStore = CompanyStore.bootstrap(loadPersisted: false)
+    var draft = EmployeeDraft()
+    draft.displayName = "ListCat"
+    draft.command = "/bin/cat"
+    seedStore.addEmployee(from: draft)
+    seedStore.saveSnapshot()
+    guard let agent = seedStore.agents.first(where: { $0.displayName == "ListCat" }) else {
+        Issue.record("seed failed")
+        return
+    }
+    let payload = "{\"agentID\":\"\(agent.id.uuidString)\"}"
+
+    #expect(opc_bridge_create() == 0)
+    defer { opc_bridge_destroy() }
+
+    func runVerb(_ verb: String, _ json: String?) -> (rc: Int32, reason: String) {
+        let v = strdup(verb)
+        let p = json.flatMap { strdup($0) }
+        defer { free(v); free(p) }
+        let rc = opc_bridge_command(v, p)
+        let reason = opc_bridge_last_error().map { String(cString: $0) } ?? ""
+        return (rc, reason)
+    }
+
+    // empty office: {} rides the channel
+    let empty = runVerb("seat_list", nil)
+    #expect(empty.rc == 0 && empty.reason == "{}", "empty roster must be {}: \(empty.reason)")
+
+    let spawned = runVerb("seat_spawn", payload)
+    #expect(spawned.rc == 0, "spawn must succeed: \(spawned.reason)")
+
+    let roster = runVerb("seat_list", nil)
+    #expect(roster.rc == 0)
+    let decoded = try JSONSerialization.jsonObject(with: Data(roster.reason.utf8))
+    let map = try #require(decoded as? [String: Bool])
+    #expect(map == [agent.id.uuidString: true], "roster must carry liveness: \(roster.reason)")
+
+    #expect(runVerb("seat_stop", payload).rc == 0)
+    let afterStop = runVerb("seat_list", nil)
+    #expect(afterStop.rc == 0 && afterStop.reason == "{}",
+            "a stopped seat has no entry: \(afterStop.reason)")
+}
