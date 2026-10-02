@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-02
+
 ### Added — v2.5.0 "the seats line"
 - **`opc watch` shows who is actually AT their desk**: every frame
   carries a seats line — the agents with a physically open tmux window
