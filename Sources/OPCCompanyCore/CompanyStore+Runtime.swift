@@ -754,6 +754,43 @@ extension CompanyStore {
     public func terminalWorkspaceSessionNameForTesting() -> String {
         terminalWorkspaceSessionName()
     }
+    /// v2.4.0 the hall doctor's read: is the workspace session alive on
+    /// THIS machine right now? A pure process probe (`tmux ls` through
+    /// the core's one process seam) — never a stored verdict.
+    public func terminalWorkspaceSessionIsRunning() -> Bool {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else {
+            return false
+        }
+        let probe = OPCProcessRunner.runAndWait(
+            executable: tmuxPath,
+            arguments: ["ls"],
+            workingDirectory: FileManager.default.temporaryDirectory)
+        guard probe.exitCode == 0 else { return false }
+        let session = terminalWorkspaceSessionNameForTesting()
+        return probe.output.split(separator: "\n").contains { $0.contains(session) }
+    }
+    /// v2.4.0 the hall doctor's read: is the agent's WINDOW physically
+    /// open in the workspace session right now? A pure process probe
+    /// (`tmux list-windows`). Distinct from hasLiveTerminalSeat, which
+    /// answers "could a send go through right now" — the doctor must
+    /// not dress a send-capable backend up as an open seat.
+    public func hasOpenTerminalWindow(agentID: UUID) -> Bool {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else {
+            return false
+        }
+        let session = terminalWorkspaceSessionNameForTesting()
+        let probe = OPCProcessRunner.runAndWait(
+            executable: tmuxPath,
+            arguments: ["list-windows", "-t", session],
+            workingDirectory: FileManager.default.temporaryDirectory)
+        guard probe.exitCode == 0 else { return false }
+        let window = terminalWorkspaceWindowNameForTesting(agentID: agentID)
+        guard !window.isEmpty else { return false }
+        // list-windows lines read `{index}: {name}{flags} (panes)` — the
+        // index-prefixed shape, verified live: match the `: {name}` span,
+        // never a name-first prefix
+        return probe.output.split(separator: "\n").contains { $0.contains(": \(window)") }
+    }
     public func terminalWorkspaceWindowNameForTesting(agentID: UUID) -> String {
         guard let agent = agents.first(where: { $0.id == agentID }) else { return "" }
         return terminalWorkspaceWindowName(for: agent)

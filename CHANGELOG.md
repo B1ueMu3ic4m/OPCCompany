@@ -5,6 +5,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v2.4.0 "the hall doctor"
+- **`opc tell <agent> -`** — stdin multi-line steering: one HONEST send
+  per input line (the seat semantics are one line at a time; a
+  multi-line paste is N sends, not one pretend one). The count prints;
+  the first refusal stops the run and names its line number. Empty
+  stdin refuses.
+- **`opc hall`** — the terminal office on THIS machine in one honest
+  paragraph: tmux present, workspace session running, per-agent WINDOW
+  liveness. Pure read; nothing starts or stops. New store door
+  `hasOpenTerminalWindow` probes `tmux list-windows` (index-prefixed
+  line shape, verified live) — deliberately distinct from
+  `hasLiveTerminalSeat`, which answers "could a send go through": the
+  doctor must not dress a send-capable backend up as an open seat.
+- **Contract doc drift guard**: a new test parses the verb table in
+  `opc_bridge.h` and demands EXACT equality with the verbs the bridge
+  switch handles — both directions. It immediately caught a real hole:
+  `weight_json` (v1.10) had never been documented in the header. Fixed.
+
 ## [2.3.0] - 2026-10-02
 
 ### Added — v2.3.0 "who's actually at their desk"

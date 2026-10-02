@@ -51,6 +51,10 @@ private func usage() -> String {
                                  the terminal. <agent> is the uuid or the
                                  exact display name. Honest refusals: unknown
                                  name, no live seat, empty/oversize line.
+      opc hall                   the terminal office on THIS machine, one
+                                 honest paragraph: tmux present, workspace
+                                 session state, per-agent seat liveness.
+                                 Pure read: nothing here starts or stops.
       opc history [n]            last decisions of the current product —
                                  who asked, what you decided, when (default
                                  10). Pure read: nothing here writes state.
@@ -161,6 +165,8 @@ struct OPC {
                 try decide(rest)
             case "tell":
                 try tell(rest)
+            case "hall":
+                try hall(rest)
             case "history":
                 try history(rest)
             case "deliverables":
@@ -348,22 +354,51 @@ struct OPC {
     /// bridge verb calls, so refusals are the store's own, verbatim.
     /// The agent may be named by uuid or exact display name
     /// (case-insensitive); ambiguity refuses rather than guesses.
+    /// v2.4.0: `opc tell <agent> -` reads stdin to EOF and injects ONE
+    /// line per input line — the seat semantics are one line at a time,
+    /// so a multi-line paste is N honest sends, not one pretend one.
+    /// The first refusal stops the run and names its line number.
     @MainActor
     static func tell(_ rest: [String]) throws {
         guard rest.count >= 2 else {
-            throw CLIError(message: "usage: opc tell <agent> <line>  (agent: uuid or exact display name; roster: opc team)")
+            throw CLIError(message: "usage: opc tell <agent> <line>  (or `opc tell <agent> -` to read stdin, one send per line; roster: opc team)")
         }
         let key = rest[0]
-        let line = rest.dropFirst().joined(separator: " ")
+        let requested = rest.dropFirst().joined(separator: " ")
         try guardNoConcurrentWriter()
         try withStore { store in
             let agent = try resolveAgent(store, key)
-            do {
-                try store.terminalSendLine(agentID: agent.id, line: line)
-            } catch let e as OPCBridgeRefusal {
-                throw CLIError(message: e.message)
+            @MainActor
+            func send(_ line: String) throws {
+                do {
+                    try store.terminalSendLine(agentID: agent.id, line: line)
+                } catch let e as OPCBridgeRefusal {
+                    throw CLIError(message: e.message)
+                }
             }
-            print("→ \(agent.displayName)")
+            if requested == "-" {
+                let data = FileHandle.standardInput.readDataToEndOfFile()
+                var lines = String(decoding: data, as: UTF8.self)
+                    .split(separator: "\n", omittingEmptySubsequences: false)
+                    .map(String.init)
+                while let last = lines.last, last.isEmpty {
+                    lines.removeLast() // the trailing newline is not a line
+                }
+                guard !lines.isEmpty else {
+                    throw CLIError(message: "opc tell: stdin produced no lines")
+                }
+                for (index, line) in lines.enumerated() {
+                    do {
+                        try send(line)
+                    } catch let e as CLIError {
+                        throw CLIError(message: "line \(index + 1): \(e.message)")
+                    }
+                }
+                print("→ \(agent.displayName) (\(lines.count) lines)")
+            } else {
+                try send(requested)
+                print("→ \(agent.displayName)")
+            }
         }
     }
 
@@ -385,6 +420,37 @@ struct OPC {
                 : "opc: '\(key)' is ambiguous — \(matches.count) employees share that name")
         }
         return matches[0]
+    }
+
+    /// v2.4.0 the hall doctor: ONE honest paragraph about the terminal
+    /// office on THIS machine — tmux present, workspace session state,
+    /// per-agent seat liveness. Pure read (the `tmux ls` probe rides
+    /// the core's process runner); nothing here starts or stops
+    /// anything. Local pipe seats are named for what they are: facts
+    /// of the office process that spawned them, invisible to a visitor.
+    @MainActor
+    static func hall(_ rest: [String]) throws {
+        try withStore { store in
+            let product = store.selectedProduct?.name ?? "— (no product yet)"
+            print("Terminal hall — \(product)")
+
+            if let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") {
+                print("  tmux: \(tmuxPath)")
+                let running = store.terminalWorkspaceSessionIsRunning()
+                let session = store.terminalWorkspaceSessionNameForTesting()
+                print("  workspace session: \(session) \(running ? "(running)" : "(not started)")")
+            } else {
+                print("  tmux: not found on this machine — tmux seats live elsewhere (local pipe seats are the other office's shape)")
+            }
+
+            print("  seats:")
+            for agent in store.agents where agent.role != .boss {
+                let open = store.hasOpenTerminalWindow(agentID: agent.id)
+                let name = agent.displayName.prefix(20)
+                print("    \(name)\(String(repeating: " ", count: max(1, 22 - name.count)))\(open ? "LIVE seat" : "no live seat")")
+            }
+            print("  local seats: none here (they are facts of the office process that spawned them — bridge verb: seat_list)")
+        }
     }
 
     /// v0.6.0 "every hand leaves a receipt": the terminal's decision
