@@ -119,7 +119,7 @@ swift build -c release --product opc
 `.build/release/opc team [hours]`           # the name behind the work: who did it, per employee
 `.build/release/opc stalls [minutes]`       # the stall watch: what STOPPED moving, longest-frozen first
 `.build/release/opc catchup [hours]`        # v0.11 the catch-up: one page — traffic, who, stuck, your desk, shelf — all doors composed
-`.build/release/opc watch [seconds]`        # v0.12 the live office: the doors, restamped on a clock (`--once` renders one frame)
+`.build/release/opc watch [seconds]`        # v0.12 the live office: the doors + open-seat windows, restamped on a clock (`--once` = one frame)
 `.build/release/opc approvals --json`       # v0.13 every read verb speaks JSON — byte-identical to the FFI bridge (pipe to jq)
 `.build/release/opc deliverables --json`    # v0.14 the family completes: history + deliverables speak it too
 `.build/release/opc weight`                 # v0.15 the weight door: how heavy the snapshot is, which sections hold the mass

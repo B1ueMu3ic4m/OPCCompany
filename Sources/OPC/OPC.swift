@@ -692,6 +692,19 @@ struct OPC {
 
         let pending = store.selectedProductPendingApprovals.count
         frame.append("  awaiting you: \(pending) approval\(pending == 1 ? "" : "s")")
+
+        // v2.5.0 the seats line: who has a physically open tmux window
+        // RIGHT NOW — one list-windows probe feeds the whole frame.
+        let open = store.openTerminalWindowAgentIDs()
+        if open.isEmpty {
+            frame.append("  seats: no windows open")
+        } else {
+            let names = store.agents
+                .filter { open.contains($0.id) }
+                .map { $0.displayName }
+                .joined(separator: ", ")
+            frame.append("  seats: \(open.count) open — \(names)")
+        }
         return frame.joined(separator: "\n")
     }
 
