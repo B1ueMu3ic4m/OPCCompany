@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-02
+
 ### Added — v2.4.0 "the hall doctor"
 - **`opc tell <agent> -`** — stdin multi-line steering: one HONEST send
   per input line (the seat semantics are one line at a time; a
