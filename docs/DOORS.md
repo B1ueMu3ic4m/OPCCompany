@@ -25,6 +25,7 @@ handles — both directions.
 | Catch-up page | `catchUpPage()` | `catchup_md` | v1.9 | `opc catchup` | ✓ | ✓ card |
 | Weight | `snapshotWeightReport()` | `weight_json` | v1.10 | `opc weight` | ✓ panel | ✓ card |
 | Transcripts | per-seat log keys + byte cursor | `terminal_digest` / `terminal_tail` | v1.1/v1.2 | `opc watch` | ✓ hall | ✓ hall |
+| Open windows | `openTerminalWindowAgentIDs()` (one `tmux list-windows` probe) | — (store read, v2.5.0) | — | `opc watch` seats line · `opc hall` | ✓ hall | — |
 | Snapshot | `snapshotJSONData()` | `opc_bridge_snapshot_json` | v1.0 | `opc status --json` | ✓ | ✓ |
 
 ## Write doors

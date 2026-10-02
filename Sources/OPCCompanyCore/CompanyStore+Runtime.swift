@@ -769,6 +769,36 @@ extension CompanyStore {
         let session = terminalWorkspaceSessionNameForTesting()
         return probe.output.split(separator: "\n").contains { $0.contains(session) }
     }
+    /// v2.5.0 the watch's seats line: every agent whose window is
+    /// physically open RIGHT NOW — ONE `tmux list-windows` probe feeds
+    /// the whole set. Pure process read; a machine whose session is not
+    /// running answers empty, honestly.
+    public func openTerminalWindowAgentIDs() -> Set<UUID> {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else {
+            return []
+        }
+        let session = terminalWorkspaceSessionNameForTesting()
+        let probe = OPCProcessRunner.runAndWait(
+            executable: tmuxPath,
+            arguments: ["list-windows", "-t", session],
+            workingDirectory: FileManager.default.temporaryDirectory)
+        guard probe.exitCode == 0 else { return [] }
+        var open: Set<UUID> = []
+        for agent in agents {
+            if hasOpenWindow(agentID: agent.id, inProbe: probe.output) {
+                open.insert(agent.id)
+            }
+        }
+        return open
+    }
+    private func hasOpenWindow(agentID: UUID, inProbe output: String) -> Bool {
+        let window = terminalWorkspaceWindowNameForTesting(agentID: agentID)
+        guard !window.isEmpty else { return false }
+        // list-windows lines read `{index}: {name}{flags} (panes)` — the
+        // index-prefixed shape, verified live: match the `: {name}` span,
+        // never a name-first prefix
+        return output.split(separator: "\n").contains { $0.contains(": \(window)") }
+    }
     /// v2.4.0 the hall doctor's read: is the agent's WINDOW physically
     /// open in the workspace session right now? A pure process probe
     /// (`tmux list-windows`). Distinct from hasLiveTerminalSeat, which
@@ -784,12 +814,7 @@ extension CompanyStore {
             arguments: ["list-windows", "-t", session],
             workingDirectory: FileManager.default.temporaryDirectory)
         guard probe.exitCode == 0 else { return false }
-        let window = terminalWorkspaceWindowNameForTesting(agentID: agentID)
-        guard !window.isEmpty else { return false }
-        // list-windows lines read `{index}: {name}{flags} (panes)` — the
-        // index-prefixed shape, verified live: match the `: {name}` span,
-        // never a name-first prefix
-        return probe.output.split(separator: "\n").contains { $0.contains(": \(window)") }
+        return hasOpenWindow(agentID: agentID, inProbe: probe.output)
     }
     public func terminalWorkspaceWindowNameForTesting(agentID: UUID) -> String {
         guard let agent = agents.first(where: { $0.id == agentID }) else { return "" }

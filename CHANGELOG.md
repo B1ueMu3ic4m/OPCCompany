@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added — v2.5.0 "the seats line"
+- **`opc watch` shows who is actually AT their desk**: every frame
+  carries a seats line — the agents with a physically open tmux window
+  RIGHT NOW, fed by ONE `tmux list-windows` probe per frame. An empty
+  office says "no windows open", honestly.
+- `openTerminalWindowAgentIDs()` is a store read (one probe feeds the
+  whole frame); `hasOpenTerminalWindow` now shares the same probe
+  matcher (`{index}: {name}` line shape, verified live).
+
 ## [2.4.0] - 2026-10-02
 
 ### Added — v2.4.0 "the hall doctor"

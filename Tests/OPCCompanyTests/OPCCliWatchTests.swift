@@ -116,3 +116,25 @@ private func runCLI(_ args: [String], supportDir: URL) throws
         #expect(r.rc != 0, "interval \(junk) must refuse")
     }
 }
+
+@Test(.enabled(if: FileManager.default.fileExists(
+    atPath: cliBinaryURL.path)))
+@MainActor func cliWatchFrameCarriesTheSeatsLine() throws {
+    let supportDir = CompanyPersistence.supportDirectory
+    let stateFile = supportDir.appendingPathComponent("company-state.json")
+    let priorBytes = try? Data(contentsOf: stateFile)
+    defer {
+        if let priorBytes {
+            try? priorBytes.write(to: stateFile)
+        } else {
+            try? FileManager.default.removeItem(at: stateFile)
+        }
+    }
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    store.saveSnapshot()
+
+    // no workspace started: the frame's seats line is honest about it
+    let s = try runCLI(["watch", "--once"], supportDir: supportDir)
+    #expect(s.rc == 0, "watch --once must exit 0: \(s.err)")
+    #expect(s.out.contains("seats: no windows open"))
+}
