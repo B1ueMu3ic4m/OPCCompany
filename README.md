@@ -109,6 +109,8 @@ swift build -c release --product opc
 .build/release/opc approvals              # pending approvals, with their ids
 .build/release/opc decide <id> approve    # resolve one — refuses stale/double taps
 .build/release/opc tell <agent> <line>    # v0.18 the tell door: ONE line into a live seat — uuid or exact name
+.build/release/opc tell <agent> -          # v2.4 stdin steering: one honest send per input line, refusals name their line
+.build/release/opc hall                    # v2.4 the hall doctor: tmux, session state, per-agent WINDOW liveness (pure read)
 .build/release/opc products               # list every product workspace (current marked *)
 .build/release/opc use <id>               # select a product — same path as the GUI sidebar
 .build/release/opc history [n]            # decision ledger: who asked, your verdict, when
