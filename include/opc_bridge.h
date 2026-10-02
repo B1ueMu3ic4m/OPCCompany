@@ -158,6 +158,20 @@ char *opc_bridge_snapshot_json(void);
  *       tmux seat falls back to the agent's LOCAL pipe seat (see
  *       seat_spawn) — one verb, whichever office you're in; the
  *       refusal wording stays v1.11-stable.
+ *   "weight_json" {}                      (v1.10)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT:
+ *       {"totalBytes":N,"sections":[{"name":"<key>","bytes":N},...],
+ *       "advisoryBytes":N,"exceedsAdvisory":bool,"terminalLogBytes":N,
+ *       "logSharePercent":N} — how heavy the snapshot is RIGHT NOW.
+ *       totalBytes is the encoder's truth (the same bytes
+ *       snapshot_json serves); section sizes re-serialize each
+ *       top-level key on the .sortedKeys scale, so their SUM may
+ *       differ from totalBytes by key-order overhead — the contract
+ *       says so, nothing fudges. sections arrive heaviest-first.
+ *       exceedsAdvisory quotes the store's own maintenance advisory
+ *       constant (the same one the GUI panel enforces); the shell has
+ *       no opinion of "heavy". Read-only, same guard silence as
+ *       approvals_list.
  *   "seat_spawn" {"agentID":"<uuid>"}    (v1.12)
  *       rc=0 → a LONG-LIVED local seat started for the agent: its CLI
  *       in interactive mode, stdin kept open (pipe-mode — no tmux, no
