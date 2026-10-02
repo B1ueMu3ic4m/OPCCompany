@@ -198,6 +198,8 @@ Sources/
 Tests/OPCCompanyTests/    611 tests (state machines, security gates, i18n invariants)
 ```
 
+The door map — every answer, one math, every surface: [DOORS](docs/DOORS.md)
+
 Deeper docs: [Product Spec](docs/PRODUCT_SPEC.md) · [Agent Roles](docs/AGENT_ROLES.en.md) · [CLI Orchestration](docs/CLI_ORCHESTRATION.en.md) · [Multi-Agent Architecture](docs/MULTI_AGENT_ARCHITECTURE.en.md) · [Runbook](docs/RUNBOOK.en.md)
 
 ## Language
