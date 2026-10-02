@@ -11,6 +11,8 @@ let package = Package(
     products: [
         .executable(name: "OPCCompany", targets: ["OPCCompany"]),
         .executable(name: "opc", targets: ["OPC"]),
+        // the pixel-workforce GIF renderer (docs/media/pixel-workforce.gif)
+        .executable(name: "opc-demo-gif", targets: ["OPCDemoGif"]),
         // M3: the portable core + C-ABI bridge as a dynamic library for
         // non-Swift hosts (Flutter/dart:ffi via OPCBridge). Purely additive
         // — macOS CI still builds/test the same way; `swift build` here
