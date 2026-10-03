@@ -37,8 +37,8 @@ private func weightSeeded(now: Date) throws -> CompanyStore {
 @Test @MainActor func weightDoorMeasuresTheEncoderTruthAndRanksHonestly() throws {
     let tmp = try temporarySupportDir("weight-math")
     defer { try? FileManager.default.removeItem(at: tmp) }
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer { CompanyPersistence.testSupportDirectoryOverride = nil }
 
     _ = try weightSeeded(now: Date())
 
@@ -82,8 +82,8 @@ private func weightSeeded(now: Date) throws -> CompanyStore {
 @Test @MainActor func weightJSONShapeIsStableAndComplete() throws {
     let tmp = try temporarySupportDir("weight-json")
     defer { try? FileManager.default.removeItem(at: tmp) }
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer { CompanyPersistence.testSupportDirectoryOverride = nil }
 
     _ = try weightSeeded(now: Date())
     let store = CompanyStore.bootstrap(loadPersisted: true)

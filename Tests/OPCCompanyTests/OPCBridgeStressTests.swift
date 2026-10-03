@@ -37,81 +37,6 @@ private func stressSupportEnv() -> [String: String] {
     ["OPC_ALLOW_CONCURRENT_WRITE": "1"]
 }
 
-// ── ABI contract under abuse ────────────────────────────────────────────
-
-@Test @MainActor func bridgeSurvivesMalformedInputs() {
-    // NULL verbs, invalid UTF-8 pairs, truncated JSON, oversized payloads:
-    // every one must come back as a refusal (-1), never a crash or a hang.
-    // (Dart hosts will send worse than this; the contract is refuse-clean.)
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
-
-    let garbage = ["{}", "", "{\"text\": null}", "{\"text\": 42}",
-                   "{\"approvalID\": \"not-a-uuid\"}", "{\"approvalID\": \"\"}"]
-    for payload in garbage {
-        let v = strdup("goal")
-        let p = strdup(payload)
-        defer { free(v); free(p) }
-        let rc = opc_bridge_command(v, p)
-        // goal with non-string text throws inside trim-guard → refused, or
-        // numeric text → refused; ""/null → refused. None may trap.
-        #expect(rc == -1, "payload '\(payload)' must be refused, got \(rc)")
-    }
-    // decide with junk ids
-    for id in ["not-a-uuid", "", "{}"] {
-        let v = strdup("decide")
-        let payload = "{\"approvalID\":\"\(id)\",\"approved\":true}"
-        let p = strdup(payload)
-        defer { free(v); free(p) }
-        #expect(opc_bridge_command(v, p) == -1, "decide junk id must refuse")
-    }
-    // oversized payload (1 MB text field) — must parse or refuse cleanly
-    let big = String(repeating: "x", count: 1_000_000)
-    let v = strdup("goal")
-    let p = strdup("{\"text\":\"\(big)\"}")
-    defer { free(v); free(p) }
-    let rc = opc_bridge_command(v, p)
-    #expect(rc == 0 || rc == -1, "oversized payload answered normally (rc=\(rc))")
-    if rc == 0 { _ = opc_bridge_destroy(); _ = opc_bridge_create() } // goal may have been accepted
-}
-
-@Test @MainActor func bridgeHandlesNullPointersAndDoubleLifecycle() {
-    // NULL verb → refuse, not crash. create→destroy→create churn must stay
-    // consistent (the churn a long-lived shell does across snapshot reloads).
-    #expect(opc_bridge_command(nil, nil) == -1)
-    for _ in 0..<25 {
-        #expect(opc_bridge_create() == 0)
-        if let snap = opc_bridge_snapshot_json() { free(snap) }
-        opc_bridge_destroy()
-    }
-    // post-destroy commands refuse with the documented reason
-    let verb = strdup("save")
-    let payload = strdup("{}")
-    defer { free(verb); free(payload) }
-    #expect(opc_bridge_command(verb, payload) == -1)
-    if let err = opc_bridge_last_error() {
-        #expect(String(cString: err).contains("not created"))
-        free(err)
-    }
-}
-
-@Test @MainActor func bridgeReturnsAreIndividuallyFreeable() {
-    // 200 leaked-pointer rounds is the smallest sample where allocator
-    // mismatch (Swift allocate vs C free) shows up as corruption on Windows
-    // debug heaps and ASan builds — keep the loop if the target adds them.
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
-    for _ in 0..<200 {
-        guard let err = opc_bridge_last_error() else { Issue.record("null error buffer"); break }
-        free(err)
-    }
-    // interleaved with snapshot buffers
-    for _ in 0..<50 {
-        if let snap = opc_bridge_snapshot_json() { free(snap) }
-        if let err = opc_bridge_last_error() { free(err) }
-    }
-}
-
 // ── write-guard stress (explicit env; the guard is env-injected) ───────
 
 @Test func writeGuardOverrideHonoredAtScale() {
@@ -185,3 +110,83 @@ func writeGuardNonOneEnvKeepsDetectionPath(env: [String: String]) throws {
 }
 
 // ── guard unit: the matrix above covers env semantics end to end ───────
+
+// These door tests were moved out of the free-function list above:
+// opc_bridge_create() is a process-global singleton, so every caller
+// runs serially via OPCBridgeABIDoorTests (.serialized).
+extension OPCBridgeABIDoorTests {
+    // ── ABI contract under abuse ────────────────────────────────────────────
+
+    @Test @MainActor func bridgeSurvivesMalformedInputs() {
+        // NULL verbs, invalid UTF-8 pairs, truncated JSON, oversized payloads:
+        // every one must come back as a refusal (-1), never a crash or a hang.
+        // (Dart hosts will send worse than this; the contract is refuse-clean.)
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+
+        let garbage = ["{}", "", "{\"text\": null}", "{\"text\": 42}",
+                       "{\"approvalID\": \"not-a-uuid\"}", "{\"approvalID\": \"\"}"]
+        for payload in garbage {
+            let v = strdup("goal")
+            let p = strdup(payload)
+            defer { free(v); free(p) }
+            let rc = opc_bridge_command(v, p)
+            // goal with non-string text throws inside trim-guard → refused, or
+            // numeric text → refused; ""/null → refused. None may trap.
+            #expect(rc == -1, "payload '\(payload)' must be refused, got \(rc)")
+        }
+        // decide with junk ids
+        for id in ["not-a-uuid", "", "{}"] {
+            let v = strdup("decide")
+            let payload = "{\"approvalID\":\"\(id)\",\"approved\":true}"
+            let p = strdup(payload)
+            defer { free(v); free(p) }
+            #expect(opc_bridge_command(v, p) == -1, "decide junk id must refuse")
+        }
+        // oversized payload (1 MB text field) — must parse or refuse cleanly
+        let big = String(repeating: "x", count: 1_000_000)
+        let v = strdup("goal")
+        let p = strdup("{\"text\":\"\(big)\"}")
+        defer { free(v); free(p) }
+        let rc = opc_bridge_command(v, p)
+        #expect(rc == 0 || rc == -1, "oversized payload answered normally (rc=\(rc))")
+        if rc == 0 { _ = opc_bridge_destroy(); _ = opc_bridge_create() } // goal may have been accepted
+    }
+
+    @Test @MainActor func bridgeHandlesNullPointersAndDoubleLifecycle() {
+        // NULL verb → refuse, not crash. create→destroy→create churn must stay
+        // consistent (the churn a long-lived shell does across snapshot reloads).
+        #expect(opc_bridge_command(nil, nil) == -1)
+        for _ in 0..<25 {
+            #expect(opc_bridge_create() == 0)
+            if let snap = opc_bridge_snapshot_json() { free(snap) }
+            opc_bridge_destroy()
+        }
+        // post-destroy commands refuse with the documented reason
+        let verb = strdup("save")
+        let payload = strdup("{}")
+        defer { free(verb); free(payload) }
+        #expect(opc_bridge_command(verb, payload) == -1)
+        if let err = opc_bridge_last_error() {
+            #expect(String(cString: err).contains("not created"))
+            free(err)
+        }
+    }
+
+    @Test @MainActor func bridgeReturnsAreIndividuallyFreeable() {
+        // 200 leaked-pointer rounds is the smallest sample where allocator
+        // mismatch (Swift allocate vs C free) shows up as corruption on Windows
+        // debug heaps and ASan builds — keep the loop if the target adds them.
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+        for _ in 0..<200 {
+            guard let err = opc_bridge_last_error() else { Issue.record("null error buffer"); break }
+            free(err)
+        }
+        // interleaved with snapshot buffers
+        for _ in 0..<50 {
+            if let snap = opc_bridge_snapshot_json() { free(snap) }
+            if let err = opc_bridge_last_error() { free(err) }
+        }
+    }
+}

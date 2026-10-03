@@ -4,8 +4,9 @@ import Testing
 @testable import OPCCompanyCore
 
 // Formal regression for `opc team` (v0.9.0 "the name behind the work"):
-// real .build/debug/opc against the suite support dir, seeded in-process,
-// state-neutral restore. Pins: each employee's window prints under their
+// real .build/debug/opc against a private support dir seeded in-process
+// through the CompanyPersistence.testSupportDirectoryOverride seam.
+// Pins: each employee's window prints under their
 // name; a 25h-old assignment does NOT count; MISSING rides the shelf
 // door; the unattributed row is named, never personified; junk hours
 // refuse; pure-read promise holds (seeded snapshot bytes must not move).
@@ -40,18 +41,17 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliTeamPrintsPerEmployeeAndNeverWrites() throws {
-    let supportDir = CompanyPersistence.supportDirectory
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-team-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
     let scratch = URL(fileURLWithPath: NSTemporaryDirectory())
         .appendingPathComponent("opc-team-\(UUID().uuidString)")
     defer {
         try? FileManager.default.removeItem(at: scratch)
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
     try FileManager.default.createDirectory(at: scratch,
                                             withIntermediateDirectories: true)
@@ -106,15 +106,14 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliTeamUnattributedRowIsNamed() throws {
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent(
+            "opc-cli-team-unattributed-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
     let now = Date()
     let store = CompanyStore.bootstrap(loadPersisted: false)

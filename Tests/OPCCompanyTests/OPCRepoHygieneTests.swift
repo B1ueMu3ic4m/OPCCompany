@@ -63,3 +63,26 @@ private func versionTuple(_ v: String) -> [Int] {
                 "THE VERSION LAW: 1.x must never exist (0.x small steps → 2.x/3.x milestones): \(name)")
     }
 }
+
+/// THE SUPPORT-DIR SEAM LAW: `OPC_COMPANY_SUPPORT_DIR` is a process-start
+/// knob by design — CompanyPersistence bakes its first resolution and
+/// never re-reads the env. A test that setenvs it is dead theater: only
+/// whoever wins the first touch is honored, everyone else silently
+/// shares one dir and dumps into each other (the "0 rows" bridge crash,
+/// the hall reading someone else's store). Tests isolate through the
+/// `CompanyPersistence.testSupportDirectoryOverride` seam instead — a
+/// bare setenv of the knob anywhere in Tests/ fails this gate.
+@Test func supportDirOverrideRidesTheSeamNotTheEnv() throws {
+    let testsDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("Tests/OPCCompanyTests")
+    let files = try FileManager.default.contentsOfDirectory(
+        at: testsDir, includingPropertiesForKeys: nil)
+        .filter { $0.pathExtension == "swift" }
+        .filter { $0.lastPathComponent != "OPCRepoHygieneTests.swift" } // 本文件必须写出这个非法形态才能守它
+    #expect(files.count > 20, "test directory moved — lint is looking at the wrong place")
+    for file in files {
+        let text = try String(contentsOf: file, encoding: .utf8)
+        #expect(!text.contains(#"setenv("OPC_COMPANY_SUPPORT_DIR""#),
+                "\(file.lastPathComponent) setenvs OPC_COMPANY_SUPPORT_DIR — dead theater after the first-touch bake; use CompanyPersistence.testSupportDirectoryOverride")
+    }
+}

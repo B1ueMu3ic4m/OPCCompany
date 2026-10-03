@@ -17,8 +17,8 @@ private func alertSeeded(now: Date) throws -> (CompanyStore, UserDefaults) {
     let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
         .appendingPathComponent("opc-alerts-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer { CompanyPersistence.testSupportDirectoryOverride = nil }
 
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let pid = store.selectedProductID
