@@ -210,6 +210,17 @@ public enum CompanyPersistence {
         testSupportDirectoryOverride ?? resolvedSupportDirectory
     }
 
+    /// 接缝盲的进程共享根：永远返回烘焙值，无视 testSupportDirectoryOverride。
+    /// 供极少数明确表达"共享目录语义"的测试使用——比如删掉共享 state 文件以观察
+    /// load() 的缺失路径。播种类测试严禁使用：它们应当走接缝拿私有目录，
+    /// 否则旁观者的读写会互相倾倒（2026-10-04 夜间 flake 的根因）。
+    public static var processSharedSupportDirectory: URL { resolvedSupportDirectory }
+
+    /// 同上，接缝盲的共享 state 文件路径。
+    public static var processSharedStateURL: URL {
+        processSharedSupportDirectory.appendingPathComponent("company-state.json")
+    }
+
     public static var stateURL: URL {
         supportDirectory.appendingPathComponent("company-state.json")
     }

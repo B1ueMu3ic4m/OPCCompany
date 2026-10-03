@@ -11809,6 +11809,13 @@ private actor AutoLoopInputQueue {
     #expect(CompanyPersistence.stateURL.deletingLastPathComponent().standardizedFileURL.path == resolvedStandardized)
     #expect(CompanyPersistence.historyIndexURL.deletingLastPathComponent().standardizedFileURL.path == resolvedStandardized)
     #expect(CompanyPersistence.agentWorkspacesURL.deletingLastPathComponent().standardizedFileURL.path == resolvedStandardized)
+
+    // The seam rides ON TOP of the baked root: whatever the override says
+    // wins, nothing (nil) means the shared root above.
+    #expect(CompanyPersistence.supportDirectory.standardizedFileURL.path
+        == (CompanyPersistence.testSupportDirectoryOverride
+            ?? CompanyPersistence.processSharedSupportDirectory).standardizedFileURL.path,
+        "supportDirectory must resolve to override-else-shared, exactly")
 }
 
 @MainActor
@@ -11824,12 +11831,24 @@ private actor AutoLoopInputQueue {
     let realStateExistedBefore = FileManager.default.fileExists(atPath: realStateURL.path)
     let realModifiedBefore = (try? FileManager.default.attributesOfItem(atPath: realStateURL.path))?[.modificationDate] as? Date
 
+    // 接缝私有目录：bootstrap 内部的 saveSnapshot 必须写进本测试自己的目录——
+    // 私有目录即用即弃，旁观者碰不到它，它也污染不了任何后续测试。
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-persistence-bootstrap-isolated-\(UUID().uuidString)",
+                                isDirectory: true)
+    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: tmp)
+    }
+
     // 触发 bootstrap + save（CompanyStore.bootstrap 内部会 saveSnapshot）。
     let store = CompanyStore.bootstrap(loadPersisted: false)
     _ = store.selectedProductID
 
-    // 测试隔离目录里 state 文件应当被写入。
-    let isolatedStateURL = CompanyPersistence.stateURL
+    // 私有隔离目录里 state 文件应当被写入。
+    let isolatedStateURL = tmp.appendingPathComponent("company-state.json")
     #expect(FileManager.default.fileExists(atPath: isolatedStateURL.path),
         "隔离 supportDirectory 内应当生成 company-state.json：\(isolatedStateURL.path)")
 
@@ -11846,6 +11865,11 @@ private actor AutoLoopInputQueue {
 
 // MARK: - R26 候选 χ-persistence 备份逻辑守门（角色继承期轮 26）
 
+// @MainActor（本体零 await）：接缝是全局静态，两个非隔离 async 测试会在协作线程池上
+// 并发互踩彼此的 override——踩中时 load() 走的是对方目录的 missing 路径（照样返回 nil，
+// 备份断言却落空）。钉到主演员后，无 await 的测试体是一个不可分割的主演员段，接缝
+// 从设置到清零天然串行。
+@MainActor
 @Test func companyPersistenceLoadBacksUpCorruptedStateBeforeReturningNil() async throws {
     // R26：当 stateURL 内容损坏（无效 JSON / Codable schema 不匹配），load() 必须：
     // (1) 返回 nil（让 caller 走 bootstrap）；
@@ -11853,7 +11877,20 @@ private actor AutoLoopInputQueue {
     // (3) 把 decode 错误描述写入同名 .reason.txt sidecar。
     // 防止悄悄覆盖损坏数据销毁 forensic 现场（candidate χ-persistence 落地）。
 
+    // 接缝私有目录：corrupted 备份断言全部落在本测试自己的目录里——共享根里
+    // 旁观者的备份/清理不再污染 before/after 扫描，本测试的产物也留不到别人眼里。
+    // 本体没有 await：接缝从设置到 defer 清零之间是一个同步原子段。
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-persistence-corrupt-backup-\(UUID().uuidString)",
+                                isDirectory: true)
+    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: tmp)
+    }
     let supportDir = CompanyPersistence.supportDirectory
+    let stateURL = CompanyPersistence.stateURL
     try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
 
     // 备份扫描基线：测试前 supportDir 里既存的 corrupted 备份不应被本测试影响判定。
@@ -11862,7 +11899,7 @@ private actor AutoLoopInputQueue {
 
     // 写入故意损坏的 JSON（既不是 nil 文件不存在 path，也不是合法 CompanySnapshot 结构）。
     let corruptPayload = Data("{ this is not valid JSON for CompanySnapshot ::: }".utf8)
-    try corruptPayload.write(to: CompanyPersistence.stateURL, options: [.atomic])
+    try corruptPayload.write(to: stateURL, options: [.atomic])
 
     let result = CompanyPersistence.load()
     #expect(result == nil, "decode 失败应返回 nil 让 caller 走 bootstrap，实际：\(String(describing: result))")
@@ -11893,18 +11930,33 @@ private actor AutoLoopInputQueue {
     // 清理：本次测试制造的备份不留给后续测试看见。
     try? FileManager.default.removeItem(at: backupURL)
     try? FileManager.default.removeItem(at: reasonURL)
-    try? FileManager.default.removeItem(at: CompanyPersistence.stateURL)
+    try? FileManager.default.removeItem(at: stateURL)
 }
 
+// @MainActor：同上——无 await 的 async 体在主演员上整段原子执行，接缝才真正私有。
+@MainActor
 @Test func companyPersistenceLoadReturnsNilWithoutBackupWhenStateFileDoesNotExist() async throws {
     // R26：load() 对「文件不存在」的合法 happy path 必须不产生备份文件（否则启动期就会污染 supportDir）。
     // 这是和 corruption path 的关键差异守门：missing != corrupt。
 
+    // 接缝私有目录：missing-path 判定必须建立在本测试自己的目录上——共享根里
+    // 任何旁观者留下的 state 文件/备份都会污染 before/after 扫描。本体没有
+    // await：接缝从设置到 defer 清零之间是一个同步原子段。
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-persistence-missing-state-\(UUID().uuidString)",
+                                isDirectory: true)
+    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: tmp)
+    }
     let supportDir = CompanyPersistence.supportDirectory
+    let stateURL = CompanyPersistence.stateURL
     try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
 
     // 确保 stateURL 不存在。
-    try? FileManager.default.removeItem(at: CompanyPersistence.stateURL)
+    try? FileManager.default.removeItem(at: stateURL)
 
     let beforeURLs = (try? FileManager.default.contentsOfDirectory(at: supportDir, includingPropertiesForKeys: nil)) ?? []
     let beforeBackupCount = beforeURLs.filter { $0.lastPathComponent.hasPrefix("company-state-corrupted-") }.count
