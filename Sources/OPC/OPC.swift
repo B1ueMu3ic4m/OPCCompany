@@ -76,6 +76,12 @@ private func usage() -> String {
                                  GUI quotes, restamped with the wall clock.
                                  Pure read. `opc watch --once` renders one
                                  frame and exits.
+      opc transcript <agent> [--tail N] [--json]
+                                 read an employee's visible terminal log —
+                                 the same product-scoped, sanitized text
+                                 the GUI's agent card shows, clipped to the
+                                 last N lines (default 40, `--tail 0` =
+                                 everything). Pure read.
       opc weight               how heavy the snapshot is RIGHT NOW —
                                  total bytes, the heaviest sections, and
                                  whether the maintenance advisory is
@@ -183,6 +189,8 @@ struct OPC {
                 try weight(rest)
             case "watch":
                 try watch(rest)
+            case "transcript":
+                try transcript(rest)
             case "products":
                 try products()
             case "use":
@@ -743,6 +751,52 @@ struct OPC {
                 Thread.sleep(forTimeInterval: seconds)
                 print("\u{1B}[H\u{1B}[2J")
                 print(watchFrame(store))
+            }
+        }
+    }
+
+    /// v2.6.0 "the transcript door" — read an employee's VISIBLE terminal
+    /// log from the visitor's seat: the same product-scoped, sanitized,
+    /// compacted text the GUI's agent card renders, clipped to the last
+    /// `--tail N` lines (default 40; `--tail 0` serves everything).
+    /// `--json` prints the bridge `transcript` verb's exact bytes. Pure
+    /// read by construction — no guardNoConcurrentWriter, nothing writes.
+    @MainActor
+    static func transcript(_ rest: [String]) throws {
+        var tail = 40
+        var json = false
+        var positional: [String] = []
+        var index = 0
+        while index < rest.count {
+            let token = rest[index]
+            if token == "--tail", index + 1 < rest.count, let parsed = Int(rest[index + 1]) {
+                tail = parsed
+                index += 1
+            } else if token.hasPrefix("--tail="), let parsed = Int(token.dropFirst("--tail=".count)) {
+                tail = parsed
+            } else if token == "--json" {
+                json = true
+            } else {
+                positional.append(token)
+            }
+            index += 1
+        }
+        guard let key = positional.first else {
+            throw CLIError(message: "usage: opc transcript <agent> [--tail N] [--json]  (agent: uuid or exact display name; roster: opc team)")
+        }
+        try withStore { store in
+            let agent = try resolveAgent(store, key)
+            let data = try store.transcriptJSON(agentID: agent.id, tail: tail)
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let visible = store.visibleTerminalLog(for: agent.id)
+            let lines = visible.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+            let window = tail > 0 ? lines.suffix(tail) : lines[...]
+            print("\(agent.displayName) — transcript — \(window.count) of \(lines.count) lines")
+            for line in window {
+                print(line)
             }
         }
     }

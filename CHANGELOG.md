@@ -5,6 +5,49 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-10-04
+
+### Added — v2.7.0 "the visible face"
+- **Flutter shell: the visible/raw toggle** — the transcript pane can now
+  show an employee's VISIBLE log (product-scoped, sanitized, compacted —
+  the same text the macOS card renders) beside the raw seat stream. The
+  header counts honestly ("visible · N of T lines"); a refused ask keeps
+  the previous text — no answer is not a guess.
+- `transcript()` binding over the v1.14 verb: a malformed payload (any
+  non-String line) refuses WHOLESALE, like every other typed wrapper.
+
+## [2.6.0] - 2026-10-04
+
+### Added — v2.6.0 "the transcript door"
+- **`opc transcript <agent> [--tail N] [--json]`** — read an employee's
+  VISIBLE terminal log from the visitor's seat: the same product-scoped,
+  sanitized, compacted text the GUI's agent card renders, clipped to the
+  last N lines (default 40; `--tail 0` serves everything). The header
+  counts honestly ("2 of 4 lines"); an empty seat answers its one
+  placeholder line instead of inventing output. Pure read by
+  construction.
+- **Bridge verb `transcript` (contract v1.14)** — the same door over the
+  frozen six-symbol ABI: a JSON OBJECT {agentID, displayName,
+  totalLines, tail, lines} riding the smuggle channel, `.sortedKeys`
+  byte-stable, documented in `opc_bridge.h`. `opc transcript --json`
+  serves these exact bytes — one serializer, no second derivation.
+- Unknown ids and unknown names refuse like every other door; ambiguity
+  refuses rather than guesses.
+
+### Hardened
+- **Test-suite isolation, rebuilt honestly**: `CompanyPersistence`
+  gained a `testSupportDirectoryOverride` seam (ForTesting convention);
+  tests that used to setenv `OPC_COMPANY_SUPPORT_DIR` were flipping a
+  process-START knob the runtime never re-reads — dead theater where
+  only the first-touching test's flip ever applied, everyone else
+  silently shared one directory and dumped into each other. The 21
+  bridge-ABI door tests now live in one `@Suite(.serialized)` suite
+  (the bridge is a process-global singleton that refuses a second
+  create — the thread-storm test runs off the main actor by design and
+  used to collide with every other door). CLI child-process tests seed
+  through the seam into private dirs. A repo-hygiene gate now fails any
+  test that setenvs the support-dir knob again.
+
 ## [2.5.0] - 2026-10-02
 
 ### Added — v2.5.0 "the seats line"

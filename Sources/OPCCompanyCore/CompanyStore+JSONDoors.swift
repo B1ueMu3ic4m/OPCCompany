@@ -167,4 +167,30 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: envelope,
                                           options: [.sortedKeys])
     }
+
+    /// The transcript door as an OBJECT (bridge v1.14 `transcript`): the
+    /// agent's VISIBLE terminal log — the same product-scoped, sanitized,
+    /// compacted text the GUI's agent card renders — clipped to the last
+    /// `tail` lines. `totalLines` counts the visible log BEFORE clipping;
+    /// `tail <= 0` means no clipping. An empty seat answers its one honest
+    /// placeholder line instead of pretending output happened.
+    public func transcriptJSON(agentID: UUID, tail: Int = 40) throws -> Data {
+        guard let agent = agents.first(where: { $0.id == agentID }) else {
+            throw OPCBridgeRefusal(message: "transcript: no agent with id \(agentID.uuidString)")
+        }
+        let visible = visibleTerminalLog(for: agentID)
+        let allLines = visible.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let clipped: [String] = tail > 0 && allLines.count > tail
+            ? Array(allLines.suffix(tail))
+            : allLines
+        let object: [String: Any] = [
+            "agentID": agentID.uuidString,
+            "displayName": agent.displayName,
+            "totalLines": allLines.count,
+            "tail": tail,
+            "lines": clipped,
+        ]
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
 }
