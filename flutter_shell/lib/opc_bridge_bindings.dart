@@ -410,6 +410,31 @@ class OpcBridge {
     return result;
   }
 
+  /// v1.14 the transcript door: the agent's VISIBLE terminal log — the
+  /// same product-scoped, sanitized, compacted text the GUI's agent card
+  /// renders — as {agentID, displayName, totalLines, tail, lines}, where
+  /// lines is the LAST [tail] window (<= 0 = everything) and totalLines
+  /// counted the log before clipping. Null = the core predates v1.14 or
+  /// the verb was refused — no answer is not a guess. A malformed
+  /// payload (any non-String line) refuses WHOLESALE.
+  Map<String, dynamic>? transcript(String agentID, {int tail = 200}) {
+    if (command('transcript', {'agentID': agentID, 'tail': tail}) != ok) {
+      return null;
+    }
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    if (raw['agentID'] is! String || raw['displayName'] is! String) {
+      return null;
+    }
+    if (raw['totalLines'] is! int || raw['tail'] is! int) return null;
+    final lines = raw['lines'];
+    if (lines is! List) return null;
+    for (final line in lines) {
+      if (line is! String) return null;
+    }
+    return raw;
+  }
+
   /// v1.6 morning standup: one rolling 24h window of company TRAFFIC as
   /// seven integer counts {hours,newWork,decisions,deliveries,missing,
   /// risks,awaitingNow}, computed live by the store's own door. Unlike

@@ -78,6 +78,14 @@ class FakeOpcBridge {
   /// value) and pin the wrapper's wholesale refusal.
   Map<String, dynamic>? seatListResult;
 
+  /// v1.14 transcript door: null => the default two-line visible log.
+  /// Typed dynamic so tests can script a MALFORMED payload (a non-String
+  /// line) and pin the wrapper's wholesale refusal. A refusal string
+  /// rides verbatim; every ask is recorded in [transcriptCalls].
+  Map<String, dynamic>? transcriptResult;
+  String? transcriptRefusal;
+  final List<(String agentID, int tail)> transcriptCalls = [];
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -187,6 +195,30 @@ class FakeOpcBridge {
     // so the fake must not wrap it in quotes either.
     if (verb == 'catchup_md') {
       nextError = rawCarryOverride ?? (catchupMdResult ?? _defaultCatchupPage);
+      return rc;
+    }
+    // v1.14 the transcript door: a query — the object rides the smuggle
+    // channel JSON-encoded; the ask is recorded either way.
+    if (verb == 'transcript') {
+      final agentID = payload['agentID'];
+      final tail = payload['tail'];
+      if (agentID is! String || tail is! int) {
+        nextError = 'transcript requires agentID and tail';
+        return -1;
+      }
+      transcriptCalls.add((agentID, tail));
+      if (transcriptRefusal != null) {
+        nextError = transcriptRefusal!;
+        return -1;
+      }
+      nextError = jsonEncode(transcriptResult ??
+          {
+            'agentID': agentID,
+            'displayName': 'Fake Employee',
+            'totalLines': 2,
+            'tail': tail,
+            'lines': ['visible-line-one', 'visible-line-two'],
+          });
       return rc;
     }
     // query verbs carry results through nextError exactly like the bridge

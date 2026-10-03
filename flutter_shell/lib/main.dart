@@ -126,6 +126,13 @@ class _CompanyHomeState extends State<CompanyHome> {
   String? _transcriptProductID;
   final ScrollController _transcriptScroll = ScrollController();
   bool _followTail = true;
+  // v2.7.0 the transcript door's visible face: the pane can show the
+  // agent's VISIBLE log (product-scoped, sanitized, compacted — what the
+  // GUI's card renders) instead of the raw seat transcript. Fetched per
+  // refresh while active; a refusal keeps the previous text (no answer
+  // is not a guess).
+  bool _visibleView = false;
+  final Map<String, String> _visibleLogs = {}; // agentID -> rendered text
 
   @override
   void initState() {
@@ -243,6 +250,23 @@ class _CompanyHomeState extends State<CompanyHome> {
           if (e.value) e.key.toLowerCase(),
       };
     }
+    // v2.7.0 the visible face: while the pane shows the VISIBLE log, one
+    // transcript() ask per refresh keeps it live. A refusal keeps the
+    // previous text — no answer is not a guess.
+    if (_visibleView) _fetchVisibleLog();
+  }
+
+  /// v2.7.0: ask the transcript door for the selected agent's visible
+  /// log and render it with an honest header ("visible · N of T lines").
+  void _fetchVisibleLog() {
+    final agentID = _selectedAgentID;
+    if (agentID == null) return;
+    final t = _bridge.transcript(agentID);
+    if (t == null) return;
+    final lines = (t['lines'] as List).cast<String>();
+    final total = t['totalLines'] as int;
+    _visibleLogs[agentID.toLowerCase()] =
+        'visible · ${lines.length} of $total lines\n${lines.join('\n')}';
   }
 
   /// One action pipeline: run a bridge verb, surface refusal verbatim,
@@ -610,7 +634,10 @@ class _CompanyHomeState extends State<CompanyHome> {
   /// reading history must not fight the stream).
   Widget _transcriptPanel() {
     final agentID = _selectedAgentID;
-    final text = agentID == null ? null : _transcripts[agentID];
+    final visible = agentID == null ? null : _visibleLogs[agentID];
+    final text = agentID == null
+        ? null
+        : (_visibleView ? visible : _transcripts[agentID]);
     return Container(
       height: 160,
       decoration: const BoxDecoration(
@@ -632,6 +659,8 @@ class _CompanyHomeState extends State<CompanyHome> {
                     agentID == null
                         ? 'Tap an employee chip to watch their terminal.'
                         : 'Transcript · ${text == null || text.isEmpty ? '(no output yet)' : '${text.split('\n').length} lines'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                 ),
@@ -650,6 +679,15 @@ class _CompanyHomeState extends State<CompanyHome> {
                                     Theme.of(context).colorScheme.primary),
                       ),
                     ),
+                  ),
+                if (agentID != null)
+                  TextButton(
+                    key: const ValueKey('visible-toggle'),
+                    onPressed: () => setState(() {
+                      _visibleView = !_visibleView;
+                      if (_visibleView) _fetchVisibleLog();
+                    }),
+                    child: Text(_visibleView ? 'visible' : 'raw'),
                   ),
                 if (agentID != null)
                   TextButton(
