@@ -9,8 +9,9 @@ import Testing
 // (selectProduct: agent-team restart + save), persisting to disk.
 // Unknown ids refuse loudly — mirroring the bridge's product_select
 // rule that a silent no-op is how shell/core drift starts. Reuses the
-// OPCCliApprovalsTests discipline: real .build/debug/opc binary, the
-// suite's temp support dir shared with the seed, state-neutral restore.
+// OPCCliApprovalsTests discipline: real .build/debug/opc binary, a
+// private support dir shared with the seed via the
+// CompanyPersistence.testSupportDirectoryOverride seam.
 
 private var cliBinaryURL: URL {
     URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -42,15 +43,13 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliProductsListAndUseSwitchPersist() throws {
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-products-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
 
     // Seed: fresh store + a second product, persisted. addProductWorkspace

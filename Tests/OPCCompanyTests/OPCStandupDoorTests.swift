@@ -75,8 +75,8 @@ private func seededStore(now: Date) -> CompanyStore {
 @Test @MainActor func standupQuietCompanySaysSo() throws {
     let tmp = try temporarySupportDir("standup-quiet")
     defer { try? FileManager.default.removeItem(at: tmp) }
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer { CompanyPersistence.testSupportDirectoryOverride = nil }
     let store = CompanyStore.bootstrap(loadPersisted: false)
     let w = store.standupWindow()
     #expect(w.quiet, "a company that did nothing must answer nothing, not noise")
@@ -87,8 +87,8 @@ private func seededStore(now: Date) -> CompanyStore {
     let tmp = try temporarySupportDir("standup-headline")
     defer { try? FileManager.default.removeItem(at: tmp) }
     let now = Date(timeIntervalSince1970: 1_760_000_000)
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer { CompanyPersistence.testSupportDirectoryOverride = nil }
 
     let store = seededStore(now: now)
     let line = store.standupHeadlineText(hours: 24, now: now)

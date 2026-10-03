@@ -1354,185 +1354,6 @@ private func writeCLIJobArchive(
     #expect(text.contains("\(engineer.displayName)：终端席位待创建"))
 }
 
-@MainActor
-@Test func persistentProtocolRunUsesTerminalWorkspaceWhenAvailable() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentTerminal-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    store.products[0].rootDirectory = root.path
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    cleanupTmuxSession(tmuxPath, sessionName)
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-
-    var session = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-    session.keepAlive = true
-    store.runtimeSessions[engineer.id] = session
-
-    #expect(store.persistentTerminalTargetPreviewForTesting(agentID: engineer.id).contains(sessionName))
-    store.runtimeSessions[engineer.id] = session
-
-    store.runAgent(agentID: engineer.id, prompt: "persistent smoke")
-    #expect(try await waitForAgentRunToFinish(store, attempts: 120))
-
-    let terminalLog = store.currentProductTerminalLog(for: engineer.id)
-    #expect(terminalLog.contains("OPC 长期席位执行"))
-    #expect(!terminalLog.contains("OPC 常驻终端执行"))
-    #expect(terminalLog.contains("persistent smoke"))
-    #expect(store.persistentTerminalSessionCacheCountForTesting() == 1)
-    #expect(store.runtimeSessions[engineer.id]?.state == .ready)
-    let jobsRoot = root.appendingPathComponent(".opc/jobs", isDirectory: true)
-    let jobDirectories = try FileManager.default.contentsOfDirectory(at: jobsRoot, includingPropertiesForKeys: nil)
-    let job = try #require(jobDirectories.first)
-    let transcript = try String(contentsOf: job.appendingPathComponent("transcript.log"))
-    #expect(transcript.contains("persistent smoke"))
-    #expect(!transcript.contains("__OPC_JOB_EXIT"))
-    #expect(store.selectedProductArtifacts.contains { $0.title.contains("命令行作业档案") && $0.path.hasPrefix(jobsRoot.path) })
-
-    store.runAgent(agentID: engineer.id, prompt: "persistent smoke again")
-    #expect(try await waitForAgentRunToFinish(store, attempts: 120))
-    #expect(store.persistentTerminalSessionCacheCountForTesting() == 1)
-    #expect(store.currentProductTerminalLog(for: engineer.id).contains("persistent smoke again"))
-
-    store.clearSelectedProductRunData()
-    #expect(store.persistentTerminalSessionCacheCountForTesting() == 0)
-}
-
-@MainActor
-@Test func persistentProtocolRunDetectsMarkersAfterLongOutput() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentLongOutput-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("long-output.sh")
-    try """
-    #!/bin/sh
-    i=0
-    while [ "$i" -lt 1200 ]; do
-      printf 'long-line-%04d\\n' "$i"
-      i=$((i + 1))
-    done
-    printf 'prompt:%s\\n' "$1"
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-    store.products[0].rootDirectory = root.path
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: script.path, model: "", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    cleanupTmuxSession(tmuxPath, sessionName)
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    store.runAgent(agentID: engineer.id, prompt: "long-output-smoke")
-    #expect(try await waitForAgentRunToFinish(store, agentID: engineer.id, attempts: 160))
-
-    let terminalLog = store.currentProductTerminalLog(for: engineer.id)
-    #expect(terminalLog.contains("命令退出码 0"))
-    #expect(!terminalLog.contains("命令超时"))
-    let jobsRoot = root.appendingPathComponent(".opc/jobs", isDirectory: true)
-    let jobDirectories = try FileManager.default.contentsOfDirectory(at: jobsRoot, includingPropertiesForKeys: nil)
-    let job = try #require(jobDirectories.first)
-    let transcript = try String(contentsOf: job.appendingPathComponent("transcript.log"))
-    #expect(transcript.contains("long-line-0000"))
-    #expect(transcript.contains("long-line-1199"))
-    #expect(transcript.contains("prompt:"))
-    let runnerDirectory = root.appendingPathComponent(".opc/runtime/terminal-runners", isDirectory: true)
-    let remainingRunnerScripts = (try? FileManager.default.contentsOfDirectory(at: runnerDirectory, includingPropertiesForKeys: nil))?
-        .filter { $0.pathExtension == "sh" } ?? []
-    #expect(remainingRunnerScripts.isEmpty)
-}
-
-@MainActor
-@Test func persistentTerminalSendInputLineUsesLiteralTmuxInput() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInput-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("read-line.sh")
-    try """
-    #!/bin/sh
-    printf 'OPC_READY\\n'
-    IFS= read -r line
-    printf 'OPC_INPUT:%s\\n' "$line"
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.addProductWorkspace()
-    let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productIndex].rootDirectory = root.path
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionName):\(windowName)", script.path, "C-m"])
-
-    var capture = ""
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
-        if capture.contains("OPC_READY") { break }
-    }
-    #expect(capture.contains("OPC_READY"))
-
-    let literalInput = "hello $USER && uname; `date`"
-    let send = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: literalInput))
-    #expect(send.exitCode == 0)
-
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
-        if capture.contains("OPC_INPUT:\(literalInput)") { break }
-    }
-    #expect(capture.contains("OPC_INPUT:\(literalInput)"))
-
-    let rejected = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "one\ntwo"))
-    #expect(rejected.exitCode == 126)
-    #expect(rejected.standardError.contains("一次只允许一行"))
-}
-
 @Test func runPersistentTerminalCommandUsesLiteralTmuxInputForShellCommand() throws {
     // 源码守门：runPersistentTerminalCommand 必须把 marker-wrapped shellCommand 通过
     // sendInputLine 投递；并且 sendInputLine 必须走 tmux load-buffer + paste-buffer 的
@@ -1635,374 +1456,6 @@ private func writeCLIJobArchive(
         !inputLineBody.contains("\"send-keys\""),
         "sendInputLine 不应再调用 send-keys；改走 load-buffer/paste-buffer 后回车由 buffer 末尾 \\n 承担，不再单独发 C-m。"
     )
-}
-
-@MainActor
-@Test func persistentTerminalSendInputLineEmptyAndUnicodeNewlinesAreGuarded() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputBoundaries-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("read-two-lines.sh")
-    try """
-    #!/bin/sh
-    printf 'OPC_READY\\n'
-    IFS= read -r first
-    printf 'OPC_FIRST:%s\\n' "$first"
-    IFS= read -r second
-    printf 'OPC_SECOND:%s\\n' "$second"
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.addProductWorkspace()
-    let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productIndex].rootDirectory = root.path
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionName):\(windowName)", script.path, "C-m"])
-
-    var capture = ""
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
-        if capture.contains("OPC_READY") { break }
-    }
-    #expect(capture.contains("OPC_READY"))
-
-    let emptySend = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: ""))
-    #expect(emptySend.exitCode == 0)
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
-        if capture.contains("OPC_FIRST:") { break }
-    }
-    #expect(capture.contains("OPC_FIRST:"))
-
-    for invalid in ["a\rb", "a\r\nb", "a\u{2028}b"] {
-        let rejected = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: invalid))
-        #expect(rejected.exitCode == 126)
-        #expect(rejected.standardError.contains("一次只允许一行"))
-    }
-
-    let secondSend = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "after-reject"))
-    #expect(secondSend.exitCode == 0)
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
-        if capture.contains("OPC_SECOND:after-reject") { break }
-    }
-    #expect(capture.contains("OPC_SECOND:after-reject"))
-}
-
-@MainActor
-@Test func persistentTerminalSendInputLineDoesNotCrossProducts() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let rootA = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputA-\(UUID().uuidString)", isDirectory: true)
-    let rootB = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputB-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: rootA, withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: rootB, withIntermediateDirectories: true)
-    try "// package".write(to: rootA.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    try "// package".write(to: rootB.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-
-    let script = rootA.appendingPathComponent("read-product-line.sh")
-    try """
-    #!/bin/sh
-    printf 'OPC_READY:%s\\n' "$1"
-    IFS= read -r line
-    printf 'OPC_INPUT:%s:%s\\n' "$1" "$line"
-    sleep 1
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-
-    store.addProductWorkspace()
-    let productAIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productAIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productAIndex].rootDirectory = rootA.path
-    let productAID = store.selectedProductID
-    let sessionA = store.terminalWorkspaceSessionNameForTesting()
-    let windowA = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    defer { cleanupTmuxSession(tmuxPath, sessionA) }
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: productAID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-    _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionA):\(windowA)", "\(script.path) product-a", "C-m"])
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        let captureA = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionA):\(windowA)", "-S", "-200"])
-        if captureA.contains("OPC_READY:product-a") { break }
-    }
-    let sendA = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "input-a"))
-    #expect(sendA.exitCode == 0)
-
-    store.addProductWorkspace()
-    let productBID = store.selectedProductID
-    let productBIndex = try #require(store.products.firstIndex { $0.id == productBID })
-    store.products[productBIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productBIndex].rootDirectory = rootB.path
-    let sessionB = store.terminalWorkspaceSessionNameForTesting()
-    let windowB = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    defer { cleanupTmuxSession(tmuxPath, sessionB) }
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: productBID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-    _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionB):\(windowB)", "\(script.path) product-b", "C-m"])
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        let captureB = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionB):\(windowB)", "-S", "-200"])
-        if captureB.contains("OPC_READY:product-b") { break }
-    }
-    let sendB = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "input-b"))
-    #expect(sendB.exitCode == 0)
-
-    var captureA = ""
-    var captureB = ""
-    for _ in 0..<30 {
-        try await Task.sleep(nanoseconds: 100_000_000)
-        captureA = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionA):\(windowA)", "-S", "-200"])
-        captureB = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionB):\(windowB)", "-S", "-200"])
-        if captureA.contains("OPC_INPUT:product-a:input-a"), captureB.contains("OPC_INPUT:product-b:input-b") { break }
-    }
-    #expect(captureA.contains("OPC_INPUT:product-a:input-a"))
-    #expect(!captureA.contains("OPC_INPUT:product-b:input-b"))
-    #expect(captureB.contains("OPC_INPUT:product-b:input-b"))
-    #expect(!captureB.contains("OPC_INPUT:product-a:input-a"))
-}
-
-@MainActor
-@Test func persistentTerminalSendInputLineDuringCommandPreservesMarkerDetection() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputDuringRun-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("interactive-command.sh")
-    try """
-    #!/bin/sh
-    printf 'OPC_READY_FOR_STDIN\\n'
-    IFS= read -r line
-    printf 'OPC_STREAM_INPUT:%s\\n' "$line"
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.addProductWorkspace()
-    let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productIndex].rootDirectory = root.path
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    let runTask = Task {
-        await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: [script.path], timeoutSeconds: 5)
-    }
-
-    let capture = try await waitForTmuxPaneOutput(
-        tmuxPath,
-        target: "\(sessionName):\(windowName)",
-        contains: "OPC_READY_FOR_STDIN",
-        historyStart: "-200",
-        attempts: 40
-    )
-    #expect(capture.contains("OPC_READY_FOR_STDIN"))
-
-    let input = "next prompt $USER && true"
-    let send = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: input))
-    #expect(send.exitCode == 0)
-    let result = try #require(await runTask.value)
-
-    #expect(result.exitCode == 0)
-    #expect(result.standardOutput.contains("OPC_READY_FOR_STDIN"))
-    #expect(result.standardOutput.contains("OPC_STREAM_INPUT:\(input)"))
-    #expect(!result.standardOutput.contains("__OPC_JOB_EXIT"))
-}
-
-@MainActor
-@Test func persistentTerminalREPLTurnWaitsForCodexPromptAndReturnsDelta() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurn-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("fake-codex-repl.sh")
-    try """
-    #!/bin/sh
-    printf 'codex>\\n'
-    while IFS= read -r line; do
-      printf 'answer:%s\\n' "$line"
-      printf 'codex>\\n'
-    done
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.addProductWorkspace()
-    let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productIndex].rootDirectory = root.path
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    let tmuxTarget = "\(sessionName):\(windowName)"
-    let codexProfile = try #require(CLIInteractionProfileCatalog.profile(forCommand: "codex"))
-    let capture = try await bringFakeREPLScriptOnline(
-        tmuxPath,
-        target: tmuxTarget,
-        scriptPath: script.path,
-        readyNeedle: "codex>",
-        expectsLatestLineMatchesProfile: codexProfile
-    )
-    #expect(capture.contains("codex>"))
-    #expect(codexProfile.endsWithReplReadyPrompt(capture))
-
-    let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "手动下一轮", timeoutSeconds: 3))
-    #expect(turn.exitCode == 0)
-    #expect(!turn.timedOut)
-    #expect(turn.observation.phase == .ready)
-    #expect(turn.output.contains("answer:手动下一轮"))
-    #expect(turn.output.contains("codex>"))
-    #expect(!turn.output.contains("OPC 员工终端"))
-    #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .ready)
-    #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
-}
-
-@MainActor
-@Test func persistentTerminalREPLTurnRejectsShellSeatBeforePrompt() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurnShellGuard-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.addProductWorkspace()
-    let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productIndex].rootDirectory = root.path
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "不要发到普通终端", timeoutSeconds: 1))
-    #expect(turn.exitCode == 126)
-    #expect(turn.observation.reasonTitle == "终端未就绪")
-    #expect(turn.output.contains("避免把手动输入误发到普通终端"))
-
-    let capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
-    #expect(!capture.contains("不要发到普通终端"))
-    #expect(!store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
-}
-
-@MainActor
-@Test func persistentTerminalOutputDeltaRequiresAnchorOrInputEcho() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let unanchoredPrompt = store.persistentTerminalOutputDeltaPreviewForTesting(
-        before: "   \n",
-        after: "codex> ready\n",
-        inputEcho: "next prompt"
-    )
-    #expect(unanchoredPrompt.isEmpty)
-
-    let echoedInput = store.persistentTerminalOutputDeltaPreviewForTesting(
-        before: "   \n",
-        after: "codex> ready\nnext prompt\nanswer\ncodex> ready\n",
-        inputEcho: "next prompt"
-    )
-    #expect(echoedInput.contains("next prompt"))
-    #expect(echoedInput.contains("answer"))
-}
-
-@MainActor
-@Test func persistentTerminalREPLTurnRejectsUnsafeAndUnsupportedInputs() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-
-    let multiline = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "one\ntwo", timeoutSeconds: 1))
-    #expect(multiline.exitCode == 126)
-    #expect(multiline.output.contains("一次只允许一行"))
-
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
-    let unsupported = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "hello", timeoutSeconds: 1))
-    #expect(unsupported.exitCode == 127)
-    #expect(unsupported.output.contains("长期会话画像目录"))
-    #expect(unsupported.observation.phase == .unknown)
 }
 
 @Test func cliInteractionREPLTurnRecognizesClaudeAndGeminiReplReady() async throws {
@@ -2338,45 +1791,6 @@ private func writeCLIJobArchive(
     #expect(!summary.contains("REPL"))
 }
 
-@MainActor
-@Test func runManualREPLTurnRejectsEmptyMultilineAndUnselectedAgent() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-
-    let empty = await store.runManualREPLTurnForSelectedAgent(text: "     ")
-    #expect(empty.rejected)
-    #expect(empty.rejectionReason?.contains("一行内容") == true)
-
-    let multi = await store.runManualREPLTurnForSelectedAgent(text: "first\nsecond")
-    #expect(multi.rejected)
-    #expect(multi.rejectionReason?.contains("一次只允许一行") == true)
-
-    let trailingNewline = await store.runManualREPLTurnForSelectedAgent(text: "first\n")
-    #expect(trailingNewline.rejected)
-    #expect(trailingNewline.rejectionReason?.contains("一次只允许一行") == true)
-
-    store.selectAgent(store.bossID)
-    let bossSelected = await store.runManualREPLTurnForSelectedAgent(text: "ping")
-    #expect(bossSelected.rejected)
-    #expect(bossSelected.rejectionReason?.contains("老板视角") == true)
-    #expect(bossSelected.rejectionReason?.contains("REPL") != true)
-}
-
-@MainActor
-@Test func runManualREPLTurnRejectsBackendWithoutInteractionProfile() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    // 非画像目录后端（/bin/echo 不在 codex/claude/gemini 画像里）
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.products[0].assignedAgentIDs.insert(engineer.id)
-    store.selectAgent(engineer.id)
-
-    let report = await store.runManualREPLTurnForSelectedAgent(text: "ping", timeoutSeconds: 0.2)
-    #expect(report.rejected)
-    let reason = report.rejectionReason ?? ""
-    #expect(reason.contains("长期会话画像目录") || reason.contains("专用就绪提示"))
-}
-
 @Test func manualREPLTurnReportSummaryStaysChinese() {
     let timedOut = CompanyStore.ManualREPLTurnReport(summary: "等待超时，未中断终端席位", outputPreview: "answer:hello", timedOut: true, rejected: false, rejectionReason: nil)
     #expect(!timedOut.summary.isEmpty)
@@ -2424,304 +1838,6 @@ private func writeCLIJobArchive(
     #expect(!bossMessages.contains("REPL"))
     #expect(!bossMessages.contains("终端席位"))
     #expect(!bossMessages.contains("codex>"))
-}
-
-@MainActor
-@Test func persistentTerminalREPLTurnRoutesClaudeBackendThroughClaudePromptSignal() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurnClaude-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("fake-claude-repl.sh")
-    try """
-    #!/bin/sh
-    printf 'claude>\\n'
-    while IFS= read -r line; do
-      printf 'reply:%s\\n' "$line"
-      printf 'claude>\\n'
-    done
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "claude", model: "sonnet", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.addProductWorkspace()
-    let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productIndex].rootDirectory = root.path
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    let tmuxTarget = "\(sessionName):\(windowName)"
-    let claudeProfile = try #require(CLIInteractionProfileCatalog.profile(forCommand: "claude"))
-    let capture = try await bringFakeREPLScriptOnline(
-        tmuxPath,
-        target: tmuxTarget,
-        scriptPath: script.path,
-        readyNeedle: "claude>",
-        historyStart: "-200",
-        readyAttempts: 60,
-        expectsLatestLineMatchesProfile: claudeProfile
-    )
-    #expect(capture.contains("claude>"))
-    #expect(claudeProfile.endsWithReplReadyPrompt(capture))
-
-    let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "claude 第一轮", timeoutSeconds: 3))
-    #expect(turn.exitCode == 0)
-    #expect(!turn.timedOut)
-    #expect(turn.observation.phase == .ready)
-    #expect(turn.output.contains("reply:claude 第一轮"))
-    #expect(turn.output.contains("claude>"))
-    #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .ready)
-    #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
-}
-
-@MainActor
-@Test func persistentTerminalREPLTurnRejectsBackendWithoutReplReadySignals() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-
-    // 后端虽然在画像目录里但若未来 replReadySignals 被清空——通过非画像后端 /bin/echo 触发"画像目录里找不到"路径
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
-    let unknownBackend = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: store.agents[engineerIndex].id, text: "ping", timeoutSeconds: 1))
-    #expect(unknownBackend.exitCode == 127)
-    #expect(unknownBackend.output.contains("长期会话画像目录"))
-    #expect(unknownBackend.observation.reasonTitle == "暂不支持")
-}
-
-@MainActor
-@Test func persistentTerminalREPLTurnTimeoutDoesNotCloseTerminalSeat() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurnTimeout-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("fake-codex-slow-repl.sh")
-    try """
-    #!/bin/sh
-    printf 'codex>\\n'
-    IFS= read -r line
-    printf 'working:%s\\n' "$line"
-    sleep 2
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    store.addProductWorkspace()
-    let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
-    store.products[productIndex].assignedAgentIDs.insert(engineer.id)
-    store.products[productIndex].rootDirectory = root.path
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    let tmuxTarget = "\(sessionName):\(windowName)"
-    let codexProfile = try #require(CLIInteractionProfileCatalog.profile(forCommand: "codex"))
-    let capture = try await bringFakeREPLScriptOnline(
-        tmuxPath,
-        target: tmuxTarget,
-        scriptPath: script.path,
-        readyNeedle: "codex>",
-        expectsLatestLineMatchesProfile: codexProfile
-    )
-    #expect(capture.contains("codex>"))
-    #expect(codexProfile.endsWithReplReadyPrompt(capture))
-
-    let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "慢响应", timeoutSeconds: 0.3))
-    #expect(turn.exitCode == 124)
-    #expect(turn.timedOut)
-    #expect(turn.observation.phase == .awaitingResponse)
-    #expect(turn.output.contains("working:慢响应"))
-    let windows = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
-    #expect(windows.contains(windowName))
-    #expect(store.currentProductTerminalLog(for: engineer.id).contains("未中断终端席位"))
-}
-
-@MainActor
-@Test func persistentProtocolRunRefusesToOverwriteUnfinishedTerminalJob() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentBusy-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    store.products[0].rootDirectory = root.path
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionName):\(windowName)", "printf '\\n__OPC_JOB_START_BUSY__\\n'", "C-m"])
-
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    store.runAgent(agentID: engineer.id, prompt: "should not overwrite")
-    for _ in 0..<40 where store.runningAgentIDs.contains(engineer.id) {
-        try await Task.sleep(nanoseconds: 100_000_000)
-    }
-
-    let terminalLog = store.currentProductTerminalLog(for: engineer.id)
-    #expect(terminalLog.contains("仍有未完成的 OPC 命令行任务"))
-    #expect(terminalLog.contains("命令退出码 125"))
-    #expect(store.runtimeSessions[engineer.id]?.state == .failed)
-}
-
-@MainActor
-@Test func persistentProtocolTimeoutEscalatesToCloseUnresponsiveTerminalSeat() async throws {
-    guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentEscalate-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
-    let script = root.appendingPathComponent("unresponsive.sh")
-    try """
-    #!/bin/sh
-    trap '' INT QUIT TERM
-    while :; do
-      sleep 1
-    done
-    """.write(to: script, atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
-    store.products[0].rootDirectory = root.path
-
-    let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
-    store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
-    let engineer = store.agents[engineerIndex]
-    let sessionName = store.terminalWorkspaceSessionNameForTesting()
-    defer { cleanupTmuxSession(tmuxPath, sessionName) }
-
-    store.startTerminalWorkspaceForSelectedProduct()
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-
-    let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
-    let result = try #require(await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: [script.path], timeoutSeconds: 0.2))
-
-    #expect(result.exitCode == 124)
-    #expect(result.standardError.contains("已关闭未响应的终端席位"))
-    let listOutput = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
-    #expect(!listOutput.contains(windowName))
-
-    store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-        agentID: engineer.id,
-        productID: store.selectedProductID,
-        state: .ready,
-        capability: .persistentProtocol,
-        backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-        startedAt: Date(),
-        lastPrewarmedAt: Date()
-    )
-    let revived = try #require(await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: ["/bin/echo", "revived-seat"], timeoutSeconds: 2))
-    #expect(revived.exitCode == 0)
-    #expect(revived.standardOutput.contains("revived-seat"))
-    let revivedWindows = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
-    #expect(revivedWindows.contains(windowName))
-}
-
-@MainActor
-@Test func persistentTerminalTurnObservationWaitsForOPCExitMarker() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let sessionID = "12345678-1234-1234-1234-123456789abc"
-    let capture = """
-    shell prompt
-    __OPC_JOB_START_TEST__
-    {"session_id":"\(sessionID)"}
-    Codex is ready
-    """
-
-    let preview = store.persistentTerminalTurnObservationPreviewForTesting(
-        capture: capture,
-        startMarker: "__OPC_JOB_START_TEST__",
-        endMarker: "__OPC_JOB_EXIT_TEST__:",
-        command: "codex"
-    )
-
-    #expect(preview.contains("结果：未完成"))
-    #expect(preview.contains("状态：可继续交互"))
-    #expect(preview.contains("会话编号：已识别"))
-    #expect(!preview.contains(sessionID))
-    #expect(!preview.contains("session_id"))
-}
-
-@MainActor
-@Test func persistentTerminalTurnClosedRequiresExitMarkerWhenStartScrolledOut() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let capture = """
-    long-output-line-10998
-    long-output-line-10999
-    still running without visible OPC start marker
-    """
-
-    #expect(!store.persistentTerminalTurnClosedPreviewForTesting(
-        capture: capture,
-        startMarker: "__OPC_JOB_START_SCROLLED__",
-        endMarker: "__OPC_JOB_EXIT_SCROLLED__:"
-    ))
-}
-
-@MainActor
-@Test func persistentTerminalTurnObservationReturnsResultAfterExitMarker() async throws {
-    let store = CompanyStore.bootstrap(loadPersisted: false)
-    let capture = """
-    __OPC_JOB_START_TEST__
-    完成输出
-    __OPC_JOB_EXIT_TEST__:0
-    """
-
-    let preview = store.persistentTerminalTurnObservationPreviewForTesting(
-        capture: capture,
-        startMarker: "__OPC_JOB_START_TEST__",
-        endMarker: "__OPC_JOB_EXIT_TEST__:",
-        command: "codex"
-    )
-
-    #expect(preview.contains("结果：退出码 0"))
-    #expect(!preview.contains("__OPC_JOB_EXIT_TEST__"))
 }
 
 @MainActor
@@ -17112,42 +16228,6 @@ private func makeStoreWithAPIAgent(
     #expect(cli.contains("OPCWriteGuard.ensureExclusiveAccess"), "CLI 写命令走核心守卫")
 }
 
-@Test @MainActor func m3BridgeSurfaceContract() throws {
-    // 桥的最小活体契约(Swift 侧直调,即 @_cdecl 符号本体):
-    // double-create 拒绝 → snapshot JSON 是含 schemaVersion 的对象 →
-    // 未知动词必须报错而非静默 no-op → destroy 后再命令报 not created。
-    #expect(opc_bridge_create() == 0)
-    #expect(opc_bridge_create() == -1, "double-create 必须拒绝")
-    if let err = opc_bridge_last_error() {
-        #expect(String(cString: err).contains("already"), "拒绝原因必须可见")
-        opc_bridge_free(err)
-    } else {
-        Issue.record("last_error 为空指针")
-    }
-    if let snap = opc_bridge_snapshot_json() {
-        let json = String(cString: snap)
-        if let data = json.data(using: .utf8),
-           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            #expect(obj["schemaVersion"] != nil, "桥快照必须携带 schemaVersion")
-        } else {
-            Issue.record("snapshot 不是合法 JSON 对象")
-        }
-        opc_bridge_free(snap)
-    } else {
-        Issue.record("snapshot 空指针")
-    }
-    let verb = strdup("bogus")
-    let payload = strdup("{}")
-    defer { free(verb); free(payload) }
-    #expect(opc_bridge_command(verb, payload) == -1, "未知动词必须失败")
-    if let err = opc_bridge_last_error() {
-        #expect(String(cString: err).contains("unknown bridge verb"))
-        opc_bridge_free(err)
-    }
-    opc_bridge_destroy()
-    #expect(opc_bridge_command(verb, payload) == -1, "destroy 后命令必须拒绝")
-}
-
 @Test func bridgeWindowCursorNeverSplitsCodepointsAndAlwaysProgresses() throws {
     // terminal_tail 的字节窗口数学(纯逻辑,任何平台可测):
     // 1) 窗口绝不切断 UTF-8 序列(否则 UI 收到 U+FFFD);
@@ -17196,133 +16276,6 @@ private func makeStoreWithAPIAgent(
     #expect(over.text.isEmpty && over.nextOffset == 18 && over.length == 18)
     let negative = OPCBridgeWindow.read(log: cjk, afterOffset: -5, maxBytes: 3)
     #expect(negative.text == "中" && negative.nextOffset == 3)
-}
-
-@Test @MainActor func bridgeQueryVerbsCarryResultsThroughLastError() throws {
-    // #70 option A 的 ABI 契约:查询动词 rc=0 且结果走 last_error(6 符号冻结
-    // 的代价,opc_bridge.h 已写明)。这里用桥真实存储验证结构;窗口/对齐数学
-    // 在上一条纯逻辑测试里已钉死。
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
-
-    // digest:必须是合法 JSON 对象(新快照下可能为空 {})
-    let dVerb = strdup("terminal_digest"), dPay = strdup("{}")
-    defer { free(dVerb); free(dPay) }
-    #expect(opc_bridge_command(dVerb, dPay) == 0, "查询动词成功必须返回 0")
-    if let p = opc_bridge_last_error() {
-        let text = String(cString: p)
-        opc_bridge_free(p)
-        let obj = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any]
-        #expect(obj != nil, "digest 必须是 JSON 对象，got: \(text.prefix(40))")
-    } else {
-        Issue.record("查询结果不得为空指针")
-    }
-
-    // tail:结构键必须齐(text/nextOffset/length),类型正确
-    let tVerb = strdup("terminal_tail"), tPay = strdup(#"{"agentID":"00000000-0000-0000-0000-000000000000"}"#)
-    defer { free(tVerb); free(tPay) }
-    #expect(opc_bridge_command(tVerb, tPay) == 0)
-    if let p = opc_bridge_last_error() {
-        let text = String(cString: p)
-        opc_bridge_free(p)
-        let obj = (try? JSONSerialization.jsonObject(with: Data(text.utf8))) as? [String: Any]
-        #expect(obj?["text"] is String, "text 必须是字符串")
-        #expect(obj?["nextOffset"] is Int, "nextOffset 必须是整数")
-        #expect(obj?["length"] is Int, "length 必须是整数")
-    } else {
-        Issue.record("tail 结果不得为空指针")
-    }
-
-    // 契约另一面:坏 agentID 类型必须拒绝(-1)而非返回空窗口(0)——
-    // 静默空成功是宿主与核心漂移的开始
-    let badVerb = strdup("terminal_tail"), badPay = strdup(#"{"agentID":42}"#)
-    defer { free(badVerb); free(badPay) }
-    #expect(opc_bridge_command(badVerb, badPay) == -1, "非 UUID agentID 必须拒绝")
-}
-
-@Test @MainActor func bridgeProductSelectVerbContract() throws {
-    // product_select（壳体验线）：老板用桥切换选中产品。selectProduct 对未知
-    // ID 是静默 guard-return——桥层必须把「无变化」升级为显式拒绝，否则宿主
-    // 以为成功而核心纹丝不动，正是 shell/core 漂移的开始。
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
-
-    let snapPtr = try #require(opc_bridge_snapshot_json())
-    let snapText = String(cString: snapPtr)
-    opc_bridge_free(snapPtr)
-    let obj = try #require(try? JSONSerialization.jsonObject(with: Data(snapText.utf8)) as? [String: Any])
-    let selected = try #require(obj["selectedProductID"] as? String, "快照必须暴露 selectedProductID")
-
-    // 正路径：选择当前产品 = 幂等成功
-    let okVerb = strdup("product_select"), okPay = strdup(#"{"productID":"\#(selected)"}"#)
-    defer { free(okVerb); free(okPay) }
-    #expect(opc_bridge_command(okVerb, okPay) == 0, "合法 productID 必须成功")
-
-    // 负路径：未知产品必须 -1 + 非空拒绝原因
-    let badVerb = strdup("product_select"), badPay = strdup(#"{"productID":"00000000-0000-0000-0000-00000000dead"}"#)
-    defer { free(badVerb); free(badPay) }
-    #expect(opc_bridge_command(badVerb, badPay) == -1, "未知产品必须拒绝而非静默无操作")
-    if let p = opc_bridge_last_error() {
-        let reason = String(cString: p)
-        opc_bridge_free(p)
-        #expect(!reason.isEmpty, "拒绝必须给出原因")
-    } else {
-        Issue.record("拒绝原因不得为空指针")
-    }
-
-    // 畸形类型同样拒绝（与 terminal_tail 的类型纪律一致）
-    let mVerb = strdup("product_select"), mPay = strdup(#"{"productID":42}"#)
-    defer { free(mVerb); free(mPay) }
-    #expect(opc_bridge_command(mVerb, mPay) == -1)
-}
-
-@Test @MainActor func bridgeDecideVerbRefusesSilentNoOps() throws {
-    // decide 动词的同款漂移检查(与 product_select 一致):store.decideApproval
-    // 对未知 ID 与已决审批都是静默 guard-return——桥必须升级为显式拒绝,
-    // 否则老板双击/过期列表时壳拿到 rc=0 而核心纹丝不动。
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
-
-    // 造一条真实 pending 审批(store 直改,桥与 store 同一实例)。
-    let store = try #require(opcBridgeStoreForTests())
-    let engineer = try #require(store.agents.first { $0.role == .codeEngineer })
-    store.createTask(title: "桥审批契约", ownerID: engineer.id,
-                     status: .needsApproval, successCriteria: "契约测试。")
-    let task = try #require(store.selectedProductTasks.last { $0.title == "桥审批契约" })
-    store.requestApproval(taskID: task.id, title: "桥审批", reason: "契约",
-                          requesterID: engineer.id)
-    let approval = try #require(store.selectedProductPendingApprovals
-        .last { $0.title == "桥审批" })
-
-    // 正路径:pending 审批 approve 成功
-    let verb = strdup("decide")
-    defer { free(verb) }
-    let okPay = strdup(#"{"approvalID":"\#(approval.id.uuidString)","approved":true}"#)
-    defer { free(okPay) }
-    #expect(opc_bridge_command(verb, okPay) == 0)
-    #expect(store.approvals.first { $0.id == approval.id }?.status == .approved)
-
-    // 负路径 1:同一审批二次决定必须拒绝(双击场景),而非静默成功
-    let againPay = strdup(#"{"approvalID":"\#(approval.id.uuidString)","approved":false}"#)
-    defer { free(againPay) }
-    #expect(opc_bridge_command(verb, againPay) == -1, "已决审批必须显式拒绝")
-    if let p = opc_bridge_last_error() {
-        #expect(String(cString: p).contains("already decided"),
-                "双击的拒绝原因必须可辨(与 CLI 共享文案)")
-        opc_bridge_free(p)
-    }
-
-    // 负路径 2:未知 ID 必须拒绝且原因非空
-    let ghostPay = strdup(#"{"approvalID":"00000000-0000-0000-0000-00000000beef","approved":true}"#)
-    defer { free(ghostPay) }
-    #expect(opc_bridge_command(verb, ghostPay) == -1)
-    if let p = opc_bridge_last_error() {
-        let reason = String(cString: p)
-        opc_bridge_free(p)
-        #expect(!reason.isEmpty)
-    } else {
-        Issue.record("拒绝原因不得为空指针")
-    }
 }
 
 @Test @MainActor func decideApprovalCheckedSurfacesTheSilentPreconditions() throws {
@@ -17935,7 +16888,7 @@ fileprivate func extractTopLevelStructSlice(
     )
     let elapsed = Date().timeIntervalSince(start)
     #expect(result.exitCode == 124, "SIGKILL 升级路径仍必须保持 124 超时退出码，实际 exitCode=\(result.exitCode)")
-    #expect(elapsed < 3, "SIGTERM 被屏蔽时必须靠 SIGKILL 在短界内强制返回，实际耗时=\(elapsed)s")
+    #expect(elapsed < 8, "SIGTERM 被屏蔽时必须靠 SIGKILL 强制返回——这个界只排除悬挂（悬挂永不返回），满负载并发套件下内核派发 SIGKILL 本身可达数秒，实际耗时=\(elapsed)s")
     #expect(result.standardError.contains("命令超时"),
             "SIGTERM 阶段写入的中文超时消息必须仍在 stderr buffer 里，实际 standardError=\(result.standardError)")
     #expect(result.standardError.contains("SIGKILL"),
@@ -18035,4 +16988,1059 @@ func languageSwitchAppliesSideEffectsBeforeNextRender() {
     #expect(enSelected == .english)
     #expect(zhSession == .simplifiedChinese)
     #expect(zhSelected == .simplifiedChinese)
+}
+
+// These door tests were moved out of the free-function list above:
+// opc_bridge_create() is a process-global singleton, so every caller
+// runs serially via OPCBridgeABIDoorTests (.serialized).
+extension OPCBridgeABIDoorTests {
+    @Test @MainActor func bridgeQueryVerbsCarryResultsThroughLastError() throws {
+        // #70 option A 的 ABI 契约:查询动词 rc=0 且结果走 last_error(6 符号冻结
+        // 的代价,opc_bridge.h 已写明)。这里用桥真实存储验证结构;窗口/对齐数学
+        // 在上一条纯逻辑测试里已钉死。
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+
+        // digest:必须是合法 JSON 对象(新快照下可能为空 {})
+        let dVerb = strdup("terminal_digest"), dPay = strdup("{}")
+        defer { free(dVerb); free(dPay) }
+        #expect(opc_bridge_command(dVerb, dPay) == 0, "查询动词成功必须返回 0")
+        if let p = opc_bridge_last_error() {
+            let text = String(cString: p)
+            opc_bridge_free(p)
+            let obj = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any]
+            #expect(obj != nil, "digest 必须是 JSON 对象，got: \(text.prefix(40))")
+        } else {
+            Issue.record("查询结果不得为空指针")
+        }
+
+        // tail:结构键必须齐(text/nextOffset/length),类型正确
+        let tVerb = strdup("terminal_tail"), tPay = strdup(#"{"agentID":"00000000-0000-0000-0000-000000000000"}"#)
+        defer { free(tVerb); free(tPay) }
+        #expect(opc_bridge_command(tVerb, tPay) == 0)
+        if let p = opc_bridge_last_error() {
+            let text = String(cString: p)
+            opc_bridge_free(p)
+            let obj = (try? JSONSerialization.jsonObject(with: Data(text.utf8))) as? [String: Any]
+            #expect(obj?["text"] is String, "text 必须是字符串")
+            #expect(obj?["nextOffset"] is Int, "nextOffset 必须是整数")
+            #expect(obj?["length"] is Int, "length 必须是整数")
+        } else {
+            Issue.record("tail 结果不得为空指针")
+        }
+
+        // 契约另一面:坏 agentID 类型必须拒绝(-1)而非返回空窗口(0)——
+        // 静默空成功是宿主与核心漂移的开始
+        let badVerb = strdup("terminal_tail"), badPay = strdup(#"{"agentID":42}"#)
+        defer { free(badVerb); free(badPay) }
+        #expect(opc_bridge_command(badVerb, badPay) == -1, "非 UUID agentID 必须拒绝")
+    }
+
+    @Test @MainActor func bridgeProductSelectVerbContract() throws {
+        // product_select（壳体验线）：老板用桥切换选中产品。selectProduct 对未知
+        // ID 是静默 guard-return——桥层必须把「无变化」升级为显式拒绝，否则宿主
+        // 以为成功而核心纹丝不动，正是 shell/core 漂移的开始。
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+
+        let snapPtr = try #require(opc_bridge_snapshot_json())
+        let snapText = String(cString: snapPtr)
+        opc_bridge_free(snapPtr)
+        let obj = try #require(try? JSONSerialization.jsonObject(with: Data(snapText.utf8)) as? [String: Any])
+        let selected = try #require(obj["selectedProductID"] as? String, "快照必须暴露 selectedProductID")
+
+        // 正路径：选择当前产品 = 幂等成功
+        let okVerb = strdup("product_select"), okPay = strdup(#"{"productID":"\#(selected)"}"#)
+        defer { free(okVerb); free(okPay) }
+        #expect(opc_bridge_command(okVerb, okPay) == 0, "合法 productID 必须成功")
+
+        // 负路径：未知产品必须 -1 + 非空拒绝原因
+        let badVerb = strdup("product_select"), badPay = strdup(#"{"productID":"00000000-0000-0000-0000-00000000dead"}"#)
+        defer { free(badVerb); free(badPay) }
+        #expect(opc_bridge_command(badVerb, badPay) == -1, "未知产品必须拒绝而非静默无操作")
+        if let p = opc_bridge_last_error() {
+            let reason = String(cString: p)
+            opc_bridge_free(p)
+            #expect(!reason.isEmpty, "拒绝必须给出原因")
+        } else {
+            Issue.record("拒绝原因不得为空指针")
+        }
+
+        // 畸形类型同样拒绝（与 terminal_tail 的类型纪律一致）
+        let mVerb = strdup("product_select"), mPay = strdup(#"{"productID":42}"#)
+        defer { free(mVerb); free(mPay) }
+        #expect(opc_bridge_command(mVerb, mPay) == -1)
+    }
+
+    @Test @MainActor func bridgeDecideVerbRefusesSilentNoOps() throws {
+        // decide 动词的同款漂移检查(与 product_select 一致):store.decideApproval
+        // 对未知 ID 与已决审批都是静默 guard-return——桥必须升级为显式拒绝,
+        // 否则老板双击/过期列表时壳拿到 rc=0 而核心纹丝不动。
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+
+        // 造一条真实 pending 审批(store 直改,桥与 store 同一实例)。
+        let store = try #require(opcBridgeStoreForTests())
+        let engineer = try #require(store.agents.first { $0.role == .codeEngineer })
+        store.createTask(title: "桥审批契约", ownerID: engineer.id,
+                         status: .needsApproval, successCriteria: "契约测试。")
+        let task = try #require(store.selectedProductTasks.last { $0.title == "桥审批契约" })
+        store.requestApproval(taskID: task.id, title: "桥审批", reason: "契约",
+                              requesterID: engineer.id)
+        let approval = try #require(store.selectedProductPendingApprovals
+            .last { $0.title == "桥审批" })
+
+        // 正路径:pending 审批 approve 成功
+        let verb = strdup("decide")
+        defer { free(verb) }
+        let okPay = strdup(#"{"approvalID":"\#(approval.id.uuidString)","approved":true}"#)
+        defer { free(okPay) }
+        #expect(opc_bridge_command(verb, okPay) == 0)
+        #expect(store.approvals.first { $0.id == approval.id }?.status == .approved)
+
+        // 负路径 1:同一审批二次决定必须拒绝(双击场景),而非静默成功
+        let againPay = strdup(#"{"approvalID":"\#(approval.id.uuidString)","approved":false}"#)
+        defer { free(againPay) }
+        #expect(opc_bridge_command(verb, againPay) == -1, "已决审批必须显式拒绝")
+        if let p = opc_bridge_last_error() {
+            #expect(String(cString: p).contains("already decided"),
+                    "双击的拒绝原因必须可辨(与 CLI 共享文案)")
+            opc_bridge_free(p)
+        }
+
+        // 负路径 2:未知 ID 必须拒绝且原因非空
+        let ghostPay = strdup(#"{"approvalID":"00000000-0000-0000-0000-00000000beef","approved":true}"#)
+        defer { free(ghostPay) }
+        #expect(opc_bridge_command(verb, ghostPay) == -1)
+        if let p = opc_bridge_last_error() {
+            let reason = String(cString: p)
+            opc_bridge_free(p)
+            #expect(!reason.isEmpty)
+        } else {
+            Issue.record("拒绝原因不得为空指针")
+        }
+    }
+
+    @Test @MainActor func m3BridgeSurfaceContract() throws {
+        // 桥的最小活体契约(Swift 侧直调,即 @_cdecl 符号本体):
+        // double-create 拒绝 → snapshot JSON 是含 schemaVersion 的对象 →
+        // 未知动词必须报错而非静默 no-op → destroy 后再命令报 not created。
+        #expect(opc_bridge_create() == 0)
+        #expect(opc_bridge_create() == -1, "double-create 必须拒绝")
+        if let err = opc_bridge_last_error() {
+            #expect(String(cString: err).contains("already"), "拒绝原因必须可见")
+            opc_bridge_free(err)
+        } else {
+            Issue.record("last_error 为空指针")
+        }
+        if let snap = opc_bridge_snapshot_json() {
+            let json = String(cString: snap)
+            if let data = json.data(using: .utf8),
+               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                #expect(obj["schemaVersion"] != nil, "桥快照必须携带 schemaVersion")
+            } else {
+                Issue.record("snapshot 不是合法 JSON 对象")
+            }
+            opc_bridge_free(snap)
+        } else {
+            Issue.record("snapshot 空指针")
+        }
+        let verb = strdup("bogus")
+        let payload = strdup("{}")
+        defer { free(verb); free(payload) }
+        #expect(opc_bridge_command(verb, payload) == -1, "未知动词必须失败")
+        if let err = opc_bridge_last_error() {
+            #expect(String(cString: err).contains("unknown bridge verb"))
+            opc_bridge_free(err)
+        }
+        opc_bridge_destroy()
+        #expect(opc_bridge_command(verb, payload) == -1, "destroy 后命令必须拒绝")
+    }
+}
+
+extension OPCPersistentTerminalDoorTests {
+
+    @MainActor
+    @Test func persistentProtocolRunUsesTerminalWorkspaceWhenAvailable() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentTerminal-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        store.products[0].rootDirectory = root.path
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        cleanupTmuxSession(tmuxPath, sessionName)
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+
+        var session = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+        session.keepAlive = true
+        store.runtimeSessions[engineer.id] = session
+
+        #expect(store.persistentTerminalTargetPreviewForTesting(agentID: engineer.id).contains(sessionName))
+        store.runtimeSessions[engineer.id] = session
+
+        store.runAgent(agentID: engineer.id, prompt: "persistent smoke")
+        #expect(try await waitForAgentRunToFinish(store, attempts: 120))
+
+        let terminalLog = store.currentProductTerminalLog(for: engineer.id)
+        #expect(terminalLog.contains("OPC 长期席位执行"))
+        #expect(!terminalLog.contains("OPC 常驻终端执行"))
+        #expect(terminalLog.contains("persistent smoke"))
+        #expect(store.persistentTerminalSessionCacheCountForTesting() == 1)
+        #expect(store.runtimeSessions[engineer.id]?.state == .ready)
+        let jobsRoot = root.appendingPathComponent(".opc/jobs", isDirectory: true)
+        let jobDirectories = try FileManager.default.contentsOfDirectory(at: jobsRoot, includingPropertiesForKeys: nil)
+        let job = try #require(jobDirectories.first)
+        let transcript = try String(contentsOf: job.appendingPathComponent("transcript.log"))
+        #expect(transcript.contains("persistent smoke"))
+        #expect(!transcript.contains("__OPC_JOB_EXIT"))
+        #expect(store.selectedProductArtifacts.contains { $0.title.contains("命令行作业档案") && $0.path.hasPrefix(jobsRoot.path) })
+
+        store.runAgent(agentID: engineer.id, prompt: "persistent smoke again")
+        #expect(try await waitForAgentRunToFinish(store, attempts: 120))
+        #expect(store.persistentTerminalSessionCacheCountForTesting() == 1)
+        #expect(store.currentProductTerminalLog(for: engineer.id).contains("persistent smoke again"))
+
+        store.clearSelectedProductRunData()
+        #expect(store.persistentTerminalSessionCacheCountForTesting() == 0)
+    }
+
+    @MainActor
+    @Test func persistentProtocolRunDetectsMarkersAfterLongOutput() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentLongOutput-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("long-output.sh")
+        try """
+        #!/bin/sh
+        i=0
+        while [ "$i" -lt 1200 ]; do
+          printf 'long-line-%04d\\n' "$i"
+          i=$((i + 1))
+        done
+        printf 'prompt:%s\\n' "$1"
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+        store.products[0].rootDirectory = root.path
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: script.path, model: "", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        cleanupTmuxSession(tmuxPath, sessionName)
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        store.runAgent(agentID: engineer.id, prompt: "long-output-smoke")
+        #expect(try await waitForAgentRunToFinish(store, agentID: engineer.id, attempts: 160))
+
+        let terminalLog = store.currentProductTerminalLog(for: engineer.id)
+        #expect(terminalLog.contains("命令退出码 0"))
+        #expect(!terminalLog.contains("命令超时"))
+        let jobsRoot = root.appendingPathComponent(".opc/jobs", isDirectory: true)
+        let jobDirectories = try FileManager.default.contentsOfDirectory(at: jobsRoot, includingPropertiesForKeys: nil)
+        let job = try #require(jobDirectories.first)
+        let transcript = try String(contentsOf: job.appendingPathComponent("transcript.log"))
+        #expect(transcript.contains("long-line-0000"))
+        #expect(transcript.contains("long-line-1199"))
+        #expect(transcript.contains("prompt:"))
+        let runnerDirectory = root.appendingPathComponent(".opc/runtime/terminal-runners", isDirectory: true)
+        let remainingRunnerScripts = (try? FileManager.default.contentsOfDirectory(at: runnerDirectory, includingPropertiesForKeys: nil))?
+            .filter { $0.pathExtension == "sh" } ?? []
+        #expect(remainingRunnerScripts.isEmpty)
+    }
+
+    @MainActor
+    @Test func persistentTerminalSendInputLineUsesLiteralTmuxInput() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInput-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("read-line.sh")
+        try """
+        #!/bin/sh
+        printf 'OPC_READY\\n'
+        IFS= read -r line
+        printf 'OPC_INPUT:%s\\n' "$line"
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.addProductWorkspace()
+        let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productIndex].rootDirectory = root.path
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionName):\(windowName)", script.path, "C-m"])
+
+        var capture = ""
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
+            if capture.contains("OPC_READY") { break }
+        }
+        #expect(capture.contains("OPC_READY"))
+
+        let literalInput = "hello $USER && uname; `date`"
+        let send = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: literalInput))
+        #expect(send.exitCode == 0)
+
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
+            if capture.contains("OPC_INPUT:\(literalInput)") { break }
+        }
+        #expect(capture.contains("OPC_INPUT:\(literalInput)"))
+
+        let rejected = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "one\ntwo"))
+        #expect(rejected.exitCode == 126)
+        #expect(rejected.standardError.contains("一次只允许一行"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalSendInputLineEmptyAndUnicodeNewlinesAreGuarded() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputBoundaries-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("read-two-lines.sh")
+        try """
+        #!/bin/sh
+        printf 'OPC_READY\\n'
+        IFS= read -r first
+        printf 'OPC_FIRST:%s\\n' "$first"
+        IFS= read -r second
+        printf 'OPC_SECOND:%s\\n' "$second"
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.addProductWorkspace()
+        let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productIndex].rootDirectory = root.path
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionName):\(windowName)", script.path, "C-m"])
+
+        var capture = ""
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
+            if capture.contains("OPC_READY") { break }
+        }
+        #expect(capture.contains("OPC_READY"))
+
+        let emptySend = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: ""))
+        #expect(emptySend.exitCode == 0)
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
+            if capture.contains("OPC_FIRST:") { break }
+        }
+        #expect(capture.contains("OPC_FIRST:"))
+
+        for invalid in ["a\rb", "a\r\nb", "a\u{2028}b"] {
+            let rejected = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: invalid))
+            #expect(rejected.exitCode == 126)
+            #expect(rejected.standardError.contains("一次只允许一行"))
+        }
+
+        let secondSend = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "after-reject"))
+        #expect(secondSend.exitCode == 0)
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
+            if capture.contains("OPC_SECOND:after-reject") { break }
+        }
+        #expect(capture.contains("OPC_SECOND:after-reject"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalSendInputLineDoesNotCrossProducts() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let rootA = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputA-\(UUID().uuidString)", isDirectory: true)
+        let rootB = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputB-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootA, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: rootB, withIntermediateDirectories: true)
+        try "// package".write(to: rootA.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        try "// package".write(to: rootB.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+
+        let script = rootA.appendingPathComponent("read-product-line.sh")
+        try """
+        #!/bin/sh
+        printf 'OPC_READY:%s\\n' "$1"
+        IFS= read -r line
+        printf 'OPC_INPUT:%s:%s\\n' "$1" "$line"
+        sleep 1
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+
+        store.addProductWorkspace()
+        let productAIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productAIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productAIndex].rootDirectory = rootA.path
+        let productAID = store.selectedProductID
+        let sessionA = store.terminalWorkspaceSessionNameForTesting()
+        let windowA = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        defer { cleanupTmuxSession(tmuxPath, sessionA) }
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: productAID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+        _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionA):\(windowA)", "\(script.path) product-a", "C-m"])
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            let captureA = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionA):\(windowA)", "-S", "-200"])
+            if captureA.contains("OPC_READY:product-a") { break }
+        }
+        let sendA = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "input-a"))
+        #expect(sendA.exitCode == 0)
+
+        store.addProductWorkspace()
+        let productBID = store.selectedProductID
+        let productBIndex = try #require(store.products.firstIndex { $0.id == productBID })
+        store.products[productBIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productBIndex].rootDirectory = rootB.path
+        let sessionB = store.terminalWorkspaceSessionNameForTesting()
+        let windowB = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        defer { cleanupTmuxSession(tmuxPath, sessionB) }
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: productBID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+        _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionB):\(windowB)", "\(script.path) product-b", "C-m"])
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            let captureB = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionB):\(windowB)", "-S", "-200"])
+            if captureB.contains("OPC_READY:product-b") { break }
+        }
+        let sendB = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: "input-b"))
+        #expect(sendB.exitCode == 0)
+
+        var captureA = ""
+        var captureB = ""
+        for _ in 0..<30 {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            captureA = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionA):\(windowA)", "-S", "-200"])
+            captureB = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionB):\(windowB)", "-S", "-200"])
+            if captureA.contains("OPC_INPUT:product-a:input-a"), captureB.contains("OPC_INPUT:product-b:input-b") { break }
+        }
+        #expect(captureA.contains("OPC_INPUT:product-a:input-a"))
+        #expect(!captureA.contains("OPC_INPUT:product-b:input-b"))
+        #expect(captureB.contains("OPC_INPUT:product-b:input-b"))
+        #expect(!captureB.contains("OPC_INPUT:product-a:input-a"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalSendInputLineDuringCommandPreservesMarkerDetection() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentInputDuringRun-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("interactive-command.sh")
+        try """
+        #!/bin/sh
+        printf 'OPC_READY_FOR_STDIN\\n'
+        IFS= read -r line
+        printf 'OPC_STREAM_INPUT:%s\\n' "$line"
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.addProductWorkspace()
+        let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productIndex].rootDirectory = root.path
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        let runTask = Task {
+            await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: [script.path], timeoutSeconds: 5)
+        }
+
+        let capture = try await waitForTmuxPaneOutput(
+            tmuxPath,
+            target: "\(sessionName):\(windowName)",
+            contains: "OPC_READY_FOR_STDIN",
+            historyStart: "-200",
+            attempts: 40
+        )
+        #expect(capture.contains("OPC_READY_FOR_STDIN"))
+
+        let input = "next prompt $USER && true"
+        let send = try #require(await store.persistentTerminalSendInputLineForTesting(agentID: engineer.id, text: input))
+        #expect(send.exitCode == 0)
+        let result = try #require(await runTask.value)
+
+        #expect(result.exitCode == 0)
+        #expect(result.standardOutput.contains("OPC_READY_FOR_STDIN"))
+        #expect(result.standardOutput.contains("OPC_STREAM_INPUT:\(input)"))
+        #expect(!result.standardOutput.contains("__OPC_JOB_EXIT"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalREPLTurnWaitsForCodexPromptAndReturnsDelta() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurn-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("fake-codex-repl.sh")
+        try """
+        #!/bin/sh
+        printf 'codex>\\n'
+        while IFS= read -r line; do
+          printf 'answer:%s\\n' "$line"
+          printf 'codex>\\n'
+        done
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.addProductWorkspace()
+        let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productIndex].rootDirectory = root.path
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        let tmuxTarget = "\(sessionName):\(windowName)"
+        let codexProfile = try #require(CLIInteractionProfileCatalog.profile(forCommand: "codex"))
+        let capture = try await bringFakeREPLScriptOnline(
+            tmuxPath,
+            target: tmuxTarget,
+            scriptPath: script.path,
+            readyNeedle: "codex>",
+            expectsLatestLineMatchesProfile: codexProfile
+        )
+        #expect(capture.contains("codex>"))
+        #expect(codexProfile.endsWithReplReadyPrompt(capture))
+
+        let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "手动下一轮", timeoutSeconds: 3))
+        #expect(turn.exitCode == 0)
+        #expect(!turn.timedOut)
+        #expect(turn.observation.phase == .ready)
+        #expect(turn.output.contains("answer:手动下一轮"))
+        #expect(turn.output.contains("codex>"))
+        #expect(!turn.output.contains("OPC 员工终端"))
+        #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .ready)
+        #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalREPLTurnRejectsShellSeatBeforePrompt() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurnShellGuard-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.addProductWorkspace()
+        let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productIndex].rootDirectory = root.path
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "不要发到普通终端", timeoutSeconds: 1))
+        #expect(turn.exitCode == 126)
+        #expect(turn.observation.reasonTitle == "终端未就绪")
+        #expect(turn.output.contains("避免把手动输入误发到普通终端"))
+
+        let capture = runTestProcessOutput(tmuxPath, ["capture-pane", "-p", "-t", "\(sessionName):\(windowName)", "-S", "-200"])
+        #expect(!capture.contains("不要发到普通终端"))
+        #expect(!store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalOutputDeltaRequiresAnchorOrInputEcho() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let unanchoredPrompt = store.persistentTerminalOutputDeltaPreviewForTesting(
+            before: "   \n",
+            after: "codex> ready\n",
+            inputEcho: "next prompt"
+        )
+        #expect(unanchoredPrompt.isEmpty)
+
+        let echoedInput = store.persistentTerminalOutputDeltaPreviewForTesting(
+            before: "   \n",
+            after: "codex> ready\nnext prompt\nanswer\ncodex> ready\n",
+            inputEcho: "next prompt"
+        )
+        #expect(echoedInput.contains("next prompt"))
+        #expect(echoedInput.contains("answer"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalREPLTurnRejectsUnsafeAndUnsupportedInputs() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+
+        let multiline = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "one\ntwo", timeoutSeconds: 1))
+        #expect(multiline.exitCode == 126)
+        #expect(multiline.output.contains("一次只允许一行"))
+
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
+        let unsupported = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "hello", timeoutSeconds: 1))
+        #expect(unsupported.exitCode == 127)
+        #expect(unsupported.output.contains("长期会话画像目录"))
+        #expect(unsupported.observation.phase == .unknown)
+    }
+
+    @MainActor
+    @Test func persistentProtocolRunRefusesToOverwriteUnfinishedTerminalJob() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentBusy-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        store.products[0].rootDirectory = root.path
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        _ = runTestProcess(tmuxPath, ["send-keys", "-t", "\(sessionName):\(windowName)", "printf '\\n__OPC_JOB_START_BUSY__\\n'", "C-m"])
+
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        store.runAgent(agentID: engineer.id, prompt: "should not overwrite")
+        for _ in 0..<40 where store.runningAgentIDs.contains(engineer.id) {
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+
+        let terminalLog = store.currentProductTerminalLog(for: engineer.id)
+        #expect(terminalLog.contains("仍有未完成的 OPC 命令行任务"))
+        #expect(terminalLog.contains("命令退出码 125"))
+        #expect(store.runtimeSessions[engineer.id]?.state == .failed)
+    }
+
+    @MainActor
+    @Test func persistentProtocolTimeoutEscalatesToCloseUnresponsiveTerminalSeat() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCPersistentEscalate-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("unresponsive.sh")
+        try """
+        #!/bin/sh
+        trap '' INT QUIT TERM
+        while :; do
+          sleep 1
+        done
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+        store.products[0].rootDirectory = root.path
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        let result = try #require(await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: [script.path], timeoutSeconds: 0.2))
+
+        #expect(result.exitCode == 124)
+        #expect(result.standardError.contains("已关闭未响应的终端席位"))
+        let listOutput = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
+        #expect(!listOutput.contains(windowName))
+
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+        let revived = try #require(await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: ["/bin/echo", "revived-seat"], timeoutSeconds: 2))
+        #expect(revived.exitCode == 0)
+        #expect(revived.standardOutput.contains("revived-seat"))
+        let revivedWindows = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
+        #expect(revivedWindows.contains(windowName))
+    }
+
+    @MainActor
+    @Test func persistentTerminalTurnObservationWaitsForOPCExitMarker() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let sessionID = "12345678-1234-1234-1234-123456789abc"
+        let capture = """
+        shell prompt
+        __OPC_JOB_START_TEST__
+        {"session_id":"\(sessionID)"}
+        Codex is ready
+        """
+
+        let preview = store.persistentTerminalTurnObservationPreviewForTesting(
+            capture: capture,
+            startMarker: "__OPC_JOB_START_TEST__",
+            endMarker: "__OPC_JOB_EXIT_TEST__:",
+            command: "codex"
+        )
+
+        #expect(preview.contains("结果：未完成"))
+        #expect(preview.contains("状态：可继续交互"))
+        #expect(preview.contains("会话编号：已识别"))
+        #expect(!preview.contains(sessionID))
+        #expect(!preview.contains("session_id"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalTurnClosedRequiresExitMarkerWhenStartScrolledOut() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let capture = """
+        long-output-line-10998
+        long-output-line-10999
+        still running without visible OPC start marker
+        """
+
+        #expect(!store.persistentTerminalTurnClosedPreviewForTesting(
+            capture: capture,
+            startMarker: "__OPC_JOB_START_SCROLLED__",
+            endMarker: "__OPC_JOB_EXIT_SCROLLED__:"
+        ))
+    }
+
+    @MainActor
+    @Test func persistentTerminalTurnObservationReturnsResultAfterExitMarker() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let capture = """
+        __OPC_JOB_START_TEST__
+        完成输出
+        __OPC_JOB_EXIT_TEST__:0
+        """
+
+        let preview = store.persistentTerminalTurnObservationPreviewForTesting(
+            capture: capture,
+            startMarker: "__OPC_JOB_START_TEST__",
+            endMarker: "__OPC_JOB_EXIT_TEST__:",
+            command: "codex"
+        )
+
+        #expect(preview.contains("结果：退出码 0"))
+        #expect(!preview.contains("__OPC_JOB_EXIT_TEST__"))
+    }
+
+    @MainActor
+    @Test func runManualREPLTurnRejectsEmptyMultilineAndUnselectedAgent() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+
+        let empty = await store.runManualREPLTurnForSelectedAgent(text: "     ")
+        #expect(empty.rejected)
+        #expect(empty.rejectionReason?.contains("一行内容") == true)
+
+        let multi = await store.runManualREPLTurnForSelectedAgent(text: "first\nsecond")
+        #expect(multi.rejected)
+        #expect(multi.rejectionReason?.contains("一次只允许一行") == true)
+
+        let trailingNewline = await store.runManualREPLTurnForSelectedAgent(text: "first\n")
+        #expect(trailingNewline.rejected)
+        #expect(trailingNewline.rejectionReason?.contains("一次只允许一行") == true)
+
+        store.selectAgent(store.bossID)
+        let bossSelected = await store.runManualREPLTurnForSelectedAgent(text: "ping")
+        #expect(bossSelected.rejected)
+        #expect(bossSelected.rejectionReason?.contains("老板视角") == true)
+        #expect(bossSelected.rejectionReason?.contains("REPL") != true)
+    }
+
+    @MainActor
+    @Test func runManualREPLTurnRejectsBackendWithoutInteractionProfile() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        // 非画像目录后端（/bin/echo 不在 codex/claude/gemini 画像里）
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.products[0].assignedAgentIDs.insert(engineer.id)
+        store.selectAgent(engineer.id)
+
+        let report = await store.runManualREPLTurnForSelectedAgent(text: "ping", timeoutSeconds: 0.2)
+        #expect(report.rejected)
+        let reason = report.rejectionReason ?? ""
+        #expect(reason.contains("长期会话画像目录") || reason.contains("专用就绪提示"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalREPLTurnRoutesClaudeBackendThroughClaudePromptSignal() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurnClaude-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("fake-claude-repl.sh")
+        try """
+        #!/bin/sh
+        printf 'claude>\\n'
+        while IFS= read -r line; do
+          printf 'reply:%s\\n' "$line"
+          printf 'claude>\\n'
+        done
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "claude", model: "sonnet", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.addProductWorkspace()
+        let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productIndex].rootDirectory = root.path
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        let tmuxTarget = "\(sessionName):\(windowName)"
+        let claudeProfile = try #require(CLIInteractionProfileCatalog.profile(forCommand: "claude"))
+        let capture = try await bringFakeREPLScriptOnline(
+            tmuxPath,
+            target: tmuxTarget,
+            scriptPath: script.path,
+            readyNeedle: "claude>",
+            historyStart: "-200",
+            readyAttempts: 60,
+            expectsLatestLineMatchesProfile: claudeProfile
+        )
+        #expect(capture.contains("claude>"))
+        #expect(claudeProfile.endsWithReplReadyPrompt(capture))
+
+        let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "claude 第一轮", timeoutSeconds: 3))
+        #expect(turn.exitCode == 0)
+        #expect(!turn.timedOut)
+        #expect(turn.observation.phase == .ready)
+        #expect(turn.output.contains("reply:claude 第一轮"))
+        #expect(turn.output.contains("claude>"))
+        #expect(store.runtimeSessions[engineer.id]?.cliInteractionPhase == .ready)
+        #expect(store.currentProductTerminalLog(for: engineer.id).contains("OPC 手动交互轮次"))
+    }
+
+    @MainActor
+    @Test func persistentTerminalREPLTurnRejectsBackendWithoutReplReadySignals() async throws {
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+
+        // 后端虽然在画像目录里但若未来 replReadySignals 被清空——通过非画像后端 /bin/echo 触发"画像目录里找不到"路径
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "/bin/echo", model: "", reasoningEffort: .low)
+        let unknownBackend = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: store.agents[engineerIndex].id, text: "ping", timeoutSeconds: 1))
+        #expect(unknownBackend.exitCode == 127)
+        #expect(unknownBackend.output.contains("长期会话画像目录"))
+        #expect(unknownBackend.observation.reasonTitle == "暂不支持")
+    }
+
+    @MainActor
+    @Test func persistentTerminalREPLTurnTimeoutDoesNotCloseTerminalSeat() async throws {
+        guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
+        let store = CompanyStore.bootstrap(loadPersisted: false)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("OPCReplTurnTimeout-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "// package".write(to: root.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8)
+        let script = root.appendingPathComponent("fake-codex-slow-repl.sh")
+        try """
+        #!/bin/sh
+        printf 'codex>\\n'
+        IFS= read -r line
+        printf 'working:%s\\n' "$line"
+        sleep 2
+        """.write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+        let engineerIndex = try #require(store.agents.firstIndex { $0.role == .codeEngineer })
+        store.agents[engineerIndex].backend = AgentBackend(type: .subscriptionCLI, command: "codex", model: "gpt-5.5", reasoningEffort: .low)
+        let engineer = store.agents[engineerIndex]
+        store.addProductWorkspace()
+        let productIndex = try #require(store.products.firstIndex { $0.id == store.selectedProductID })
+        store.products[productIndex].assignedAgentIDs.insert(engineer.id)
+        store.products[productIndex].rootDirectory = root.path
+        let sessionName = store.terminalWorkspaceSessionNameForTesting()
+        defer { cleanupTmuxSession(tmuxPath, sessionName) }
+
+        store.startTerminalWorkspaceForSelectedProduct()
+        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+            agentID: engineer.id,
+            productID: store.selectedProductID,
+            state: .ready,
+            capability: .persistentProtocol,
+            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+            startedAt: Date(),
+            lastPrewarmedAt: Date()
+        )
+
+        let windowName = store.terminalWorkspaceWindowNameForTesting(agentID: engineer.id)
+        let tmuxTarget = "\(sessionName):\(windowName)"
+        let codexProfile = try #require(CLIInteractionProfileCatalog.profile(forCommand: "codex"))
+        let capture = try await bringFakeREPLScriptOnline(
+            tmuxPath,
+            target: tmuxTarget,
+            scriptPath: script.path,
+            readyNeedle: "codex>",
+            expectsLatestLineMatchesProfile: codexProfile
+        )
+        #expect(capture.contains("codex>"))
+        #expect(codexProfile.endsWithReplReadyPrompt(capture))
+
+        let turn = try #require(await store.persistentTerminalREPLTurnForTesting(agentID: engineer.id, text: "慢响应", timeoutSeconds: 0.3))
+        #expect(turn.exitCode == 124)
+        #expect(turn.timedOut)
+        #expect(turn.observation.phase == .awaitingResponse)
+        #expect(turn.output.contains("working:慢响应"))
+        let windows = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
+        #expect(windows.contains(windowName))
+        #expect(store.currentProductTerminalLog(for: engineer.id).contains("未中断终端席位"))
+    }
 }

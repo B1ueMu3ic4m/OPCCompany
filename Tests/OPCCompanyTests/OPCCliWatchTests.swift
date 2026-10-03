@@ -4,8 +4,9 @@ import Testing
 @testable import OPCCompanyCore
 
 // Formal regression for `opc watch` (v0.12.0 "the live office"): real
-// .build/debug/opc, suite support dir seeded in-process, state-neutral
-// restore. The LOOP itself is untestable by design (it never returns);
+// .build/debug/opc against a private support dir seeded in-process
+// through the CompanyPersistence.testSupportDirectoryOverride seam.
+// The LOOP itself is untestable by design (it never returns);
 // the seam is `--once`: one frame, exit 0. Pins: the frame quotes the
 // store's doors (counts, stall wording, desk count), the clear escape
 // leads so a terminal actually redraws in place, the wall clock is
@@ -42,18 +43,17 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliWatchOnceRendersDoorsAndNeverWrites() throws {
-    let supportDir = CompanyPersistence.supportDirectory
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-watch-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
     let scratch = URL(fileURLWithPath: NSTemporaryDirectory())
         .appendingPathComponent("opc-watch-\(UUID().uuidString)")
     defer {
         try? FileManager.default.removeItem(at: scratch)
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
     try FileManager.default.createDirectory(at: scratch,
                                             withIntermediateDirectories: true)
@@ -79,8 +79,8 @@ private func runCLI(_ args: [String], supportDir: URL) throws
                       updatedAt: now.addingTimeInterval(-90 * 60)),
     ]
     store.saveSnapshot()
-    // pure-read baseline = the SEEDED state (priorBytes restores the
-    // pre-seed state in defer; the comparison below must use this one)
+    // pure-read baseline = the SEEDED state (the comparison below must
+    // use these bytes, not whatever preceded the seed)
     let seededBytes = try Data(contentsOf: stateFile)
 
     let s = try runCLI(["watch", "--once"], supportDir: supportDir)
@@ -120,15 +120,13 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliWatchFrameCarriesTheSeatsLine() throws {
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-watch-seats-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
     let store = CompanyStore.bootstrap(loadPersisted: false)
     store.saveSnapshot()

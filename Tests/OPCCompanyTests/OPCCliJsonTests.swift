@@ -39,13 +39,12 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 }
 
 /// The bridge's answer for a query verb, over the CURRENT snapshot on disk.
-/// The dir is set EXPLICITLY here because CompanyPersistence caches its
-/// first resolution: whatever dir the seed used, the bridge must be
-/// pointed at the same one through the env it actually reads.
+/// The dir rides the CompanyPersistence test seam: whatever dir the seed
+/// used, the bridge must resolve the SAME one at create time.
 @MainActor
 private func bridgeBytes(verb: String, payload: [String: Any],
                          supportDir: URL) throws -> String {
-    setenv("OPC_COMPANY_SUPPORT_DIR", supportDir.path, 1)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     #expect(opc_bridge_create() == 0)
     defer { opc_bridge_destroy() }
     let v = strdup(verb)
@@ -90,62 +89,6 @@ private func seedScriptableCompany(now: Date, supportDir: URL) throws -> Company
 
 @Suite(.serialized)
 struct OPCCliJsonTests {
-
-@Test(.enabled(if: FileManager.default.fileExists(
-    atPath: cliBinaryURL.path)))
-@MainActor func cliJSONMatchesTheBridgeByteForByte() throws {
-    // Follow whatever dir CompanyPersistence has CACHED (its first
-    // resolution wins process-wide — a private setenv gate here would be
-    // a lie under the full suite). Seed, CLI and bridge all point at
-    // that one dir; the snapshot is restored afterwards.
-    let supportDir = CompanyPersistence.supportDirectory
-    let tmp = supportDir
-    let stateFile = tmp.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
-    defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
-        unsetenv("OPC_COMPANY_SUPPORT_DIR")
-    }
-
-    let now = Date()
-    _ = try seedScriptableCompany(now: now, supportDir: tmp)
-
-    // THE anti-drift pin: CLI stdout bytes == bridge last_error bytes.
-    let pairs: [(args: [String], verb: String, payload: [String: Any])] = [
-        (["approvals", "--json"], "approvals_list", [:]),
-        (["standup", "--json"], "standup_window", [:]),
-        (["team", "12", "--json"], "team_stats_list", ["hours": 12]),
-        (["stalls", "--json"], "stalls_list", [:]),
-        (["history", "--json"], "history_list", [:]),
-        (["deliverables", "--json"], "deliverables_list", [:]),
-        (["weight", "--json"], "weight_json", [:]),
-    ]
-    for pair in pairs {
-        let s = try runCLI(pair.args, supportDir: tmp)
-        #expect(s.rc == 0, "\(pair.args) must exit 0: \(s.err)")
-        let fromBridge = try bridgeBytes(verb: pair.verb, payload: pair.payload,
-                                     supportDir: supportDir)
-        let fromCLI = s.out.trimmingCharacters(in: .whitespacesAndNewlines)
-        #expect(fromCLI == fromBridge,
-                "CLI \(pair.args) must print the bridge's exact bytes\nCLI:   \(fromCLI)\nBRIDGE: \(fromBridge)")
-    }
-
-    // catchup is the one deliberate shape difference: the bridge carries
-    // the RAW page (the page IS the payload), the CLI's --json wraps the
-    // SAME page in a {"page": ...} envelope for jq. Compare the page.
-    let cu = try runCLI(["catchup", "--json"], supportDir: tmp)
-    let envelope = try JSONSerialization.jsonObject(with: Data(cu.out.utf8))
-        as? [String: Any]
-    let cliPage = try #require(envelope?["page"] as? String)
-    let bridgePage = try bridgeBytes(verb: "catchup_md", payload: [:],
-                                     supportDir: tmp)
-    #expect(cliPage == bridgePage,
-            "the envelope wraps the bridge's page byte-for-byte")
-}
 
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
@@ -200,4 +143,61 @@ struct OPCCliJsonTests {
     #expect(try Data(contentsOf: stateFile) == seededBytes,
             "pure read: --json never moves state bytes")
 }
+}
+
+// This door test was moved out of the suite above:
+// opc_bridge_create() is a process-global singleton, so every caller
+// runs serially via OPCBridgeABIDoorTests (.serialized).
+extension OPCBridgeABIDoorTests {
+    @Test(.enabled(if: FileManager.default.fileExists(
+        atPath: cliBinaryURL.path)))
+    @MainActor func cliJSONMatchesTheBridgeByteForByte() throws {
+        // A private dir for every side of the pin: the seed and the bridge
+        // resolve it through the CompanyPersistence test seam, the CLI child
+        // gets it through its process env (a child cannot see this process's
+        // static). Nothing touches the shared default dir.
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("opc-cli-json-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        CompanyPersistence.testSupportDirectoryOverride = tmp
+        defer {
+            CompanyPersistence.testSupportDirectoryOverride = nil
+            try? FileManager.default.removeItem(at: tmp)
+        }
+
+        let now = Date()
+        _ = try seedScriptableCompany(now: now, supportDir: tmp)
+
+        // THE anti-drift pin: CLI stdout bytes == bridge last_error bytes.
+        let pairs: [(args: [String], verb: String, payload: [String: Any])] = [
+            (["approvals", "--json"], "approvals_list", [:]),
+            (["standup", "--json"], "standup_window", [:]),
+            (["team", "12", "--json"], "team_stats_list", ["hours": 12]),
+            (["stalls", "--json"], "stalls_list", [:]),
+            (["history", "--json"], "history_list", [:]),
+            (["deliverables", "--json"], "deliverables_list", [:]),
+            (["weight", "--json"], "weight_json", [:]),
+        ]
+        for pair in pairs {
+            let s = try runCLI(pair.args, supportDir: tmp)
+            #expect(s.rc == 0, "\(pair.args) must exit 0: \(s.err)")
+            let fromBridge = try bridgeBytes(verb: pair.verb, payload: pair.payload,
+                                         supportDir: tmp)
+            let fromCLI = s.out.trimmingCharacters(in: .whitespacesAndNewlines)
+            #expect(fromCLI == fromBridge,
+                    "CLI \(pair.args) must print the bridge's exact bytes\nCLI:   \(fromCLI)\nBRIDGE: \(fromBridge)")
+        }
+
+        // catchup is the one deliberate shape difference: the bridge carries
+        // the RAW page (the page IS the payload), the CLI's --json wraps the
+        // SAME page in a {"page": ...} envelope for jq. Compare the page.
+        let cu = try runCLI(["catchup", "--json"], supportDir: tmp)
+        let envelope = try JSONSerialization.jsonObject(with: Data(cu.out.utf8))
+            as? [String: Any]
+        let cliPage = try #require(envelope?["page"] as? String)
+        let bridgePage = try bridgeBytes(verb: "catchup_md", payload: [:],
+                                         supportDir: tmp)
+        #expect(cliPage == bridgePage,
+                "the envelope wraps the bridge's page byte-for-byte")
+    }
 }

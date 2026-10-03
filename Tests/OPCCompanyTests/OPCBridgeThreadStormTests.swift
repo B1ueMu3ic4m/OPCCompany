@@ -26,93 +26,6 @@ import Testing
 //      calls require a host whose main thread keeps servicing its queue
 //      (any GUI does; a blocked main does not) — see include/opc_bridge.h.
 
-@Test func bridgeIsSafeAndSerializedFromWorkerThreads() async throws {
-    // Skip the per-save WriteGuard pgrep spawn (240 guard launches would
-    // serialize on the host main queue and stretch a seconds-long storm
-    // into minutes). Persistence stays safe: a test process resolves the
-    // support dir to the temp-isolated OPCCompanyTests-<pid> location
-    // (isLikelyTestProcess), never the real user snapshot — and the real
-    // snapshot hash is re-checked by the suite gates after this test.
-    setenv("OPC_ALLOW_CONCURRENT_WRITE", "1", 1)
-    defer { unsetenv("OPC_ALLOW_CONCURRENT_WRITE") }
-
-    #expect(opc_bridge_create() == 0, "bridge create failed before storm")
-    defer { opc_bridge_destroy() }
-
-    let workers = 8
-    let iterations = 120
-    let collector = StormCollector()
-
-    // Launch the storm from detached tasks — these are exactly what a Dart
-    // FFI call looks like from the bridge's point of view: a non-main
-    // thread blocking on a main-queue hop.
-    await withTaskGroup(of: Void.self) { group in
-        for w in 0..<workers {
-            group.addTask(priority: .userInitiated) {
-                for i in 0..<iterations {
-                    switch (w &+ i) % 4 {
-                    case 0:
-                        if let p = opc_bridge_snapshot_json() {
-                            collector.absorbSnapshot(String(cString: p))
-                            opc_bridge_free(p)
-                        }
-                    case 1:
-                        let rc: Int32 = "save".withCString {
-                            opc_bridge_command($0, nil)
-                        }
-                        // save may legitimately refuse (concurrent writer);
-                        // it must NEVER return a garbage code.
-                        #expect(rc == 0 || rc == -1, "save rc was \(rc)")
-                    case 2:
-                        _ = "terminal_digest".withCString {
-                            opc_bridge_command($0, nil)
-                        }
-                        if let p = opc_bridge_last_error() {
-                            collector.observeError(String(cString: p))
-                            opc_bridge_free(p)
-                        }
-                    default:
-                        let rc: Int32 = "bogus_verb".withCString { v in
-                            "{}".withCString { p in
-                                opc_bridge_command(v, p)
-                            }
-                        }
-                        #expect(rc == -1, "bogus verb must refuse, rc=\(rc)")
-                    }
-                }
-            }
-        }
-        // The current task's awaits keep the main queue live while the
-        // detached storm hops through it — the GUI-host shape, no blocking,
-        // no runloop hacks, no timers.
-        await group.waitForAll()
-    }
-
-    let snaps = collector.snapshots
-    #expect(snaps.count > workers,
-            "only \(snaps.count) snapshots collected — hops starved?")
-    for s in snaps {
-        let obj = try? JSONSerialization.jsonObject(with: Data(s.utf8))
-        #expect(obj != nil, "snapshot JSON torn: \(s.prefix(80))")
-    }
-    for e in collector.errors {
-        let plausible = e.isEmpty
-            || e.hasPrefix("{") // digest envelope JSON payload
-            || e.contains("unknown bridge verb")
-            || e.contains("already decided")
-            || e.contains("no approval with id")
-            || e.contains("no product with id")
-            || e.contains("concurrent")
-            || e.contains("no product selected")
-        #expect(plausible, "torn refusal reason: \(e.prefix(120))")
-    }
-
-    // ABI discipline after the storm: clean destroy, working re-create.
-    opc_bridge_destroy()
-    #expect(opc_bridge_create() == 0, "bridge could not be re-created")
-    opc_bridge_destroy()
-}
-
 /// Thread-safe capture of strings observed by the storm (capped so a
 /// ~1000-call storm cannot balloon memory in the runner).
 private final class StormCollector: @unchecked Sendable {
@@ -126,5 +39,97 @@ private final class StormCollector: @unchecked Sendable {
     }
     func observeError(_ s: String) {
         lock.lock(); if _errors.count < 256 { _errors.append(s) }; lock.unlock()
+    }
+}
+
+// These door tests were moved out of the free-function list above:
+// opc_bridge_create() is a process-global singleton, so every caller
+// runs serially via OPCBridgeABIDoorTests (.serialized).
+extension OPCBridgeABIDoorTests {
+    @Test func bridgeIsSafeAndSerializedFromWorkerThreads() async throws {
+        // Skip the per-save WriteGuard pgrep spawn (240 guard launches would
+        // serialize on the host main queue and stretch a seconds-long storm
+        // into minutes). Persistence stays safe: a test process resolves the
+        // support dir to the temp-isolated OPCCompanyTests-<pid> location
+        // (isLikelyTestProcess), never the real user snapshot — and the real
+        // snapshot hash is re-checked by the suite gates after this test.
+        setenv("OPC_ALLOW_CONCURRENT_WRITE", "1", 1)
+        defer { unsetenv("OPC_ALLOW_CONCURRENT_WRITE") }
+
+        #expect(opc_bridge_create() == 0, "bridge create failed before storm")
+        defer { opc_bridge_destroy() }
+
+        let workers = 8
+        let iterations = 120
+        let collector = StormCollector()
+
+        // Launch the storm from detached tasks — these are exactly what a Dart
+        // FFI call looks like from the bridge's point of view: a non-main
+        // thread blocking on a main-queue hop.
+        await withTaskGroup(of: Void.self) { group in
+            for w in 0..<workers {
+                group.addTask(priority: .userInitiated) {
+                    for i in 0..<iterations {
+                        switch (w &+ i) % 4 {
+                        case 0:
+                            if let p = opc_bridge_snapshot_json() {
+                                collector.absorbSnapshot(String(cString: p))
+                                opc_bridge_free(p)
+                            }
+                        case 1:
+                            let rc: Int32 = "save".withCString {
+                                opc_bridge_command($0, nil)
+                            }
+                            // save may legitimately refuse (concurrent writer);
+                            // it must NEVER return a garbage code.
+                            #expect(rc == 0 || rc == -1, "save rc was \(rc)")
+                        case 2:
+                            _ = "terminal_digest".withCString {
+                                opc_bridge_command($0, nil)
+                            }
+                            if let p = opc_bridge_last_error() {
+                                collector.observeError(String(cString: p))
+                                opc_bridge_free(p)
+                            }
+                        default:
+                            let rc: Int32 = "bogus_verb".withCString { v in
+                                "{}".withCString { p in
+                                    opc_bridge_command(v, p)
+                                }
+                            }
+                            #expect(rc == -1, "bogus verb must refuse, rc=\(rc)")
+                        }
+                    }
+                }
+            }
+            // The current task's awaits keep the main queue live while the
+            // detached storm hops through it — the GUI-host shape, no blocking,
+            // no runloop hacks, no timers.
+            await group.waitForAll()
+        }
+
+        let snaps = collector.snapshots
+        #expect(snaps.count > workers,
+                "only \(snaps.count) snapshots collected — hops starved?")
+        for s in snaps {
+            let obj = try? JSONSerialization.jsonObject(with: Data(s.utf8))
+            #expect(obj != nil, "snapshot JSON torn: \(s.prefix(80))")
+        }
+        for e in collector.errors {
+            let plausible = e.isEmpty
+                || e.hasPrefix("{") // digest envelope JSON payload
+                || e.contains("unknown bridge verb")
+                || e.contains("already decided")
+                || e.contains("no approval with id")
+                || e.contains("no product with id")
+                || e.contains("concurrent")
+                || e.contains("no product selected")
+            #expect(plausible, "torn refusal reason: \(e.prefix(120))")
+        }
+
+        // ABI discipline after the storm: clean destroy, working re-create.
+        opc_bridge_destroy()
+        #expect(opc_bridge_create() == 0, "bridge could not be re-created")
+        opc_bridge_destroy()
     }
 }

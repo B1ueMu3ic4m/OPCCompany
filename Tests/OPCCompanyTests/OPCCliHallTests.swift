@@ -6,7 +6,8 @@ import Testing
 // v2.4.0 CLI steering extras: `opc tell <agent> -` (stdin, one honest
 // send per line, first refusal names its line) and `opc hall` (the
 // one-paragraph terminal-office doctor, pure read). Real binary, real
-// tmux for the stdin round-trip; state-neutral restore throughout.
+// tmux for the stdin round-trip; each test seeds a private support dir
+// via the CompanyPersistence.testSupportDirectoryOverride seam.
 
 private var cliBinaryURL: URL {
     URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -49,15 +50,13 @@ private func cleanuptmux(_ tmuxPath: String, _ sessionName: String) {
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliHallReportsTheOfficeWithoutTouchingAnything() throws {
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-hall-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
     let store = CompanyStore.bootstrap(loadPersisted: false)
     store.saveSnapshot()
@@ -92,15 +91,13 @@ private func cleanuptmux(_ tmuxPath: String, _ sessionName: String) {
     atPath: cliBinaryURL.path)))
 @MainActor func cliTellStdinSendsOneHonestLinePerInputLine() async throws {
     guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-tell-stdin-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
 
     let store = CompanyStore.bootstrap(loadPersisted: false)
@@ -121,6 +118,11 @@ private func cleanuptmux(_ tmuxPath: String, _ sessionName: String) {
 
     store.startTerminalWorkspaceForSelectedProduct()
     store.saveSnapshot()
+    // The seed is on disk; drop the seam BEFORE any await. This test is
+    // async (the capture loop below awaits for seconds) and a suspended
+    // seam holder would point every concurrent bootstrap at THIS dir —
+    // the children need only their env, the store object stays valid.
+    CompanyPersistence.testSupportDirectoryOverride = nil
 
     guard let agent = store.agents.first(where: {
         $0.displayName == "StdinCat" && store.hasLiveTerminalSeat(agentID: $0.id)

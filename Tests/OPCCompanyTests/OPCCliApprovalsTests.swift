@@ -47,28 +47,18 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliApprovalsAndDecideRoundTrip() throws {
-    // IMPORTANT: use the suite's own resolved supportDirectory. It is a
-    // process-level lazy cache — whichever test touches it FIRST pins it —
-    // so setenv()-ing a private dir here only works when this test happens
-    // to run first (single --filter) and silently desyncs from the seed
-    // write in the full suite. The test-process detection guarantees this
-    // directory is temp-isolated (OPCCompanyTests-<pid>), never the real
-    // user snapshot; passing it to the child via the override env keeps
-    // seed and subprocess pointed at the SAME place with zero timing
-    // assumptions.
-    let supportDir = CompanyPersistence.supportDirectory
-    // State-neutral: remember whatever the suite dir held and restore it
-    // after — a leaked pending approval would be visible to later
-    // bootstrap(loadPersisted: true) tests and bite as a heisenflaky
-    // count assertion at a distance.
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    // A private dir on both sides: the seed writes through the
+    // CompanyPersistence.testSupportDirectoryOverride seam, the CLI child
+    // gets the same dir through its process env (a child cannot see this
+    // process's static). Nothing touches the shared default dir, so no
+    // backup/restore dance is needed and there are no timing assumptions.
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-approvals-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
 
     // Seed through the SAME hooks the CLI reads: fresh store, one task in

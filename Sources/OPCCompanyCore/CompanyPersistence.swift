@@ -198,7 +198,17 @@ public enum CompanyPersistence {
     private static let resolvedSupportDirectory: URL =
         resolveSupportDirectory(environment: ProcessInfo.processInfo.environment)
 
-    public static var supportDirectory: URL { resolvedSupportDirectory }
+    /// 测试接缝（ForTesting 惯例，与 terminalWorkspaceSessionNameForTesting 同族）：
+    /// 非 nil 时优先于进程级烘焙值。Swift Testing 在一个进程里并发跑测试，
+    /// 而本进程的持久化根目录是"首次触摸即定"的——测试若靠 setenv 隔离，
+    /// 只有抢到首次触摸的那一个生效（死代码剧场），其余全部共享同一目录互相倾倒。
+    /// 同步 @MainActor 测试体不可分割，在其体内设/清本接缝即天然串行、无锁、
+    /// 每测试一个真目录。生产进程永远为 nil。
+    public nonisolated(unsafe) static var testSupportDirectoryOverride: URL?
+
+    public static var supportDirectory: URL {
+        testSupportDirectoryOverride ?? resolvedSupportDirectory
+    }
 
     public static var stateURL: URL {
         supportDirectory.appendingPathComponent("company-state.json")
