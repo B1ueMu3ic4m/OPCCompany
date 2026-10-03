@@ -93,20 +93,23 @@ struct OPCCliJsonTests {
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliJSONShapesFlagsAndPurity() throws {
-    // the suite-shared support dir: CompanyPersistence.supportDirectory
-    // caches per-process, so a second test's setenv is a lie — instead,
-    // seed AND every runCLI read the SAME (cached) dir, and the pure-read
-    // pin compares seeded-vs-after bytes in that dir
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    // A seam-PRIVATE dir per run: the seed and every runCLI read the SAME
+    // dir — the in-process seed resolves it through the CompanyPersistence
+    // test seam, the CLI child through its process env (a child cannot see
+    // this process's static) — and the pure-read pin compares
+    // seeded-vs-after bytes in that dir. Nothing touches the suite-shared
+    // root, so there is nothing to restore either.
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-json-shapes-\(UUID().uuidString)",
+                                isDirectory: true)
+    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = tmp
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: tmp)
     }
+    let supportDir = tmp
+    let stateFile = tmp.appendingPathComponent("company-state.json")
 
     let now = Date()
     _ = try seedScriptableCompany(now: now, supportDir: supportDir)

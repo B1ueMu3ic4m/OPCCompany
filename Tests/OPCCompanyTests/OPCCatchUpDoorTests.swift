@@ -120,13 +120,23 @@ private func catchUpSeeded(now: Date) -> (CompanyStore, UUID, UUID, UUID) {
 }
 
 @Test @MainActor func catchUpPageIsByteStableAndNeverWrites() throws {
+    // Seam-PRIVATE dir: this test used to pure-read the SUITE-shared dir
+    // (seeding nothing), so an async bystander's cleanup could delete the
+    // bytes under it — tonight's flake. Now: a fresh private dir, the seam
+    // set first, a seeded-and-SAVED state file, then the same pins run
+    // against that dir. A dir only this atomic body can name has no
+    // bystanders and needs no restore dance.
     let tmp = try temporarySupportDir("catchup-stable")
-    defer { try? FileManager.default.removeItem(at: tmp) }
+    CompanyPersistence.testSupportDirectoryOverride = tmp
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: tmp)
+    }
     let now = Date(timeIntervalSince1970: 1_800_000_000)
     let (store, _, _, _) = catchUpSeeded(now: now)
+    store.saveSnapshot()  // the pure-read pin needs state bytes ON DISK
 
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
+    let stateFile = tmp.appendingPathComponent("company-state.json")
     let priorBytes = try? Data(contentsOf: stateFile)
 
     let first = store.catchUpPage(now: now)

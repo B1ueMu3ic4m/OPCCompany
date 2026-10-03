@@ -95,13 +95,28 @@ import Testing
     }
 
     @Test func migrationIsIdempotentAndPruningPersistsAcrossRoundTrip() throws {
+        // Seam-PRIVATE dir: the deletes below are part of the pinned
+        // scenario (migrate → wipe file → save → reload), and they must
+        // hit THIS test's dir, never the suite-shared root a bystander may
+        // be reading.
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("opc-legacy-mirror-roundtrip-\(UUID().uuidString)",
+                                    isDirectory: true)
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        CompanyPersistence.testSupportDirectoryOverride = tmp
+        defer {
+            CompanyPersistence.testSupportDirectoryOverride = nil
+            try? FileManager.default.removeItem(at: tmp)
+        }
+        let stateURL = tmp.appendingPathComponent("company-state.json")
+
         let store = CompanyStore.bootstrap(loadPersisted: false)
         let engineer = try #require(store.agents.first { $0.role == .codeEngineer })
         store.terminalLogs[engineer.id] = "legacy audit trail"
         #expect(store.migrateLegacyTerminalLogsToProductScopedLogs(saveAfterChange: false))
         // Second pass over the same store must be a no-op (no oscillation).
         #expect(!store.migrateLegacyTerminalLogsToProductScopedLogs(saveAfterChange: false))
-        try? FileManager.default.removeItem(at: CompanyPersistence.stateURL)
+        try? FileManager.default.removeItem(at: stateURL)
         store.saveSnapshot()
         guard let reloaded = CompanyPersistence.load() else {
             Issue.record("persisted snapshot must reload")
@@ -113,6 +128,6 @@ import Testing
         // Schema compatibility: legacy field still encodes (empty dict survives).
         let empty = reloaded.terminalLogs
         #expect(empty.isEmpty)
-        try? FileManager.default.removeItem(at: CompanyPersistence.stateURL)
+        try? FileManager.default.removeItem(at: stateURL)
     }
 }
