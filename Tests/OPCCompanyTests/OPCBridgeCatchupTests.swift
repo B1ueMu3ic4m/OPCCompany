@@ -30,48 +30,53 @@ private func seedCatchUp(now: Date) throws -> CompanyStore {
     return store
 }
 
-@MainActor
-@Test func bridgeCatchupContractOverRealABI() throws {
-    let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
-        .appendingPathComponent("opc-catchup-bridge-\(UUID().uuidString)")
-    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tmp) }
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+// These door tests were moved out of the free-function list above:
+// opc_bridge_create() is a process-global singleton, so every caller
+// runs serially via OPCBridgeABIDoorTests (.serialized).
+extension OPCBridgeABIDoorTests {
+    @MainActor
+    @Test func bridgeCatchupContractOverRealABI() throws {
+        let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("opc-catchup-bridge-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        CompanyPersistence.testSupportDirectoryOverride = tmp
+        defer { CompanyPersistence.testSupportDirectoryOverride = nil }
 
-    _ = try seedCatchUp(now: Date())
+        _ = try seedCatchUp(now: Date())
 
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
-    let verb = strdup("catchup_md")
-    defer { free(verb) }
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+        let verb = strdup("catchup_md")
+        defer { free(verb) }
 
-    #expect(opc_bridge_command(verb, nil) == 0)
-    let page = String(cString: try #require(opc_bridge_last_error()))
+        #expect(opc_bridge_command(verb, nil) == 0)
+        let page = String(cString: try #require(opc_bridge_last_error()))
 
-    // the page IS the payload: plain markdown, every section in order
-    for marker in ["# Catch-up — ", "## Traffic (last 24h)", "## Who did what",
-                   "## Stuck (parked over 30 min)", "## Waiting on you (1)",
-                   "## Shelf integrity", "Pure read — this page wrote nothing."] {
-        #expect(page.contains(marker), "section missing from the channel: \(marker)")
+        // the page IS the payload: plain markdown, every section in order
+        for marker in ["# Catch-up — ", "## Traffic (last 24h)", "## Who did what",
+                       "## Stuck (parked over 30 min)", "## Waiting on you (1)",
+                       "## Shelf integrity", "Pure read — this page wrote nothing."] {
+            #expect(page.contains(marker), "section missing from the channel: \(marker)")
+        }
+        #expect(page.contains("等你批"), "the desk names the pending row")
+
+        // byte-stability: a second read of the same state is byte-identical
+        #expect(opc_bridge_command(verb, nil) == 0)
+        let again = String(cString: try #require(opc_bridge_last_error()))
+        #expect(page == again, "no wall-clock inside: repeat channel reads are byte-stable")
+
+        // payload knobs: hours/over_minutes pass through to the section text
+        let payload = strdup("{\"hours\":5,\"over_minutes\":10}")
+        defer { free(payload) }
+        #expect(opc_bridge_command(verb, payload) == 0)
+        let tuned = String(cString: try #require(opc_bridge_last_error()))
+        #expect(tuned.contains("## Traffic (last 5h)"))
+        #expect(tuned.contains("## Stuck (parked over 10 min)"))
+
+        // the ABI's refusal discipline is untouched next to the new case
+        let junk = strdup("not_a_verb")
+        defer { free(junk) }
+        #expect(opc_bridge_command(junk, nil) == -1)
     }
-    #expect(page.contains("等你批"), "the desk names the pending row")
-
-    // byte-stability: a second read of the same state is byte-identical
-    #expect(opc_bridge_command(verb, nil) == 0)
-    let again = String(cString: try #require(opc_bridge_last_error()))
-    #expect(page == again, "no wall-clock inside: repeat channel reads are byte-stable")
-
-    // payload knobs: hours/over_minutes pass through to the section text
-    let payload = strdup("{\"hours\":5,\"over_minutes\":10}")
-    defer { free(payload) }
-    #expect(opc_bridge_command(verb, payload) == 0)
-    let tuned = String(cString: try #require(opc_bridge_last_error()))
-    #expect(tuned.contains("## Traffic (last 5h)"))
-    #expect(tuned.contains("## Stuck (parked over 10 min)"))
-
-    // the ABI's refusal discipline is untouched next to the new case
-    let junk = strdup("not_a_verb")
-    defer { free(junk) }
-    #expect(opc_bridge_command(junk, nil) == -1)
 }

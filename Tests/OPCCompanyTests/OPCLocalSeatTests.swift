@@ -183,59 +183,6 @@ private func makeSeatAgent(_ store: CompanyStore, name: String,
     #expect(CLIAgentCommandBuilder.interactiveCommand(for: apiAgent) == nil)
 }
 
-@MainActor @Test func bridgeSeatLifecycleOverRealABI() throws {
-    let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
-        .appendingPathComponent("opc-seat-bridge-\(UUID().uuidString)")
-    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
-
-    // seed IN-PROCESS before create, so the bridge's store sees this roster
-    let seedStore = CompanyStore.bootstrap(loadPersisted: false)
-    var draft = EmployeeDraft()
-    draft.displayName = "BridgeCat"
-    draft.command = "/bin/cat"
-    seedStore.addEmployee(from: draft)
-    seedStore.saveSnapshot()
-    guard let agent = seedStore.agents.first(where: { $0.displayName == "BridgeCat" }) else {
-        Issue.record("seed failed")
-        return
-    }
-    let payload = "{\"agentID\":\"\(agent.id.uuidString)\"}"
-
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
-
-    func runVerb(_ verb: String, _ json: String) -> (rc: Int32, reason: String) {
-        let v = strdup(verb)
-        let p = strdup(json)
-        defer { free(v); free(p) }
-        let rc = opc_bridge_command(v, p)
-        let reason = opc_bridge_last_error().map { String(cString: $0) } ?? ""
-        return (rc, reason)
-    }
-
-    let spawned = runVerb("seat_spawn", payload)
-    #expect(spawned.rc == 0, "seat_spawn must succeed: \(spawned.reason)")
-    #expect(spawned.reason.isEmpty, "a write's success is silence")
-
-    let double = runVerb("seat_spawn", payload)
-    #expect(double.rc == -1 && double.reason.contains("already has a live local seat"),
-            "double spawn must refuse: \(double.reason)")
-
-    // v1.12: terminal_send now reaches the bridge's own local seat too
-    let tell = runVerb("terminal_send",
-                       "{\"agentID\":\"\(agent.id.uuidString)\",\"line\":\"bridge-marker\"}")
-    #expect(tell.rc == 0, "terminal_send must steer the local seat: \(tell.reason)")
-
-    let stopped = runVerb("seat_stop", payload)
-    #expect(stopped.rc == 0, "seat_stop must succeed: \(stopped.reason)")
-
-    let again = runVerb("seat_stop", payload)
-    #expect(again.rc == -1 && again.reason.contains("no local seat"),
-            "stopping twice must refuse: \(again.reason)")
-}
-
 // MARK: - v2.2.0 the readable seat
 
 @Test func ansiNormalizerStripsEscapeSequencesAndCarriesPartialOnes() {
@@ -311,52 +258,111 @@ private func makeSeatAgent(_ store: CompanyStore, name: String,
     #expect(store.localSeatStatuses().isEmpty)
 }
 
-@MainActor @Test func bridgeSeatRosterOverRealABI() throws {
-    let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
-        .appendingPathComponent("opc-seatlist-\(UUID().uuidString)")
-    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
-    setenv("OPC_COMPANY_SUPPORT_DIR", tmp.path, 1)
-    defer { unsetenv("OPC_COMPANY_SUPPORT_DIR") }
+// These door tests were moved out of the free-function list above:
+// opc_bridge_create() is a process-global singleton, so every caller
+// runs serially via OPCBridgeABIDoorTests (.serialized).
+extension OPCBridgeABIDoorTests {
 
-    let seedStore = CompanyStore.bootstrap(loadPersisted: false)
-    var draft = EmployeeDraft()
-    draft.displayName = "ListCat"
-    draft.command = "/bin/cat"
-    seedStore.addEmployee(from: draft)
-    seedStore.saveSnapshot()
-    guard let agent = seedStore.agents.first(where: { $0.displayName == "ListCat" }) else {
-        Issue.record("seed failed")
-        return
+    @MainActor @Test func bridgeSeatRosterOverRealABI() throws {
+        let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("opc-seatlist-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        CompanyPersistence.testSupportDirectoryOverride = tmp
+        defer { CompanyPersistence.testSupportDirectoryOverride = nil }
+
+        let seedStore = CompanyStore.bootstrap(loadPersisted: false)
+        var draft = EmployeeDraft()
+        draft.displayName = "ListCat"
+        draft.command = "/bin/cat"
+        seedStore.addEmployee(from: draft)
+        seedStore.saveSnapshot()
+        guard let agent = seedStore.agents.first(where: { $0.displayName == "ListCat" }) else {
+            Issue.record("seed failed")
+            return
+        }
+        let payload = "{\"agentID\":\"\(agent.id.uuidString)\"}"
+
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+
+        func runVerb(_ verb: String, _ json: String?) -> (rc: Int32, reason: String) {
+            let v = strdup(verb)
+            let p = json.flatMap { strdup($0) }
+            defer { free(v); free(p) }
+            let rc = opc_bridge_command(v, p)
+            let reason = opc_bridge_last_error().map { String(cString: $0) } ?? ""
+            return (rc, reason)
+        }
+
+        // empty office: {} rides the channel
+        let empty = runVerb("seat_list", nil)
+        #expect(empty.rc == 0 && empty.reason == "{}", "empty roster must be {}: \(empty.reason)")
+
+        let spawned = runVerb("seat_spawn", payload)
+        #expect(spawned.rc == 0, "spawn must succeed: \(spawned.reason)")
+
+        let roster = runVerb("seat_list", nil)
+        #expect(roster.rc == 0)
+        let decoded = try JSONSerialization.jsonObject(with: Data(roster.reason.utf8))
+        let map = try #require(decoded as? [String: Bool])
+        #expect(map == [agent.id.uuidString: true], "roster must carry liveness: \(roster.reason)")
+
+        #expect(runVerb("seat_stop", payload).rc == 0)
+        let afterStop = runVerb("seat_list", nil)
+        #expect(afterStop.rc == 0 && afterStop.reason == "{}",
+                "a stopped seat has no entry: \(afterStop.reason)")
     }
-    let payload = "{\"agentID\":\"\(agent.id.uuidString)\"}"
 
-    #expect(opc_bridge_create() == 0)
-    defer { opc_bridge_destroy() }
+    @MainActor @Test func bridgeSeatLifecycleOverRealABI() throws {
+        let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("opc-seat-bridge-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        CompanyPersistence.testSupportDirectoryOverride = tmp
+        defer { CompanyPersistence.testSupportDirectoryOverride = nil }
 
-    func runVerb(_ verb: String, _ json: String?) -> (rc: Int32, reason: String) {
-        let v = strdup(verb)
-        let p = json.flatMap { strdup($0) }
-        defer { free(v); free(p) }
-        let rc = opc_bridge_command(v, p)
-        let reason = opc_bridge_last_error().map { String(cString: $0) } ?? ""
-        return (rc, reason)
+        // seed IN-PROCESS before create, so the bridge's store sees this roster
+        let seedStore = CompanyStore.bootstrap(loadPersisted: false)
+        var draft = EmployeeDraft()
+        draft.displayName = "BridgeCat"
+        draft.command = "/bin/cat"
+        seedStore.addEmployee(from: draft)
+        seedStore.saveSnapshot()
+        guard let agent = seedStore.agents.first(where: { $0.displayName == "BridgeCat" }) else {
+            Issue.record("seed failed")
+            return
+        }
+        let payload = "{\"agentID\":\"\(agent.id.uuidString)\"}"
+
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+
+        func runVerb(_ verb: String, _ json: String) -> (rc: Int32, reason: String) {
+            let v = strdup(verb)
+            let p = strdup(json)
+            defer { free(v); free(p) }
+            let rc = opc_bridge_command(v, p)
+            let reason = opc_bridge_last_error().map { String(cString: $0) } ?? ""
+            return (rc, reason)
+        }
+
+        let spawned = runVerb("seat_spawn", payload)
+        #expect(spawned.rc == 0, "seat_spawn must succeed: \(spawned.reason)")
+        #expect(spawned.reason.isEmpty, "a write's success is silence")
+
+        let double = runVerb("seat_spawn", payload)
+        #expect(double.rc == -1 && double.reason.contains("already has a live local seat"),
+                "double spawn must refuse: \(double.reason)")
+
+        // v1.12: terminal_send now reaches the bridge's own local seat too
+        let tell = runVerb("terminal_send",
+                           "{\"agentID\":\"\(agent.id.uuidString)\",\"line\":\"bridge-marker\"}")
+        #expect(tell.rc == 0, "terminal_send must steer the local seat: \(tell.reason)")
+
+        let stopped = runVerb("seat_stop", payload)
+        #expect(stopped.rc == 0, "seat_stop must succeed: \(stopped.reason)")
+
+        let again = runVerb("seat_stop", payload)
+        #expect(again.rc == -1 && again.reason.contains("no local seat"),
+                "stopping twice must refuse: \(again.reason)")
     }
-
-    // empty office: {} rides the channel
-    let empty = runVerb("seat_list", nil)
-    #expect(empty.rc == 0 && empty.reason == "{}", "empty roster must be {}: \(empty.reason)")
-
-    let spawned = runVerb("seat_spawn", payload)
-    #expect(spawned.rc == 0, "spawn must succeed: \(spawned.reason)")
-
-    let roster = runVerb("seat_list", nil)
-    #expect(roster.rc == 0)
-    let decoded = try JSONSerialization.jsonObject(with: Data(roster.reason.utf8))
-    let map = try #require(decoded as? [String: Bool])
-    #expect(map == [agent.id.uuidString: true], "roster must carry liveness: \(roster.reason)")
-
-    #expect(runVerb("seat_stop", payload).rc == 0)
-    let afterStop = runVerb("seat_list", nil)
-    #expect(afterStop.rc == 0 && afterStop.reason == "{}",
-            "a stopped seat has no entry: \(afterStop.reason)")
 }

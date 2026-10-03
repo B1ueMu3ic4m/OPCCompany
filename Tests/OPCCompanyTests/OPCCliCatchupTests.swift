@@ -4,8 +4,9 @@ import Testing
 @testable import OPCCompanyCore
 
 // Formal regression for `opc catchup` (v0.11.0 "the catch-up"): real
-// .build/debug/opc, suite support dir seeded in-process, state-neutral
-// restore. Pins: the page prints whole (every section, in order), the
+// .build/debug/opc against a private support dir seeded in-process
+// through the CompanyPersistence.testSupportDirectoryOverride seam.
+// Pins: the page prints whole (every section, in order), the
 // 25-hour-old event stays OUT of the traffic window, a ghost delivery
 // is named as MISSING with its path, junk arguments are refused, and
 // the pure-read promise holds (snapshot bytes must not move).
@@ -40,18 +41,17 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliCatchupPrintsWholePageAndNeverWrites() throws {
-    let supportDir = CompanyPersistence.supportDirectory
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-catchup-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
     let scratch = URL(fileURLWithPath: NSTemporaryDirectory())
         .appendingPathComponent("opc-catchup-\(UUID().uuidString)")
     defer {
         try? FileManager.default.removeItem(at: scratch)
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
     try FileManager.default.createDirectory(at: scratch,
                                             withIntermediateDirectories: true)
@@ -77,8 +77,8 @@ private func runCLI(_ args: [String], supportDir: URL) throws
                        summary: "s", createdAt: now.addingTimeInterval(-800)),
     ]
     store.saveSnapshot()
-    // pure-read baseline = the SEEDED state (priorBytes restores the
-    // pre-seed state in defer; the comparison below must use this one)
+    // pure-read baseline = the SEEDED state (the comparison below must
+    // use these bytes, not whatever preceded the seed)
     let seededBytes = try Data(contentsOf: stateFile)
 
     let s = try runCLI(["catchup"], supportDir: supportDir)

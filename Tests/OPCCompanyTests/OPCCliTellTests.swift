@@ -4,7 +4,9 @@ import Testing
 @testable import OPCCompanyCore
 
 // Formal regression for `opc tell` (v0.18.0 "the tell door"): the real
-// .build/debug/opc against the suite support dir, state-neutral restore.
+// .build/debug/opc against a private support dir — seed and child both
+// pointed there (CompanyPersistence.testSupportDirectoryOverride seam /
+// the child's OPC_COMPANY_SUPPORT_DIR env).
 // Pins: uuid AND name resolution (case-insensitive), honest refusals —
 // junk args, unknown name, an AMBIGUOUS name, an empty line through the
 // store's own guards — and the end-to-end success path: a line steered
@@ -46,15 +48,13 @@ private func cleanuptmux(_ tmuxPath: String, _ sessionName: String) {
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliTellResolvesAgentsAndRefusesHonestly() throws {
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-tell-resolve-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
 
     // seed: one uniquely-named employee, one duplicated name
@@ -100,15 +100,13 @@ private func cleanuptmux(_ tmuxPath: String, _ sessionName: String) {
     atPath: cliBinaryURL.path)))
 @MainActor func cliTellDeliversToALiveTmuxSeat() async throws {
     guard let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux") else { return }
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-tell-seat-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
 
     let store = CompanyStore.bootstrap(loadPersisted: false)
@@ -129,6 +127,10 @@ private func cleanuptmux(_ tmuxPath: String, _ sessionName: String) {
 
     store.startTerminalWorkspaceForSelectedProduct()
     store.saveSnapshot()
+    // The seed is on disk; drop the seam BEFORE any await (the capture
+    // loop below awaits): a suspended seam holder would point every
+    // concurrent bootstrap at THIS dir. The child needs only its env.
+    CompanyPersistence.testSupportDirectoryOverride = nil
 
     // the seat must already be live BEFORE the CLI process is launched:
     // tmux (the server) is the shared truth both processes see

@@ -4,9 +4,10 @@ import Testing
 @testable import OPCCompanyCore
 
 // Formal regression for `opc stalls` (v0.10.0 "the stall watch"): real
-// .build/debug/opc against the shared suite support dir, seeded in-process
-// (save BEFORE create/run so the child sees exactly this), state-neutral
-// restore. Pins: longest stall prints first with WAITS ON YOU; the
+// .build/debug/opc against a private support dir, seeded in-process
+// through the CompanyPersistence.testSupportDirectoryOverride seam
+// (save BEFORE create/run so the child sees exactly this). Pins: longest
+// stall prints first with WAITS ON YOU; the
 // threshold is a real knob through argv; junk refuses with usage; the
 // quiet company says "nothing parked"; the pure-read promise holds —
 // seeded snapshot bytes never move. Baseline captured AFTER the seed's
@@ -44,15 +45,14 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliStallsPrintsTheDoorAndNeverWrites() throws {
-    let supportDir = CompanyPersistence.supportDirectory
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-stalls-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
 
     let realNow = Date()
@@ -118,15 +118,13 @@ private func runCLI(_ args: [String], supportDir: URL) throws
 @Test(.enabled(if: FileManager.default.fileExists(
     atPath: cliBinaryURL.path)))
 @MainActor func cliStallsQuietCompanySaysNothingParked() throws {
-    let supportDir = CompanyPersistence.supportDirectory
-    let stateFile = supportDir.appendingPathComponent("company-state.json")
-    let priorBytes = try? Data(contentsOf: stateFile)
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-stalls-quiet-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
     defer {
-        if let priorBytes {
-            try? priorBytes.write(to: stateFile)
-        } else {
-            try? FileManager.default.removeItem(at: stateFile)
-        }
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
     }
 
     let store = CompanyStore.bootstrap(loadPersisted: false)
