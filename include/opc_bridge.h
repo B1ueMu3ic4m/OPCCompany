@@ -197,6 +197,19 @@ char *opc_bridge_snapshot_json(void);
  *       spawned was never this store's fact to report; an empty office
  *       answers {}. Pure read over the runtime registry — never
  *       persisted, never guessed across restarts.
+ *   "transcript" {"agentID":"<uuid>","tail":N}   (v1.14)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       {agentID, displayName, totalLines, tail, lines} (.sortedKeys
+ *       byte-stable): the agent's VISIBLE terminal log — the same
+ *       product-scoped, sanitized, compacted text the GUI's agent card
+ *       renders — clipped to the last `tail` lines. "tail" echoes the
+ *       asked knob (default 40; ask 0 or negative for the full text);
+ *       "totalLines" counts the visible log BEFORE clipping; "lines"
+ *       is the window actually served. rc=-1 with a reason in
+ *       last_error: not a UUID or no such agent. An empty seat answers
+ *       its one honest placeholder line. Pure read, same guard silence
+ *       as approvals_list. The CLI's `transcript --json` serves THESE
+ *       EXACT bytes.
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a

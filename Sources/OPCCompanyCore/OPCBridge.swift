@@ -423,6 +423,24 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.weightJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "transcript":
+                    // v1.14 the transcript door: the agent's VISIBLE
+                    // terminal log — the same product-scoped, sanitized,
+                    // compacted text the GUI's agent card renders — as a
+                    // JSON OBJECT {agentID, displayName, totalLines, tail,
+                    // lines} riding the smuggle channel. payload: agentID
+                    // (UUID, required), tail (Int, optional, default 40,
+                    // <= 0 = no clipping). Pure read; an unknown id
+                    // refuses; an empty seat answers its honest
+                    // placeholder line.
+                    guard let idString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "transcript requires a UUID agentID")
+                    }
+                    let tail = (payload["tail"] as? Int) ?? 40
+                    let data = try store.transcriptJSON(agentID: agentID, tail: tail)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 default:
                     throw OPCBridgeRefusal(message: "unknown bridge verb '\(verbString)'")
                 }
