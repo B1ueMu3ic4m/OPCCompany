@@ -289,6 +289,25 @@ class _CompanyHomeState extends State<CompanyHome> {
     });
   }
 
+  /// v1.15 write-style verbs answer '' on success and the verbatim
+  /// refusal otherwise (the seat-write contract) — one pipeline here so
+  /// the shell can't drift between the two shapes.
+  void _runWrite(String label, String Function() action) {
+    setState(() {
+      final refusal = action();
+      _lastAction = refusal.isEmpty ? '$label: ok' : '$label: refused — $refusal';
+      _snap = _bridge.snapshot();
+      _history = _bridge.historyList();
+      _deliverables = _bridge.deliverablesList();
+      _standup = _bridge.standupWindow();
+      _team = _bridge.teamStatsList();
+      _stalls = _bridge.stallsList();
+      _catchup = _bridge.catchupMd();
+      _weight = _bridge.weightJson();
+      _syncTranscripts();
+    });
+  }
+
   void _sendGoal() {
     final text = _goalController.text.trim();
     if (text.isEmpty) {
@@ -621,6 +640,13 @@ class _CompanyHomeState extends State<CompanyHome> {
                 onPressed: () => _run('advance', _bridge.advance),
                 icon: const Icon(Icons.fast_forward),
                 label: const Text('Let the CTO advance'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const ValueKey('autopilot-button'),
+                onPressed: () => _runWrite('autopilot', _bridge.autopilot),
+                icon: const Icon(Icons.auto_mode),
+                label: const Text('Autopilot — one full dispatch'),
               ),
             ],
           ),

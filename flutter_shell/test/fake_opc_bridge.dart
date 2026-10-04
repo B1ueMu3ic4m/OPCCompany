@@ -86,6 +86,12 @@ class FakeOpcBridge {
   String? transcriptRefusal;
   final List<(String agentID, int tail)> transcriptCalls = [];
 
+  /// v1.15 the shell's autopilot: null => success (lastError reset to
+  /// ''); a string => the verbatim refusal the next call returns. Every
+  /// dispatch is recorded in [autopilotCalls].
+  String? autopilotRefusal;
+  int autopilotCalls = 0;
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -173,10 +179,20 @@ class FakeOpcBridge {
       nextError = '';
       return rc;
     }
+    // v1.15 the shell's autopilot: ONE full dispatch per call — a write
+    // with the same ''-on-success contract; recorded either way.
+    if (verb == 'autopilot') {
+      autopilotCalls++;
+      if (autopilotRefusal != null) {
+        nextError = autopilotRefusal!;
+        return -1;
+      }
+      nextError = '';
+      return rc;
+    }
     // v1.11: a WRITE — success is lastError reset to '', a refusal rides
     // its reason verbatim; the attempt is recorded either way.
-    if (verb == 'terminal_send') {
-      final agentID = payload['agentID'];
+    if (verb == 'terminal_send') {      final agentID = payload['agentID'];
       final line = payload['line'];
       if (agentID is! String || line is! String) {
         nextError = 'terminal_send requires agentID and line';

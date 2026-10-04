@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-10-05
+
+### Added — v2.10.0 "the shell's autopilot"
+- **Bridge verb `autopilot` (contract v1.15)** — ONE full store dispatch
+  per call (the same primitive the desktop app's button and
+  `opc autopilot` drive), then a save; honors the cross-process writer
+  guard. A repeating loop is the caller's job — the bridge never
+  decides how many cycles the office deserves.
+- **Flutter shell: the autopilot button** — one dispatch per tap, the
+  refusal (if any) surfaces verbatim through the seat-write contract
+  ('' = success), and every door reloads after the write.
+
 ## [2.9.0] - 2026-10-05
 
 ### Added — v2.9.0 "the autopilot"

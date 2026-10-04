@@ -386,6 +386,17 @@ class OpcBridge {
   /// v1.12: stop the agent's local seat. '' = success, else the reason.
   String seatStop(String agentID) => _seatWrite('seat_stop', agentID);
 
+  /// v1.15 the shell's autopilot: ONE full store dispatch per call —
+  /// the same primitive the desktop app's button and `opc autopilot`
+  /// drive. '' = success, otherwise the verbatim refusal. A repeating
+  /// loop is the caller's job: the button fires one dispatch per tap.
+  String autopilot() {
+    final rc = command('autopilot');
+    if (rc == ok) return '';
+    final reason = lastError();
+    return reason.isEmpty ? 'autopilot refused' : reason;
+  }
+
   String _seatWrite(String verb, String agentID) {
     final rc = command(verb, {'agentID': agentID});
     if (rc == ok) return '';

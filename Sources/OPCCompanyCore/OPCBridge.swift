@@ -184,6 +184,17 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     try OPCWriteGuard.ensureExclusiveAccess()
                     _ = store.advanceCTOSupervisorLoop()
                     store.saveSnapshot()
+                case "autopilot":
+                    // v1.15 the shell's autopilot: ONE full store dispatch
+                    // per call — the same primitive the desktop app's
+                    // button and `opc autopilot` drive (checkpoint, queue,
+                    // blocked→approval, artifacts, verification, health
+                    // audit, memory, advance), then a save. A repeating
+                    // loop is the CALLER's job: the bridge never decides
+                    // how many cycles the office deserves.
+                    try OPCWriteGuard.ensureExclusiveAccess()
+                    store.runCTOAutopilot()
+                    store.saveSnapshot()
                 case "decide":
                     try OPCWriteGuard.ensureExclusiveAccess()
                     guard let idString = payload["approvalID"] as? String,

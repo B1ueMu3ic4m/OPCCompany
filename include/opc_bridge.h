@@ -210,6 +210,17 @@ char *opc_bridge_snapshot_json(void);
  *       its one honest placeholder line. Pure read, same guard silence
  *       as approvals_list. The CLI's `transcript --json` serves THESE
  *       EXACT bytes.
+ *   "autopilot" {}                        (v1.15)
+ *       rc=0 → ONE full store dispatch: the same primitive the desktop
+ *       app's autopilot button and `opc autopilot` drive (safety
+ *       checkpoint, team, queue, blocked→approval, artifacts,
+ *       verification, health audit, decision memory, advance), then a
+ *       save. Honors the cross-process writer guard. A REPEATING loop
+ *       is the caller's job — the bridge never decides how many cycles
+ *       the office deserves; the shell button fires one dispatch per
+ *       tap, `opc autopilot` adds the cycle count and the two honest
+ *       stop conditions (an approval waiting on the boss, a cycle
+ *       where nothing moved).
  * IMPORTANT: for query verbs, success means rc==0 AND last_error holds the
  * payload — branch on rc, never on whether last_error is empty. The ABI is
  * frozen at six symbols; a query result channel is a contract choice, not a
