@@ -686,6 +686,22 @@ extension CompanyStore {
                 if createWindowResult.exitCode == 0 {
                     didCreateWindow = true
                     windowNames.insert(windowName)
+                } else {
+                    // v2.8.0: 一个刚被 kill-window 的同名席位，tmux 服务端可能仍在
+                    // 回收中——new-window 瞬时失败。0.4 秒后重试一次；再失败就
+                    // 记风险事件（老板看得见"谁的席位没建成"），绝不静默跳过。
+                    Thread.sleep(forTimeInterval: 0.4)
+                    let retry = runLocalProcess(
+                        executable: tmuxPath,
+                        arguments: ["new-window", "-d", "-t", sessionName, "-n", windowName, "-c", executionDirectory.path],
+                        workingDirectory: workingDirectory
+                    )
+                    if retry.exitCode == 0 {
+                        didCreateWindow = true
+                        windowNames.insert(windowName)
+                    } else {
+                        appendEvent(kind: .risk, title: "员工席位创建失败".L(), detail: "\(agent.displayName)：\(retry.output)", agentID: agent.id)
+                    }
                 }
             }
             guard didCreateWindow else { continue }

@@ -1150,6 +1150,7 @@ enum AppStringsGenerated {
         "员工工作进度": "Employee Progress",
         "员工工作队列": "Employee Work Queue",
         "员工工作项": "Employee work item",
+        "员工席位创建失败": "Employee seat failed to build",
         "员工席位：": "Employee seats: ",
         "员工恢复建议": "Employee recovery suggestions",
         "员工恢复建议摘要": "Employee Recovery Suggestions Summary",
