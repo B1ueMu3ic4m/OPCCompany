@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-10-05
+
+### Fixed — v2.8.0 "the seat comes back"
+- **Timeout-killed seats revive reliably**: a tmux seat closed by the
+  timeout escalation could transiently fail its own recreation — the
+  server is still recycling the just-killed window when `new-window`
+  fires, and the rebuild was silently skipped, so the next command had
+  no seat to land in. The rebuild now retries once after 0.4s.
+- **A seat that still fails to build is no longer invisible**: the
+  failure lands in the risk events as「员工席位创建失败」naming the
+  employee and tmux's own output — the boss sees which desk is empty,
+  instead of a silent `continue`.
+
 ## [2.7.0] - 2026-10-04
 
 ### Added — v2.7.0 "the visible face"
