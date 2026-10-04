@@ -47,6 +47,49 @@ private func mockURLSession(responses: [(Int, String)]) -> URLSession {
     return URLSession(configuration: configuration)
 }
 
+// The URLProtocol statics above are PROCESS-GLOBAL, and Swift Testing
+// runs suites concurrently: a foreign reset mid-flight steals this
+// test's scripted responses and wipes its recording (the "requests.count
+// == 2 → 1" soak-3 signature). Every mock-session lifetime MUST run
+// under this gate — an actor, so the wait is cooperative and Swift-6
+// clean (no blocked threads). The repo-hygiene lint fails any file that
+// calls mockURLSession without naming the gate.
+actor MockHTTPGate {
+    static let shared = MockHTTPGate()
+    private var busy = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func acquire() async {
+        if !busy {
+            busy = true
+            return
+        }
+        await withCheckedContinuation { waiters.append($0) }
+        // ownership transfers from the resuming releaser — busy stays true
+    }
+
+    func release() {
+        if let next = waiters.first {
+            waiters.removeFirst()
+            next.resume()
+        } else {
+            busy = false
+        }
+    }
+}
+
+func withMockHTTPGate<T>(_ body: () async throws -> T) async rethrows -> T {
+    await MockHTTPGate.shared.acquire()
+    do {
+        let value = try await body()
+        await MockHTTPGate.shared.release()
+        return value
+    } catch {
+        await MockHTTPGate.shared.release()
+        throw error
+    }
+}
+
 private func requestBodyText(_ request: URLRequest) -> String {
     if let body = request.httpBody {
         return String(data: body, encoding: .utf8) ?? ""
@@ -3595,6 +3638,7 @@ private func writeCLIJobArchive(
         headers: ["Content-Type": "application/json"],
         body: #"{"text":"测试"}"#
     )
+    await MockHTTPGate.shared.acquire()
     let session = mockURLSession(responses: [(503, "busy"), (200, "ok")])
 
     let result = await CommunicationGatewayDispatcher.dispatch(preview, session: session, retryBudget: 1)
@@ -3610,15 +3654,18 @@ private func writeCLIJobArchive(
     let redacted = CommunicationGatewayDispatcher.redactedEndpoint(preview.endpoint)
     #expect(redacted.contains("hooks.example.com"))
     #expect(!redacted.contains("secret-token-abc"))
+    await MockHTTPGate.shared.release()
 }
 
 @MainActor
 @Test func communicationGatewayDispatchWritesSentLogForReadyLocalChannel() async throws {
     let store = CompanyStore.bootstrap(loadPersisted: false)
     store.ensureCommunicationGatewayPlan()
+    await MockHTTPGate.shared.acquire()
     let session = mockURLSession(responses: [])
 
     await store.dispatchTeamLeadReportThroughGateway(session: session)
+    await MockHTTPGate.shared.release()
 
     #expect(store.selectedProductCommunicationLogs.contains { $0.title == "团队负责人手机汇报发送" && $0.status == .sent })
     #expect(store.messages(for: store.ctoID).contains { $0.text.contains("团队负责人手机汇报发送") })
