@@ -5,6 +5,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-10-05
+
+### Added — v2.9.0 "the autopilot"
+- **`opc autopilot [--cycles N] [--interval S] [--once]`** — push the
+  company forward cycle after cycle without the boss at the wheel: the
+  SAME store primitive the desktop app's autopilot button drives
+  (safety checkpoint, team, queue, blocked → approval, artifacts,
+  verification, health audit, decision memory, advance — one full
+  dispatch per cycle), one honest frame per cycle. Defaults: 4 cycles,
+  30s apart; `--once` is exactly one.
+- **The loop stops ITSELF when it needs you**: a pending approval
+  pauses the run ("the loop never decides for you"), and a cycle where
+  nothing moved ends it ("the office is quiet"). Junk knobs refuse with
+  the usage line (cycles 1–100, interval 1–3600s).
+
 ## [2.8.0] - 2026-10-05
 
 ### Fixed — v2.8.0 "the seat comes back"

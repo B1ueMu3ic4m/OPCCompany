@@ -41,6 +41,12 @@ private func usage() -> String {
       opc status                 company snapshot (products, team, tasks, approvals)
       opc goal "TEXT"            send a boss goal to the CTO (creates the chain)
       opc advance                let the CTO advance every open goal one step
+      opc autopilot [--cycles N] [--interval S] [--once]
+                                 push the company forward N cycles (default 4)
+                                 with S seconds between (default 30) — the same
+                                 dispatch the app's autopilot drives; stops
+                                 itself when an approval needs the boss or
+                                 nothing moved. Boss-side writes.
       opc report                 boss-readable progress report (current product)
       opc approvals              list pending approvals with their ids
       opc decide <id> approve|reject
@@ -163,6 +169,8 @@ struct OPC {
                 try goal(rest)
             case "advance":
                 try advance()
+            case "autopilot":
+                try autopilot(rest)
             case "report":
                 try report()
             case "approvals":
@@ -272,6 +280,75 @@ struct OPC {
             print(progressed
                   ? "CTO advanced at least one goal — run `opc status` for the new state."
                   : "Nothing to advance: no open supervisor loops, or the next step needs a real employee CLI run (start those from the desktop app, or file more goals).")
+        }
+    }
+
+    /// v2.9.0 "the autopilot": push the company forward cycle after cycle
+    /// without the boss at the wheel — the SAME store primitive the
+    /// desktop app's autopilot button drives (checkpoint, queue, blocked
+    /// → approval, artifacts, verification, health audit, memory,
+    /// advance — one full dispatch per cycle), one honest frame per
+    /// cycle. The run stops ITSELF the moment it needs you: a pending
+    /// approval pauses the loop (the terminal visitor never decides for
+    /// the boss), and a cycle where nothing moved ends it honestly.
+    /// `--cycles N` (default 4, 1–100), `--interval S` seconds between
+    /// cycles (default 30, 1–3600), `--once` = exactly one cycle.
+    @MainActor
+    static func autopilot(_ rest: [String]) throws {
+        var cycles = 4
+        var interval = 30.0
+        var index = 0
+        while index < rest.count {
+            let token = rest[index]
+            if token == "--once" {
+                cycles = 1
+            } else if token == "--cycles", index + 1 < rest.count, let parsed = Int(rest[index + 1]) {
+                cycles = parsed
+                index += 1
+            } else if token.hasPrefix("--cycles="), let parsed = Int(token.dropFirst("--cycles=".count)) {
+                cycles = parsed
+            } else if token == "--interval", index + 1 < rest.count, let parsed = Double(rest[index + 1]) {
+                interval = parsed
+                index += 1
+            } else if token.hasPrefix("--interval="), let parsed = Double(token.dropFirst("--interval=".count)) {
+                interval = parsed
+            } else {
+                throw CLIError(message: "usage: opc autopilot [--cycles N] [--interval S] [--once]")
+            }
+            index += 1
+        }
+        guard cycles >= 1, cycles <= 100 else {
+            throw CLIError(message: "usage: opc autopilot [--cycles N] [--interval S] [--once]  (cycles 1–100, default 4)")
+        }
+        guard interval >= 1, interval <= 3600 else {
+            throw CLIError(message: "usage: opc autopilot [--cycles N] [--interval S] [--once]  (interval 1–3600 seconds, default 30)")
+        }
+        try guardNoConcurrentWriter()
+        print("Autopilot — \(cycles) cycle(s), \(Int(interval))s apart. The run stops itself the moment it needs the boss; Ctrl-C stops it sooner.")
+        for cycle in 1...cycles {
+            var needsBoss = false
+            var moved = false
+            try withStore { store in
+                let statesBefore = store.tasks.map { "\($0.id):\($0.status.rawValue)" }.sorted()
+                let queueBefore = store.workQueue.filter { $0.productID == store.selectedProductID }.count
+                store.runCTOAutopilot()
+                let statesAfter = store.tasks.map { "\($0.id):\($0.status.rawValue)" }.sorted()
+                let queueAfter = store.workQueue.filter { $0.productID == store.selectedProductID }.count
+                moved = statesBefore != statesAfter || queueBefore != queueAfter
+                let pending = store.selectedProductPendingApprovals.count
+                needsBoss = pending > 0
+                print("\n── autopilot cycle \(cycle)/\(cycles) ──")
+                print(watchFrame(store))
+            }
+            if needsBoss {
+                print("\n  autopilot stops here: approval(s) are waiting on the boss — the loop never decides for you.")
+                break
+            }
+            if !moved {
+                print("\n  nothing moved this cycle — the office is quiet. stopping.")
+                break
+            }
+            if cycle < cycles { Thread.sleep(forTimeInterval: interval) }
         }
     }
 
