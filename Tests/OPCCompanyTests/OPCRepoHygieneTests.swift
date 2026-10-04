@@ -86,3 +86,24 @@ private func versionTuple(_ v: String) -> [Int] {
                 "\(file.lastPathComponent) setenvs OPC_COMPANY_SUPPORT_DIR — dead theater after the first-touch bake; use CompanyPersistence.testSupportDirectoryOverride")
     }
 }
+
+/// THE HTTP-MOCK GATE LAW: MockURLProtocol's statics are process-global
+/// and Swift Testing runs suites concurrently — a foreign reset
+/// mid-flight steals the scripted responses and wipes the recording.
+/// Any test file that calls mockURLSession must name withMockHTTPGate
+/// (or the MockHTTPGate actor directly) so its mock lifetime is
+/// serialized.
+@Test func httpMockUsersMustHoldTheGate() throws {
+    let testsDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("Tests/OPCCompanyTests")
+    let files = try FileManager.default.contentsOfDirectory(
+        at: testsDir, includingPropertiesForKeys: nil)
+        .filter { $0.pathExtension == "swift" }
+    for file in files {
+        let text = try String(contentsOf: file, encoding: .utf8)
+        let uses = text.contains("mockURLSession(")
+        let gated = text.contains("MockHTTPGate")
+        #expect(!uses || gated,
+                "\(file.lastPathComponent) calls mockURLSession without the MockHTTPGate — a foreign reset can steal the scripted responses mid-flight")
+    }
+}
