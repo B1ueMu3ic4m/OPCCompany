@@ -105,6 +105,7 @@ swift build -c release --product opc
 .build/release/opc status                 # team, task histogram, approvals
 .build/release/opc goal "refactor X"      # hand a boss goal to the CTO
 .build/release/opc advance                # CTO pushes every open loop one step
+.build/release/opc autopilot              # v2.9 the loop: N full dispatches, stops itself when an approval needs the boss
 .build/release/opc report                 # boss-readable progress report
 .build/release/opc approvals              # pending approvals, with their ids
 .build/release/opc decide <id> approve    # resolve one — refuses stale/double taps
