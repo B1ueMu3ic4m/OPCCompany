@@ -79,6 +79,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   late final OpcBridge _bridge = widget.bridge ?? OpcBridge();
   final TextEditingController _goalController = TextEditingController();
   final FocusNode _goalFocus = FocusNode();
+  // v1.16 the checkpoint door: the reason IS the record — the boss
+  // types why, the button files it verbatim.
+  final TextEditingController _checkpointField = TextEditingController();
   OpcSnapshot? _snap;
   String? _lastAction;
   // v0.6.0 decision ledger (v1.4 history_list): event-driven exactly like
@@ -177,6 +180,7 @@ class _CompanyHomeState extends State<CompanyHome> {
     _goalController.dispose();
     _goalFocus.dispose();
     _steerField.dispose();
+    _checkpointField.dispose();
     _transcriptScroll.dispose();
     _bridge.stop();
     super.dispose();
@@ -308,6 +312,20 @@ class _CompanyHomeState extends State<CompanyHome> {
     });
   }
 
+  /// v1.16 the checkpoint door: the reason IS the record — an empty
+  /// field refuses locally (nothing sent, nothing pretended); the
+  /// verbatim refusal or the ok lands in the status line, and every
+  /// door reloads after the write.
+  void _fileCheckpoint() {
+    final reason = _checkpointField.text.trim();
+    if (reason.isEmpty) {
+      setState(() => _lastAction = 'checkpoint: empty — a checkpoint needs its reason');
+      return;
+    }
+    _runWrite('checkpoint', () => _bridge.checkpoint(reason));
+    _checkpointField.clear();
+  }
+
   void _sendGoal() {
     final text = _goalController.text.trim();
     if (text.isEmpty) {
@@ -383,6 +401,7 @@ class _CompanyHomeState extends State<CompanyHome> {
         child: Row(children: [
           Expanded(
             child: TextField(
+              key: const ValueKey('goal-field'),
               controller: _goalController,
               focusNode: _goalFocus,
               onSubmitted: (_) => _sendGoal(),
@@ -647,6 +666,31 @@ class _CompanyHomeState extends State<CompanyHome> {
                 onPressed: () => _runWrite('autopilot', _bridge.autopilot),
                 icon: const Icon(Icons.auto_mode),
                 label: const Text('Autopilot — one full dispatch'),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const ValueKey('checkpoint-field'),
+                      controller: _checkpointField,
+                      style: const TextStyle(fontSize: 12),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                        hintText: 'Why this checkpoint…',
+                      ),
+                      onSubmitted: (_) => _fileCheckpoint(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    key: const ValueKey('checkpoint-button'),
+                    onPressed: _fileCheckpoint,
+                    icon: const Icon(Icons.backup_outlined),
+                    label: const Text('Checkpoint'),
+                  ),
+                ],
               ),
             ],
           ),

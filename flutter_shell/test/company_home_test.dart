@@ -96,7 +96,7 @@ void main() {
     await tester.pumpWidget(_app(fake.asBridge()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'ship v1');
+    await tester.enterText(find.byKey(const ValueKey('goal-field')), 'ship v1');
     await tester.tap(find.text('Send'));
     await tester.pumpAndSettle();
 
@@ -108,7 +108,7 @@ void main() {
     expect(find.textContaining('goal "ship v1": ok'), findsOneWidget);
     // the input clears after a successful send (read the controller itself:
     // typed text is not findable as a Text widget)
-    final field = tester.widget<TextField>(find.byType(TextField));
+    final field = tester.widget<TextField>(find.byKey(const ValueKey('goal-field')));
     expect(field.controller!.text, isEmpty);
     expect(fake.unfreed, isEmpty);
   });
@@ -139,7 +139,7 @@ void main() {
     fake.nextCommandResult = OpcBridge.refused;
     fake.nextError = 'snapshot is shared with the desktop app';
 
-    await tester.enterText(find.byType(TextField), 'nope');
+    await tester.enterText(find.byKey(const ValueKey('goal-field')), 'nope');
     await tester.tap(find.text('Send'));
     await tester.pumpAndSettle();
 

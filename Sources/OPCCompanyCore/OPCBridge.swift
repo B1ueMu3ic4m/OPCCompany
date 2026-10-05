@@ -184,6 +184,21 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     try OPCWriteGuard.ensureExclusiveAccess()
                     _ = store.advanceCTOSupervisorLoop()
                     store.saveSnapshot()
+                case "checkpoint":
+                    // v1.16 the shell's checkpoint: file a safety
+                    // checkpoint with the boss's reason. The checked
+                    // facade reads the verdict — a checkpoint that
+                    // failed to land refuses (rc=-1, reason rides
+                    // last_error) instead of pretending. Boss-side
+                    // write: honors the cross-process writer guard.
+                    guard let reason = payload["reason"] as? String,
+                          !reason.trimmingCharacters(in: .whitespaces).isEmpty else {
+                        throw OPCBridgeRefusal(message: "checkpoint requires a non-empty reason")
+                    }
+                    try OPCWriteGuard.ensureExclusiveAccess()
+                    guard store.createSafetyCheckpointChecked(reason: reason) else {
+                        throw OPCBridgeRefusal(message: "checkpoint failed to land — the risk event names the error")
+                    }
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

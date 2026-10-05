@@ -57,3 +57,56 @@ extension OPCBridgeABIDoorTests {
         #expect(opc_bridge_command(sv, nil) == 0)
     }
 }
+
+
+extension OPCBridgeABIDoorTests {
+
+    @MainActor
+    @Test func bridgeCheckpointFilesWithTheBossReasonOverRealABI() throws {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("opc-bridge-checkpoint-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        CompanyPersistence.testSupportDirectoryOverride = tmp
+        defer {
+            CompanyPersistence.testSupportDirectoryOverride = nil
+            try? FileManager.default.removeItem(at: tmp)
+        }
+        CompanyStore.bootstrap(loadPersisted: false).saveSnapshot()
+
+        #expect(opc_bridge_create() == 0)
+        defer { opc_bridge_destroy() }
+
+        func command(_ payload: [String: Any]) throws -> (Int32, String) {
+            let data = try JSONSerialization.data(withJSONObject: payload)
+            let p = strdup(String(decoding: data, as: UTF8.self))
+            defer { free(p) }
+            let verb = strdup("checkpoint")
+            defer { free(verb) }
+            let rc = opc_bridge_command(verb, p)
+            return (rc, String(cString: opc_bridge_last_error()!))
+        }
+
+        // a landed checkpoint: rc=0, and the archive exists on disk
+        let (rc, _) = try command(["reason": "before the jump"])
+        #expect(rc == 0)
+        let archives = try FileManager.default.contentsOfDirectory(
+            at: tmp.appendingPathComponent("checkpoints", isDirectory: true),
+            includingPropertiesForKeys: nil)
+        #expect(archives.count == 1, "the archive actually landed")
+
+        // an empty reason refuses before any write
+        let (rcEmpty, msgEmpty) = try command(["reason": "   "])
+        #expect(rcEmpty == -1)
+        #expect(msgEmpty.contains("non-empty reason"), "\(msgEmpty)")
+
+        // a missing reason refuses too
+        let (rcMissing, msgMissing) = try command([:])
+        #expect(rcMissing == -1)
+        #expect(msgMissing.contains("non-empty reason"), "\(msgMissing)")
+
+        // neighbors stay shut
+        let junk = strdup("checkpointx")
+        defer { free(junk) }
+        #expect(opc_bridge_command(junk, nil) == -1)
+    }
+}

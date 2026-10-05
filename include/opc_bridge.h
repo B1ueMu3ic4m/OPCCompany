@@ -210,6 +210,16 @@ char *opc_bridge_snapshot_json(void);
  *       its one honest placeholder line. Pure read, same guard silence
  *       as approvals_list. The CLI's `transcript --json` serves THESE
  *       EXACT bytes.
+ *   "checkpoint" {"reason":"<text>"}      (v1.16)
+ *       rc=0 → a safety checkpoint filed with the boss's reason — the
+ *       SAME store primitive the app runs before every risky
+ *       operation (cleanup, reset, product deletion, autopilot) and
+ *       `opc checkpoint <reason>` drives. The reason rides the record
+ *       verbatim. Honors the cross-process writer guard. rc=-1 with a
+ *       reason in last_error: empty/missing reason, or the checkpoint
+ *       failed to land (the checked facade reads the store's verdict —
+ *       no silent no-ops). Archives carry a short UUID suffix, so
+ *       same-second checkpoints never overwrite each other.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety

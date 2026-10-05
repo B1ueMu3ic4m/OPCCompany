@@ -92,6 +92,12 @@ class FakeOpcBridge {
   String? autopilotRefusal;
   int autopilotCalls = 0;
 
+  /// v1.16 the shell's checkpoint: null => success; a string => the
+  /// verbatim refusal. Every (reason) ask is recorded in
+  /// [checkpointReasons].
+  String? checkpointRefusal;
+  List<String> checkpointReasons = [];
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
@@ -174,6 +180,22 @@ class FakeOpcBridge {
       final refusal = verb == 'seat_spawn' ? seatSpawnRefusal : seatStopRefusal;
       if (refusal != null) {
         nextError = refusal;
+        return -1;
+      }
+      nextError = '';
+      return rc;
+    }
+    // v1.16 the shell's checkpoint: a write — '' on success, refusal
+    // verbatim; the reason is recorded either way.
+    if (verb == 'checkpoint') {
+      final reason = payload['reason'];
+      if (reason is! String || reason.trim().isEmpty) {
+        nextError = 'checkpoint requires a non-empty reason';
+        return -1;
+      }
+      checkpointReasons.add(reason);
+      if (checkpointRefusal != null) {
+        nextError = checkpointRefusal!;
         return -1;
       }
       nextError = '';
