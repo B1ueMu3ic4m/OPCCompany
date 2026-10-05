@@ -38,6 +38,7 @@ handles — both directions.
 | Decide | `decideApprovalChecked` | `decide` | v1.0 | `opc decide` | ✓ popover | ✓ |
 | Product select | product switch | `product_select` | v1.0 | `opc use` | ✓ sidebar | ✓ |
 | Save | snapshot persist | `save` | v1.0 | (every write) | ✓ | ✓ |
+| Autopilot dispatch | `runCTOAutopilot()` | `autopilot` | v1.15 | `opc autopilot` (cycles + honest stops) | ✓ button | ✓ button |
 | **Steering** | `terminalSendLine` | `terminal_send` | v1.11 | `opc tell` (+ `-` stdin, v2.4.0) | ✓ send line (v2.1.0) | ✓ input (v0.18) |
 | Seat spawn/stop | `spawnLocalSeat`/`stopLocalSeat` | `seat_spawn` / `seat_stop` | v1.12 | — (deliberate: pipe seats belong to a long-lived office) | — (tmux seats are the macOS shape) | ✓ toggle (v2.0.0) |
 | Seat roster | `localSeatStatuses()` | `seat_list` | v1.13 | — (a visitor sees no seats) | — | ✓ drives the toggle (v2.3.0) |
