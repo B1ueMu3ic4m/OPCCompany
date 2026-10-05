@@ -417,7 +417,8 @@ extension CompanyStore {
     public func createSafetyCheckpoint(reason: String) {
         let directory = CompanyPersistence.stateURL.deletingLastPathComponent().appendingPathComponent("checkpoints", isDirectory: true)
         let formatter = ISO8601DateFormatter()
-        let fileName = "checkpoint-\(formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")).json"
+        // 秒级 ISO 时间戳会同秒相撞、静默互相覆盖——补 8 位短 UUID（v2.12.0）。
+        let fileName = "checkpoint-\(formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-"))-\(UUID().uuidString.prefix(8)).json"
         let url = directory.appendingPathComponent(fileName)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -431,6 +432,19 @@ extension CompanyStore {
             appendEvent(kind: .risk, title: "安全检查点失败".L().L(), detail: error.localizedDescription, agentID: ctoID)
         }
         saveSnapshot()
+    }
+
+    /// v2.12.0 the checkpoint door's checked facade: files the checkpoint
+    /// and reports whether it actually LANDED — the create path reports
+    /// failure through a verification record, not a throw, so the CLI
+    /// (and any future bridge surface) must read the verdict here to
+    /// stay honest. One rule, one place — no silent no-ops.
+    @discardableResult
+    public func createSafetyCheckpointChecked(reason: String) -> Bool {
+        let verificationsBefore = verifications.count
+        createSafetyCheckpoint(reason: reason)
+        guard verifications.count > verificationsBefore else { return false }
+        return verifications.first?.status == .passed
     }
 
     public func persistentTerminalOutputDeltaPreviewForTesting(before baseline: String, after latest: String, inputEcho: String? = nil) -> String {

@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-10-06
+
+### Added — v2.12.0 "the checkpoint door"
+- **`opc checkpoint <reason>`** — file a safety checkpoint from the
+  terminal: the SAME store primitive the app runs before every risky
+  operation (cleanup, reset, product deletion, autopilot). The reason
+  rides the record verbatim; the output counts the archives on disk;
+  an empty reason refuses.
+- **`createSafetyCheckpointChecked`** — the checked facade: the create
+  path reports failure through a verification record rather than a
+  throw, so the CLI reads the verdict in one place and a checkpoint
+  that failed to land exits nonzero instead of pretending. No silent
+  no-ops.
+
 ## [2.11.0] - 2026-10-06
 
 ### Added — v2.11.0 "at desk"
