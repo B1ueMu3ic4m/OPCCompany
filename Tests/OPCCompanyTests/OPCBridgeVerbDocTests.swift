@@ -76,3 +76,24 @@ private func handledSwitchVerbs() throws -> Set<String> {
     #expect(unimplemented.isEmpty,
             "documented in opc_bridge.h but NOT handled in OPCBridge: \(unimplemented.sorted())")
 }
+
+
+/// The FOURTH docs-drift gate: the door map must QUOTE every bridge
+/// verb. include/opc_bridge.h is the wire contract and DOORS.md is the
+/// surface index — a verb the map forgot is a door nobody knows about.
+/// One direction only: every h verb must appear backticked in
+/// docs/DOORS.md (the map may legitimately quote CLI/store symbols the
+/// bridge doesn't know).
+@Test func doorsDocQuotesEveryBridgeVerb() throws {
+    let doorsURL = packageRootURL().appendingPathComponent("docs/DOORS.md")
+    guard FileManager.default.fileExists(atPath: doorsURL.path) else {
+        throw BridgeVerbDocError(message: "docs/DOORS.md not found")
+    }
+    let doors = try String(contentsOf: doorsURL, encoding: .utf8)
+    let verbs = try documentedHeaderVerbs()
+    #expect(verbs.count >= 15, "the verb extraction broke — refusing to lint an empty set")
+    for verb in verbs.sorted() {
+        #expect(doors.contains("`\(verb)`"),
+                "DOORS.md never quotes the bridge verb `\(verb)` — add it to the read/write doors table")
+    }
+}
