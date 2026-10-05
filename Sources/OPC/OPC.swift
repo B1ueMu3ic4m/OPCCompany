@@ -103,6 +103,9 @@ private func usage() -> String {
       opc products               list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
+      opc checkpoint <reason>    file a safety checkpoint — the same primitive
+                                 the app runs before risky operations; the
+                                 reason rides the record verbatim
 
     Read commands (status, approvals, history, deliverables, standup,
     team, stalls, catchup) accept --json: machine-readable output,
@@ -203,6 +206,8 @@ struct OPC {
                 try products()
             case "use":
                 try use(rest)
+            case "checkpoint":
+                try checkpoint(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -914,6 +919,33 @@ struct OPC {
                 let marker = p.id == store.selectedProductID ? "*" : " "
                 print("  \(marker) \(p.id.uuidString)  \(p.name)  [\(p.stage.title)]")
             }
+        }
+    }
+
+    /// v2.12.0 "the checkpoint door": the boss files a safety checkpoint
+    /// from the terminal — the same store primitive the app runs before
+    /// every risky operation (cleanup, reset, product deletion,
+    /// autopilot). The reason rides the record verbatim; an empty reason
+    /// refuses; a checkpoint that failed to land reports failure and
+    /// exits nonzero (the checked facade reads the verdict — no silent
+    /// no-ops). Boss-side write.
+    @MainActor
+    static func checkpoint(_ rest: [String]) throws {
+        let reason = rest.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        guard !reason.isEmpty else {
+            throw CLIError(message: "usage: opc checkpoint <reason>  (e.g. `opc checkpoint before migrating the task graph`)")
+        }
+        try guardNoConcurrentWriter()
+        try withStore { store in
+            guard store.createSafetyCheckpointChecked(reason: reason) else {
+                throw CLIError(message: "checkpoint failed to land — the risk event names the error")
+            }
+            let dir = CompanyPersistence.stateURL.deletingLastPathComponent()
+                .appendingPathComponent("checkpoints", isDirectory: true)
+            let count = (try? FileManager.default.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: nil))?
+                .filter { $0.lastPathComponent.hasPrefix("checkpoint-") }.count ?? 0
+            print("✓ checkpoint filed (\(count) on disk) — reason: \(reason)")
         }
     }
 
