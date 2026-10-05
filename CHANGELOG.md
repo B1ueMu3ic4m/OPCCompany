@@ -5,6 +5,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-10-06
+
+### Added — v2.11.0 "at desk"
+- **The terminal hall's「在座」chip**: the overview now shows how many
+  employees have a physically open tmux window RIGHT NOW — the same
+  truth `opc watch`'s seats line prints, as a hall metric. The chip
+  appears only when the workspace session actually exists; a machine
+  without tmux renders no constant-zero seat chip (noise is not
+  honesty).
+- **The throttle that un-defers it**: the probes (one `list-windows` +
+  one `tmux ls`) run at most once per 5 seconds and the cached state
+  serves every render in between — per-render process probes were the
+  reason this metric sat in the deferred pile. The injectable twin
+  verifies the throttle with synthetic probes and a synthetic clock: no
+  real tmux, no sleeps.
+
 ## [2.10.0] - 2026-10-05
 
 ### Added — v2.10.0 "the shell's autopilot"

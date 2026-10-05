@@ -137,6 +137,14 @@ static let agentMessageBodyTextLimit = 2_400
     /// fact ONLY — never persisted, never guessed across restarts; the
     /// transcript persists separately via the per-seat log keys.
     var localSeatProcesses: [UUID: OPCLocalSeatProcess] = [:]
+    // v2.11.0 the hall "at desk" chip's throttle: the open-windows probes
+    // run at most once per TTL; the cached state serves every render in
+    // between (per-render tmux probes were why this metric sat deferred).
+    struct TerminalOpenWindowsCache {
+        let state: (agentIDs: Set<UUID>, sessionRunning: Bool)
+        let probedAt: Date
+    }
+    var terminalOpenWindowsCache: TerminalOpenWindowsCache?
     var persistSnapshot: (CompanySnapshot) -> Result<Void, Error> = CompanyPersistence.save
     /// 测试可注入的 Keychain 写入闭包，默认走真实 `OPCKeychainStore.saveAPIKey`。
     /// 与 `persistSnapshot` 同模式：把 OSStatus 透出后，store 把非 `errSecSuccess` 转换成
