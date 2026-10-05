@@ -386,6 +386,17 @@ class OpcBridge {
   /// v1.12: stop the agent's local seat. '' = success, else the reason.
   String seatStop(String agentID) => _seatWrite('seat_stop', agentID);
 
+  /// v1.16 the shell's checkpoint: file a safety checkpoint with the
+  /// boss's reason — the same primitive the app runs before every
+  /// risky operation. '' = success, otherwise the verbatim refusal
+  /// (empty reason, or the checkpoint failed to land).
+  String checkpoint(String reason) {
+    final rc = command('checkpoint', {'reason': reason});
+    if (rc == ok) return '';
+    final r = lastError();
+    return r.isEmpty ? 'checkpoint refused' : r;
+  }
+
   /// v1.15 the shell's autopilot: ONE full store dispatch per call —
   /// the same primitive the desktop app's button and `opc autopilot`
   /// drive. '' = success, otherwise the verbatim refusal. A repeating

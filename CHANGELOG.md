@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-10-06
+
+### Added — v2.13.0 "the shell's checkpoint"
+- **Bridge verb `checkpoint` (contract v1.16)** — file a safety
+  checkpoint with the boss's reason from any surface. Honors the
+  cross-process writer guard; the checked facade reads the verdict, so
+  a checkpoint that failed to land refuses (rc=-1) instead of
+  pretending. Empty/missing reasons refuse before any write.
+- **Flutter shell: the reason field + Checkpoint button** — the reason
+  IS the record: an empty field refuses locally with ZERO bridge
+  traffic; the verbatim refusal (or the ok) lands in the status line
+  through the same `_runWrite` pipeline; every door reloads after the
+  write.
+
 ## [2.12.0] - 2026-10-06
 
 ### Added — v2.12.0 "the checkpoint door"
