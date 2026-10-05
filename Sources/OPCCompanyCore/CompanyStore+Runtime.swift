@@ -24,20 +24,57 @@ extension CompanyStore {
         let pendingApprovals = selectedProductApprovals.filter { $0.status == .pending }.count
         let blocked = selectedProductTasks.filter { [.blocked, .failed, .needsApproval].contains($0.status) }.count
         let recentRisks = selectedProductEvents.filter { $0.kind == .risk }.prefix(5).count
+        let openWindows = terminalHallOpenWindowState()
         var metrics: [TerminalHallOverviewMetric] = [
             TerminalHallOverviewMetric(title: "团队".L().L(), value: team, kind: .neutral),
             TerminalHallOverviewMetric(title: "运行中".L().L(), value: running, kind: running > 0 ? .ok : .neutral),
+        ]
+        // v2.11.0「在座」chip：只有工作区会话真实存在时才出现——没装 tmux
+        // 的机器上渲染一个恒为 0 的席位 chip 是噪音，不是诚实。
+        if openWindows.sessionRunning {
+            metrics.append(TerminalHallOverviewMetric(title: "在座".L().L(), value: openWindows.agentIDs.count, kind: openWindows.agentIDs.isEmpty ? .neutral : .ok))
+        }
+        metrics.append(contentsOf: [
             TerminalHallOverviewMetric(title: "待审批".L().L(), value: pendingApprovals, kind: pendingApprovals > 0 ? .warning : .neutral),
             TerminalHallOverviewMetric(title: "阻塞/失败".L().L(), value: blocked, kind: blocked > 0 ? .danger : .neutral),
             TerminalHallOverviewMetric(title: "最近风险".L().L(), value: recentRisks, kind: recentRisks > 0 ? .danger : .neutral)
-        ]
+        ])
         // 健康预警 chip：当且仅当当前产品有员工处于轮 4 徽章可见状态（attention）时追加；
-        // 默认情况（无 attention 员工）保持 5 个 chip 不变，避免常规场景下挤压窄屏卡片。
+        // 默认情况（无 attention 员工）保持基础 chip 不变，避免常规场景下挤压窄屏卡片。
         let attentionCount = terminalHallOverviewAttentionAgentCount()
         if attentionCount > 0 {
             metrics.append(TerminalHallOverviewMetric(title: "健康预警".L().L(), value: attentionCount, kind: .danger))
         }
         return metrics
+    }
+
+    /// v2.11.0 the hall's "at desk" chip feed: how many employees have a
+    /// physically open tmux window RIGHT NOW, and whether the workspace
+    /// session exists at all — fed by ONE `list-windows` probe + ONE
+    /// `tmux ls` probe, THROTTLED: the probes run at most once per `ttl`
+    /// (5s) and the cached state serves every render in between.
+    /// Per-render process probes were the reason this metric sat in the
+    /// deferred pile; the throttle is the layer that un-defers it. A
+    /// machine without tmux answers `sessionRunning == false` and the
+    /// chip stays hidden — honest, same contract as `opc watch`'s seats
+    /// line.
+    public func terminalHallOpenWindowState(now: Date = Date(), ttl: TimeInterval = 5) -> (agentIDs: Set<UUID>, sessionRunning: Bool) {
+        terminalHallOpenWindowState(now: now, ttl: ttl,
+                                    probe: { openTerminalWindowAgentIDs() },
+                                    sessionProbe: { terminalWorkspaceSessionIsRunning() })
+    }
+
+    /// The injectable twin: tests drive synthetic probes and a synthetic
+    /// clock, so the throttle is verified without real tmux or sleeps.
+    func terminalHallOpenWindowState(now: Date, ttl: TimeInterval,
+                                     probe: () -> Set<UUID>,
+                                     sessionProbe: () -> Bool) -> (agentIDs: Set<UUID>, sessionRunning: Bool) {
+        if let cached = terminalOpenWindowsCache, now.timeIntervalSince(cached.probedAt) < ttl {
+            return cached.state
+        }
+        let state = (probe(), sessionProbe())
+        terminalOpenWindowsCache = TerminalOpenWindowsCache(state: state, probedAt: now)
+        return state
     }
     /// 当前产品所有员工里有多少处于「需要技术负责人注意」状态。
     /// 复用轮 4 `terminalAgentCardHealthBadge(for:)` 数据源；徽章 nil 的员工（OK / unknown / API/local）

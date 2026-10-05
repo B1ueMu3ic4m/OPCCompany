@@ -1246,6 +1246,7 @@
     "团队负责人理解手机端指令，拆解下一步并向老板汇报；涉及高风险操作时必须回到老板审批。": "The team lead understands the phone command, breaks down next steps and reports to the boss; high-risk operations always return to boss approval.",
     "团队负责人：": "Team lead: ",
     "团队运行": "Team Operations",
+    "在座": "At desk",
     "在明确范围内改代码、修问题、跑验证，并把改动结果说清楚": "Change code, fix issues and run verification within an explicit scope; explain the outcome clearly.",
     "在终端大厅运行闭环演练或启动技术负责人协作目标后，这里会显示可审核链路。": "Run a closed-loop drill in the Terminal Hall or start a CTO collaboration goal, and auditable links will appear here.",
     "基于当前提示词与员工配置重新生成运行前预检文本。": "Regenerate the preflight text from the current prompt and employee config.",
