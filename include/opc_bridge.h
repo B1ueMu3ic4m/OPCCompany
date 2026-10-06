@@ -220,6 +220,17 @@ char *opc_bridge_snapshot_json(void);
  *       failed to land (the checked facade reads the store's verdict —
  *       no silent no-ops). Archives carry a short UUID suffix, so
  *       same-second checkpoints never overwrite each other.
+ *   "desk" {"agentID":"<uuid>"}          (v1.17)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       (.sortedKeys byte-stable): one employee's working surface —
+ *       {agentID, displayName, role, onTeam, session|null,
+ *       profileChips:[{label,value}], assignedTasks, workQueue,
+ *       pendingInboxCount, pendingInbox} — composed from the SAME
+ *       accessors the macOS agent desk renders. payload: agentID
+ *       (UUID, required). rc=-1 with a reason in last_error: not a
+ *       UUID or no such agent. Pure read, same guard silence as
+ *       approvals_list. The CLI's `desk --json` serves THESE EXACT
+ *       bytes.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety

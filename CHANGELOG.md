@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-10-07
+
+### Added — v2.14.0 "the desk door"
+- **`opc desk <agent> [--json]`** — one employee's working surface from
+  the visitor's seat: profile chips, runtime session, assigned tasks,
+  work queue, pending inbox — composed from the SAME accessors the
+  macOS agent desk renders, so no surface grows a second opinion. The
+  agent is named by uuid or exact display name; ambiguity refuses.
+- **Bridge verb `desk` (contract v1.17)** — the same composition
+  through the smuggle channel, `.sortedKeys` byte-stable, documented in
+  `opc_bridge.h`. `opc desk --json` serves these exact bytes. Unknown
+  ids refuse. Pure read: the in-memory selection the composition needs
+  is never saved.
+
 ## [2.13.0] - 2026-10-06
 
 ### Added — v2.13.0 "the shell's checkpoint"
