@@ -107,6 +107,7 @@ swift build -c release --product opc
 .build/release/opc advance                # CTO pushes every open loop one step
 .build/release/opc autopilot              # v2.9 the loop: N full dispatches, stops itself when an approval needs the boss
 .build/release/opc checkpoint <reason>    # v2.12 file a safety checkpoint — the app's own risky-operation primitive
+.build/release/opc checkpoints            # v2.15 list the safety checkpoints on disk, newest first
 .build/release/opc desk <agent>           # v2.14 one employee's working surface — chips, session, tasks, queue, inbox
 .build/release/opc report                 # boss-readable progress report
 .build/release/opc approvals              # pending approvals, with their ids

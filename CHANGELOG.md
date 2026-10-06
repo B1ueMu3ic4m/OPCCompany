@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.15.0] - 2026-10-07
+
+### Added — v2.15.0 "the archive list"
+- **`opc checkpoints`** — what safety checkpoints exist on disk,
+  newest first: the same text the app's maintenance sheet renders.
+  An empty office answers its honest placeholder instead of inventing
+  archives. Pure read by construction.
+
 ## [2.14.0] - 2026-10-07
 
 ### Added — v2.14.0 "the desk door"

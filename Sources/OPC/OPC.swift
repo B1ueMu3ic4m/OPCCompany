@@ -109,6 +109,8 @@ private func usage() -> String {
       opc checkpoint <reason>    file a safety checkpoint — the same primitive
                                  the app runs before risky operations; the
                                  reason rides the record verbatim
+      opc checkpoints            list the safety checkpoints on disk, newest
+                                 first. Pure read.
 
     Read commands (status, approvals, history, deliverables, standup,
     team, stalls, catchup) accept --json: machine-readable output,
@@ -213,6 +215,8 @@ struct OPC {
                 try use(rest)
             case "checkpoint":
                 try checkpoint(rest)
+            case "checkpoints":
+                try checkpoints(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -927,7 +931,17 @@ struct OPC {
         }
     }
 
-    /// v2.14.0 "the desk door": one employee's working surface from the
+    /// v2.15.0 "the archive list": what safety checkpoints exist on
+    /// disk, newest first — the same text the app's maintenance sheet
+    /// renders. Pure read by construction.
+    @MainActor
+    static func checkpoints(_ rest: [String]) throws {
+        try withStore { store in
+            print(store.safetyCheckpointListText())
+        }
+    }
+
+    /// v2.14.0 "the desk door":    /// v2.14.0 "the desk door": one employee's working surface from the
     /// visitor's seat — profile chips, session, assigned tasks, work
     /// queue, pending inbox — the SAME accessors the macOS agent desk
     /// renders, composed once. The agent may be named by uuid or exact
