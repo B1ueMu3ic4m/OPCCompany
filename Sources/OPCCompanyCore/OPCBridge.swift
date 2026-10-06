@@ -199,6 +199,21 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     guard store.createSafetyCheckpointChecked(reason: reason) else {
                         throw OPCBridgeRefusal(message: "checkpoint failed to land — the risk event names the error")
                     }
+                case "desk":
+                    // v1.17 the agent desk: one employee's working
+                    // surface — profile chips, session, assigned tasks,
+                    // work queue, pending inbox — as a JSON OBJECT
+                    // riding the smuggle channel, composed from the
+                    // SAME accessors the macOS agent desk renders.
+                    // payload: agentID (UUID, required). Pure read; an
+                    // unknown id refuses.
+                    guard let idString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "desk requires a UUID agentID")
+                    }
+                    let data = try store.deskJSON(agentID: agentID)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

@@ -193,4 +193,42 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: object,
                                           options: [.sortedKeys])
     }
+
+    /// The agent desk as an OBJECT (bridge v1.17 `desk`): one employee's
+    /// working surface — profile chips, session, assigned tasks, work
+    /// queue, pending inbox — composed from the SAME accessors the
+    /// macOS agent desk renders, so no surface grows a second opinion.
+    /// Unknown ids refuse. Pure read.
+    public func deskJSON(agentID: UUID) throws -> Data {
+        guard let agent = agents.first(where: { $0.id == agentID }) else {
+            throw OPCBridgeRefusal(message: "desk: no agent with id \(agentID.uuidString)")
+        }
+        let tasks = selectedProductTasks.filter { $0.ownerID == agentID }
+        let queue = selectedProductWorkQueue.filter { $0.agentID == agentID }
+        let inbox = selectedAgentRecentProductMessages.filter { $0.toAgentID == agentID && $0.status == .pending }
+        var object: [String: Any] = [
+            "agentID": agentID.uuidString,
+            "displayName": agent.displayName,
+            "role": agent.role.title,
+            "onTeam": isAgentAssignedToSelectedProduct(agentID),
+            "profileChips": agentDeskProfileChips(forAgentID: agentID).map { ["label": $0.label, "value": $0.value] },
+            "assignedTasks": tasks.map { ["taskID": $0.id.uuidString, "title": $0.title, "status": $0.status.rawValue] },
+            "workQueue": queue.map { ["itemID": $0.id.uuidString, "taskID": $0.taskID.uuidString, "status": $0.status.rawValue, "promptPreview": $0.promptPreview] },
+            "pendingInboxCount": inbox.count,
+            "pendingInbox": inbox.prefix(3).map { message -> [String: Any] in
+                var row: [String: Any] = ["subject": message.subject, "kind": message.kind.rawValue]
+                if let from = agents.first(where: { $0.id == message.fromAgentID }) {
+                    row["from"] = from.displayName
+                }
+                return row
+            },
+        ]
+        if let session = runtimeSession(for: agentID) {
+            object["session"] = ["state": session.state.title, "capability": session.capability.title]
+        } else {
+            object["session"] = NSNull()
+        }
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
 }

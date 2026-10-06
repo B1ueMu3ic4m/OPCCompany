@@ -82,6 +82,9 @@ private func usage() -> String {
                                  GUI quotes, restamped with the wall clock.
                                  Pure read. `opc watch --once` renders one
                                  frame and exits.
+      opc desk <agent> [--json]  one employee's working surface — chips,
+                                 session, assigned tasks, work queue,
+                                 pending inbox. Pure read.
       opc transcript <agent> [--tail N] [--json]
                                  read an employee's visible terminal log —
                                  the same product-scoped, sanitized text
@@ -202,6 +205,8 @@ struct OPC {
                 try watch(rest)
             case "transcript":
                 try transcript(rest)
+            case "desk":
+                try desk(rest)
             case "products":
                 try products()
             case "use":
@@ -918,6 +923,61 @@ struct OPC {
             for p in store.products {
                 let marker = p.id == store.selectedProductID ? "*" : " "
                 print("  \(marker) \(p.id.uuidString)  \(p.name)  [\(p.stage.title)]")
+            }
+        }
+    }
+
+    /// v2.14.0 "the desk door": one employee's working surface from the
+    /// visitor's seat — profile chips, session, assigned tasks, work
+    /// queue, pending inbox — the SAME accessors the macOS agent desk
+    /// renders, composed once. The agent may be named by uuid or exact
+    /// display name; ambiguity refuses. \`--json\` serves the bridge
+    /// \`desk\` verb's exact bytes. Pure read — the in-memory selection
+    /// the composition needs is never saved.
+    @MainActor
+    static func desk(_ rest: [String]) throws {
+        var json = false
+        var positional: [String] = []
+        for token in rest {
+            if token == "--json" { json = true } else { positional.append(token) }
+        }
+        guard let key = positional.first else {
+            throw CLIError(message: "usage: opc desk <agent> [--json]  (agent: uuid or exact display name; roster: opc team)")
+        }
+        try withStore { store in
+            let agent = try resolveAgent(store, key)
+            let data = try store.deskJSON(agentID: agent.id)
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let desk = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+            print("\(agent.displayName) — desk (\(agent.role.title))")
+            for chip in desk["profileChips"] as? [[String: Any]] ?? [] {
+                let label = chip["label"] as? String ?? "?"
+                if label == "会话" || label == "保活" { continue } // 专用会话段落覆盖
+                print("  \(label): \(chip["value"] ?? "?")")
+            }
+            if let session = desk["session"] as? [String: Any] {
+                print("  会话: \(session["state"] ?? "?") · \(session["capability"] ?? "?")")
+            } else {
+                print("  会话: 未运行")
+            }
+            let tasks = desk["assignedTasks"] as? [[String: Any]] ?? []
+            print("  assigned tasks: \(tasks.count)")
+            for task in tasks.prefix(5) {
+                print("    · [\(task["status"] ?? "?")] \(task["title"] ?? "?")")
+            }
+            let queue = desk["workQueue"] as? [[String: Any]] ?? []
+            print("  work queue: \(queue.count)")
+            for item in queue.prefix(5) {
+                print("    · [\(item["status"] ?? "?")] \(item["promptPreview"] ?? "?")")
+            }
+            if let pending = desk["pendingInboxCount"] as? Int {
+                print("  pending inbox: \(pending)")
+                for message in desk["pendingInbox"] as? [[String: Any]] ?? [] {
+                    print("    · \(message["from"] ?? "?") → \(message["subject"] ?? "?")")
+                }
             }
         }
     }
