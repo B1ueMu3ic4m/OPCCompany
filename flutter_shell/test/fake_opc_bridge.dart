@@ -102,6 +102,11 @@ class FakeOpcBridge {
   String? checkpointRefusal;
   List<String> checkpointReasons = [];
 
+  /// v1.19 the goal ledger: null => the default one-goal ledger below.
+  /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
+  /// row) and pin the wrapper's wholesale refusal.
+  List<dynamic>? goalsListResult;
+
   /// v1.18 the doctor door: null => the default honest healthy-office
   /// report below. Typed dynamic so tests can script a MALFORMED payload
   /// (a non-String contractVersion) and pin the wrapper's wholesale
@@ -314,6 +319,32 @@ class FakeOpcBridge {
       // v1.13 seat roster: a {uuid: bool} object rides the smuggle channel
       'seat_list' => seatListResult ?? const <String, bool>{},
       // v1.18 the doctor: the facts object rides the same smuggle channel
+      'goals_list' => goalsListResult ??
+          const [
+            {
+              'goalID': 'fake-goal',
+              'goal': 'ship the demo',
+              'status': 'warning',
+              'completionScore': 42,
+              'steps': [
+                {
+                  'id': 'task-graph',
+                  'title': '任务图',
+                  'status': 'passed',
+                  'detail': '技术负责人、执行、审查、老板审批任务 4/4。'
+                },
+              ],
+              'counts': {
+                'tasks': 4,
+                'messages': 2,
+                'approvals': 0,
+                'artifacts': 0,
+                'verifications': 0
+              },
+              'createdAt': 1757000000,
+              'updatedAt': 1757000600,
+            },
+          ],
       'doctor' => doctorResult ??
           const {
             'contractVersion': 'v1.18',

@@ -28,6 +28,7 @@ handles — both directions.
 | Visible transcript | `visibleTerminalLog()` (product-scoped, sanitized, compacted) | `transcript` | v1.14 | `opc transcript` | ✓ hall card | ✓ visible/raw toggle |
 | Agent desk | profile chips + session + assigned tasks + work queue + inbox accessors | `desk` | v1.17 | `opc desk` | ✓ agent desk | — |
 | Doctor | `doctorJSON()` — environment facts (contract version, state file, tmux, seats, writer guard); warnings, never verdicts | `doctor` | v1.18 | `opc doctor` | — (the app IS the writer the doctor reports) | ✓ doctor button (v2.16.0) |
+| Goal ledger | `goalsListJSON()` — the closure traces the operations suite renders, newest-touched first | `goals_list` | v1.19 | `opc goals` | ✓ operations suite | ✓ goals card (v2.17.0) |
 | Open windows | `openTerminalWindowAgentIDs()` (one `tmux list-windows` probe) | — (store read, v2.5.0) | — | `opc watch` seats line · `opc hall` | ✓ hall chip (throttled, v2.11.0) | — |
 | Snapshot | `snapshotJSONData()` | `opc_bridge_snapshot_json` | v1.0 | `opc status --json` | ✓ | ✓ |
 

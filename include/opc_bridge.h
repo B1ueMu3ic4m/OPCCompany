@@ -245,6 +245,19 @@ char *opc_bridge_snapshot_json(void);
  *       payload ignored. Pure read, same guard silence as
  *       approvals_list. The CLI's `doctor --json` serves THESE EXACT
  *       bytes.
+ *   "goals_list" {}                       (v1.19)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY
+ *       (.sortedKeys byte-stable): every goal chain on the CURRENT
+ *       product, newest-touched first, capped at 20. Each row:
+ *       {goalID, goal, status, completionScore, steps:[{id,title,
+ *       status,detail}], counts:{tasks,messages,approvals,artifacts,
+ *       verifications}, createdAt, updatedAt (epoch seconds)} — the
+ *       SAME closure traces the macOS operations suite renders;
+ *       steps/counts compose from the trace itself, no second opinion
+ *       about what "closed" means. A company with no goals answers [].
+ *       Payload ignored. Pure read, same guard silence as
+ *       approvals_list. The CLI's `goals --json` serves THESE EXACT
+ *       bytes.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety

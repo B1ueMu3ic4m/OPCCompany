@@ -283,4 +283,34 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: object,
                                           options: [.sortedKeys])
     }
+
+    /// The goal ledger as a LIST (bridge v1.19 `goals_list`): every goal
+    /// chain on the CURRENT product, newest-touched first — the SAME
+    /// closure traces the macOS operations suite renders, one row per
+    /// goal: {goalID, goal, status, completionScore, steps, counts,
+    /// createdAt, updatedAt (epoch seconds)}. steps/counts compose from
+    /// the trace itself — no second opinion about what "closed" means.
+    /// A company with no goals answers []. Capped at 20: a ledger, not a
+    /// warehouse. Pure read.
+    public func goalsListJSON() throws -> Data {
+        let rows: [[String: Any]] = selectedProductClosureTraces.prefix(20).map { trace in
+            ["goalID": trace.id,
+             "goal": trace.goal,
+             "status": trace.status.rawValue,
+             "completionScore": trace.completionScore,
+             "steps": trace.steps.map { ["id": $0.id,
+                                         "title": $0.title,
+                                         "status": $0.status.rawValue,
+                                         "detail": $0.detail] },
+             "counts": ["tasks": trace.taskIDs.count,
+                        "messages": trace.messageIDs.count,
+                        "approvals": trace.approvalIDs.count,
+                        "artifacts": trace.artifactIDs.count,
+                        "verifications": trace.verificationIDs.count],
+             "createdAt": Int(trace.createdAt.timeIntervalSince1970),
+             "updatedAt": Int(trace.updatedAt.timeIntervalSince1970)]
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
 }
