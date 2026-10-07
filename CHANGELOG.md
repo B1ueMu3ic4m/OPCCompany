@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.18.0] - 2026-10-08
+
+### Added — v2.18.0 "the risk ledger"
+- **`opc risks`** — what went WRONG on the current product, newest
+  first: the SAME boss-view filtered stream the macOS command center
+  renders (closure drills and whitelisted backend noise never reach
+  the boss). An honest office answers `[]` / its quiet-office
+  placeholder. Bridge contract v1.20, and the Windows shell grows a
+  risk ledger card. Pure read.
+
 ## [2.17.0] - 2026-10-08
 
 ### Added — v2.17.0 "the goal ledger"

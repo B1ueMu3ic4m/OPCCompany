@@ -112,6 +112,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v2.17.0 the goal ledger (bridge v1.19): rides the standard refresh —
   // the ledger is current state, not a point-in-time diagnosis.
   List<Map<String, dynamic>>? _goals;
+  // v2.18.0 the risk ledger (bridge v1.20): rides the standard refresh —
+  // the boss view (drills + backend noise never render here).
+  List<Map<String, dynamic>>? _risks;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -171,6 +174,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
+      _risks = _bridge.risksList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -205,6 +209,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
+      _risks = _bridge.risksList();
       _syncTranscripts();
     });
   }
@@ -299,6 +304,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
+      _risks = _bridge.risksList();
       _syncTranscripts();
     });
   }
@@ -320,6 +326,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
+      _risks = _bridge.risksList();
       _syncTranscripts();
     });
   }
@@ -660,6 +667,15 @@ class _CompanyHomeState extends State<CompanyHome> {
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               _goalsCard(),
+              const SizedBox(height: 12),
+              // v2.18.0 "the risk ledger": what went WRONG, newest first —
+              // pulled through risks_list (bridge v1.20), the SAME
+              // boss-view stream the macOS command center renders. An old
+              // core says so; never a fabricated risk.
+              Text('Risk ledger',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _risksCard(),
               const SizedBox(height: 12),
               // v0.11.0 "the catch-up": ONE page that brings the boss up
               // to speed — pulled through catchup_md (bridge v1.9), the
@@ -1094,6 +1110,50 @@ class _CompanyHomeState extends State<CompanyHome> {
 
   /// v0.15.0 weight card: one honest line — how heavy, how close to the
   /// advisory the maintenance panel enforces. An old core says so.
+  /// v2.18.0 the risk ledger card: the boss view — title, detail, the
+  /// agent chip when attributed. Facts from the door; an old core says
+  /// so; never a fabricated risk.
+  Widget _risksCard() {
+    final rows = _risks;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.report_problem_outlined),
+              title: Text('No risk ledger from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.verified_outlined),
+              title: Text('No risks on the boss desk — quiet office.')));
+    }
+    return Card(
+      child: Column(
+        children: [
+          for (final row in rows.take(5))
+            ListTile(
+              leading: const Icon(Icons.report_problem_outlined,
+                  color: Colors.redAccent),
+              title: Text('${row['title']}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                row['agentID'] != null
+                    ? '${row['detail']} · agent ${row['agentID']}'
+                    : '${row['detail']}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          if (rows.length > 5)
+            ListTile(
+                dense: true,
+                title: Text('… and ${rows.length - 5} older',
+                    style: const TextStyle(fontSize: 12))),
+        ],
+      ),
+    );
+  }
+
   /// v2.17.0 the goal ledger card: one row per chain — goal, score,
   /// status, step titles with their marks. Facts from the door; an old
   /// core says so; never a fabricated chain.
