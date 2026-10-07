@@ -123,10 +123,13 @@ private func usage() -> String {
                                  current product, newest first (boss view:
                                  closure drills and backend noise never
                                  reach it). Pure read.
+      opc messages [--json]      the message bus — the current product's
+                                 recent agent traffic, newest first, who →
+                                 whom. Pure read.
 
     Read commands (status, approvals, history, deliverables, standup,
-    team, stalls, catchup, desk, transcript, doctor, goals, risks)
-    accept
+    team, stalls, catchup, desk, transcript, doctor, goals, risks,
+    messages) accept
     --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
@@ -237,6 +240,8 @@ struct OPC {
                 try goals(rest)
             case "risks":
                 try risks(rest)
+            case "messages":
+                try messages(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -1125,6 +1130,42 @@ struct OPC {
             }
             if rows.count > 12 {
                 print("… and \(rows.count - 12) older (opc risks --json for the full ledger)")
+            }
+        }
+    }
+
+    /// v2.19.0 "the message bus door": the current product's recent
+    /// agent traffic, newest first — the SAME drill-filtered stream the
+    /// macOS workflow map renders. \`--json\` serves the bridge's exact
+    /// bytes. Pure read.
+    @MainActor
+    static func messages(_ rest: [String]) throws {
+        let (json, extra) = splitJSONFlag(rest)
+        guard extra.isEmpty else {
+            throw CLIError(message: "usage: opc messages [--json]")
+        }
+        try withStore { store in
+            let data = try store.messagesListJSON()
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+            guard !rows.isEmpty else {
+                print("the bus is quiet — no messages on the current product")
+                return
+            }
+            for row in rows.prefix(15) {
+                let route: String
+                if let to = row["to"] as? String {
+                    route = "\(row["from"] ?? "?") → \(to)"
+                } else {
+                    route = "\(row["from"] ?? "?")"
+                }
+                print("[\(row["kind"] ?? "?")] \(route) — \(row["subject"] ?? "?")")
+            }
+            if rows.count > 15 {
+                print("… and \(rows.count - 15) older (opc messages --json for the full bus)")
             }
         }
     }

@@ -115,6 +115,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v2.18.0 the risk ledger (bridge v1.20): rides the standard refresh —
   // the boss view (drills + backend noise never render here).
   List<Map<String, dynamic>>? _risks;
+  // v2.19.0 the message bus (bridge v1.21): rides the standard refresh —
+  // the drill-filtered traffic, newest first, names resolved.
+  List<Map<String, dynamic>>? _messages;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -175,6 +178,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
+      _messages = _bridge.messagesList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -210,6 +214,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
+      _messages = _bridge.messagesList();
       _syncTranscripts();
     });
   }
@@ -305,6 +310,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
+      _messages = _bridge.messagesList();
       _syncTranscripts();
     });
   }
@@ -327,6 +333,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _weight = _bridge.weightJson();
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
+      _messages = _bridge.messagesList();
       _syncTranscripts();
     });
   }
@@ -676,6 +683,14 @@ class _CompanyHomeState extends State<CompanyHome> {
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               _risksCard(),
+              const SizedBox(height: 12),
+              // v2.19.0 "the message bus": the company's nervous system,
+              // readable — pulled through messages_list (bridge v1.21), the SAME
+              // drill-filtered stream the macOS workflow map renders.
+              Text('Message bus',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _messagesCard(),
               const SizedBox(height: 12),
               // v0.11.0 "the catch-up": ONE page that brings the boss up
               // to speed — pulled through catchup_md (bridge v1.9), the
@@ -1110,6 +1125,46 @@ class _CompanyHomeState extends State<CompanyHome> {
 
   /// v0.15.0 weight card: one honest line — how heavy, how close to the
   /// advisory the maintenance panel enforces. An old core says so.
+  /// v2.19.0 the message bus card: kind + route + subject. Facts from
+  /// the door; an old core says so; never a fabricated message.
+  Widget _messagesCard() {
+    final rows = _messages;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.forum_outlined),
+              title: Text('No message bus from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.forum_outlined),
+              title: Text('The bus is quiet.')));
+    }
+    return Card(
+      child: Column(
+        children: [
+          for (final row in rows.take(5))
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.forum_outlined),
+              title: Text(
+                  '[${row['kind']}] ${row['from']} → ${row['to'] ?? '—'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+              subtitle: Text('${row['subject']}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          if (rows.length > 5)
+            ListTile(
+                dense: true,
+                title: Text('… and ${rows.length - 5} older',
+                    style: const TextStyle(fontSize: 12))),
+        ],
+      ),
+    );
+  }
+
   /// v2.18.0 the risk ledger card: the boss view — title, detail, the
   /// agent chip when attributed. Facts from the door; an old core says
   /// so; never a fabricated risk.

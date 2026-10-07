@@ -288,6 +288,12 @@ class OpcBridge {
   /// reach the boss. Read-only.
   List<Map<String, dynamic>>? risksList() => _listVerb('risks_list');
 
+  /// v1.21 the message bus: the selected product's recent agent
+  /// traffic, newest-first, capped at 50. Rows: id/kind/status/from/to?/
+  /// subject/taskID?/createdAt — from/to are RESOLVED display names;
+  /// closure drills never surface. Read-only.
+  List<Map<String, dynamic>>? messagesList() => _listVerb('messages_list');
+
   /// v1.8 the stall watch: non-terminal work parked longer than
   /// [overMinutes] (default 30) on the current product. Rows arrive in the
   /// door's order — longest-frozen FIRST, the unattributed row (no

@@ -343,4 +343,26 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: rows,
                                           options: [.sortedKeys])
     }
+
+    /// The message bus as a LIST (bridge v1.21 `messages_list`): the
+    /// CURRENT product's recent agent messages — the SAME drill-filtered,
+    /// newest-first stream the macOS workflow map renders — capped at 50.
+    /// Rows: {id, kind, status, from, to?, subject, taskID?, createdAt
+    /// (epoch)}. from/to ride RESOLVED display names: the bus is for
+    /// reading, not for joining. Pure read.
+    public func messagesListJSON() throws -> Data {
+        let rows: [[String: Any]] = selectedProductRecentAgentMessages.prefix(50).map { message in
+            var row: [String: Any] = ["id": message.id.uuidString,
+                                      "kind": message.kind.rawValue,
+                                      "status": message.status.rawValue,
+                                      "from": agentName(message.fromAgentID),
+                                      "subject": message.subject,
+                                      "createdAt": Int(message.createdAt.timeIntervalSince1970)]
+            if let to = message.toAgentID { row["to"] = agentName(to) }
+            if let taskID = message.taskID { row["taskID"] = taskID.uuidString }
+            return row
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
 }
