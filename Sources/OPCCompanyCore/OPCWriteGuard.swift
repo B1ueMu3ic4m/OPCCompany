@@ -26,6 +26,17 @@ public struct OPCConcurrentWriterError: Error, Equatable {
 }
 
 public enum OPCWriteGuard {
+    /// The desktop app's presence, as BOTH the write guard and the v1.18
+    /// doctor door see it — one probe, one rule, one place.
+    public static func isAppRunning() -> Bool {
+        // #9 seam: the launch lives in OPCProcessRunner (pgrep is absent on
+        // Windows → runQuietly returns nil → "no detection available", which
+        // matches the documented no-op contract and the old throw-to-false).
+        OPCProcessRunner.runQuietly(
+            executable: "/usr/bin/pgrep",
+            arguments: ["-x", "OPCCompany"]) == 0
+    }
+
     /// Throws when another snapshot writer appears active. Callers translate
     /// the error into their own surface (CLI: stderr+exit 1; FFI: errno-ish
     /// return code + message pointer).
@@ -33,14 +44,7 @@ public enum OPCWriteGuard {
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) throws {
         if environment["OPC_ALLOW_CONCURRENT_WRITE"] == "1" { return }
-        // #9 seam: the launch lives in OPCProcessRunner (pgrep is absent on
-        // Windows → runQuietly returns nil → "no detection available", which
-        // matches the documented no-op contract and the old throw-to-false).
-        let status = OPCProcessRunner.runQuietly(
-            executable: "/usr/bin/pgrep",
-            arguments: ["-x", "OPCCompany"])
-        let appRunning = status == 0
-        if appRunning {
+        if isAppRunning() {
             throw OPCConcurrentWriterError(message:
                 "OPCCompany.app is running — the desktop app shares this snapshot "
                 + "and last writer wins. Quit it first, or set OPC_ALLOW_CONCURRENT_WRITE=1 if you are "

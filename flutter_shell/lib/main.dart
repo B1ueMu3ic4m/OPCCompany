@@ -105,6 +105,10 @@ class _CompanyHomeState extends State<CompanyHome> {
   Timer? _poll;
   // v0.15.0 the weight door: null = core predates v1.10.
   Map<String, dynamic>? _weight;
+  // v2.16.0 the doctor door (bridge v1.18): pulled on demand — the report
+  // is a point-in-time diagnosis, not a door that rides every refresh.
+  // null = never asked (or the core predates v1.18 — the row says so).
+  Map<String, dynamic>? _doctor;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -299,7 +303,8 @@ class _CompanyHomeState extends State<CompanyHome> {
   void _runWrite(String label, String Function() action) {
     setState(() {
       final refusal = action();
-      _lastAction = refusal.isEmpty ? '$label: ok' : '$label: refused — $refusal';
+      _lastAction =
+          refusal.isEmpty ? '$label: ok' : '$label: refused — $refusal';
       _snap = _bridge.snapshot();
       _history = _bridge.historyList();
       _deliverables = _bridge.deliverablesList();
@@ -316,10 +321,63 @@ class _CompanyHomeState extends State<CompanyHome> {
   /// field refuses locally (nothing sent, nothing pretended); the
   /// verbatim refusal or the ok lands in the status line, and every
   /// door reloads after the write.
+  /// v2.16.0 the doctor door: a point-in-time diagnosis pulled on demand —
+  /// the report must reflect the machine as it is NOW, not as the last
+  /// write left it. A refusal (or a pre-v1.18 core) lands verbatim in the
+  /// status line; the report never pretends.
+  void _runDoctor() {
+    setState(() {
+      final report = _bridge.doctor();
+      _doctor = report;
+      _lastAction = report == null
+          ? 'doctor: refused — ${_bridge.lastError()}'
+          : 'doctor: ok';
+    });
+  }
+
+  /// v2.16.0 the doctor's rows: FACTS, never a verdict stamp — the boss
+  /// reads the warnings and decides.
+  Widget _doctorReport(Map<String, dynamic> d) {
+    final warnings = (d["warnings"] as List).cast<String>();
+    return Container(
+      key: const ValueKey('doctor-report'),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("doctor — contract ${d["contractVersion"]}",
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+              "state file: ${d["stateFileExists"] == true ? "${d["stateFileBytes"]} bytes" : "missing (first run)"}",
+              style: const TextStyle(fontSize: 11)),
+          Text(
+              "tmux: ${d["tmuxAvailable"] == true ? "ready" : "not found"} · "
+              "seats running: ${d["seatsRunning"]}",
+              style: const TextStyle(fontSize: 11)),
+          Text(
+              "writer guard: ${d["overrideSet"] == true ? "OVERRIDDEN" : (d["appRunning"] == true ? "CONFLICT — desktop app running" : "clear")}",
+              style: const TextStyle(fontSize: 11)),
+          for (final w in warnings)
+            Text("! $w",
+                style:
+                    const TextStyle(fontSize: 11, color: Colors.amberAccent)),
+        ],
+      ),
+    );
+  }
+
   void _fileCheckpoint() {
     final reason = _checkpointField.text.trim();
     if (reason.isEmpty) {
-      setState(() => _lastAction = 'checkpoint: empty — a checkpoint needs its reason');
+      setState(() =>
+          _lastAction = 'checkpoint: empty — a checkpoint needs its reason');
       return;
     }
     _runWrite('checkpoint', () => _bridge.checkpoint(reason));
@@ -524,8 +582,8 @@ class _CompanyHomeState extends State<CompanyHome> {
                       // out; unassigned/unknown never fabricate an owner).
                       subtitle: Text(
                           (a['reason'] as String?)?.trim().isNotEmpty == true
-                          ? '${a['reason']} · from ${_askerOf(a['requesterID'])}'
-                          : 'from ${_askerOf(a['requesterID'])}',
+                              ? '${a['reason']} · from ${_askerOf(a['requesterID'])}'
+                              : 'from ${_askerOf(a['requesterID'])}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis),
                       trailing: Row(
@@ -692,6 +750,14 @@ class _CompanyHomeState extends State<CompanyHome> {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const ValueKey('doctor-button'),
+                onPressed: _runDoctor,
+                icon: const Icon(Icons.health_and_safety_outlined),
+                label: const Text('Doctor — environment facts'),
+              ),
+              if (_doctor != null) _doctorReport(_doctor!),
             ],
           ),
         ),
@@ -743,10 +809,8 @@ class _CompanyHomeState extends State<CompanyHome> {
                         key: const ValueKey('steer-status'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall
-                            ?.copyWith(
-                                color:
-                                    Theme.of(context).colorScheme.primary),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary),
                       ),
                     ),
                   ),
@@ -990,11 +1054,11 @@ class _CompanyHomeState extends State<CompanyHome> {
         for (final row in rows)
           Card(
             child: ListTile(
-              leading: Icon(row['waitingOnYou'] == true
-                  ? Icons.error_outline
-                  : Icons.hourglass_full,
-                  color:
-                      row['waitingOnYou'] == true ? Colors.orange : null),
+              leading: Icon(
+                  row['waitingOnYou'] == true
+                      ? Icons.error_outline
+                      : Icons.hourglass_full,
+                  color: row['waitingOnYou'] == true ? Colors.orange : null),
               title: Text('${row['name']}'),
               subtitle: Text(_stallLine(row),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -1033,8 +1097,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       child: ListTile(
         leading: Icon(over ? Icons.warning_amber_rounded : Icons.scale_outlined,
             color: over ? Colors.amber : null),
-        title: Text(
-            '${kb(total)} snapshot — terminal logs $share%'),
+        title: Text('${kb(total)} snapshot — terminal logs $share%'),
         subtitle: Text(over
             ? 'OVER the ${kb(advisory)} maintenance advisory — run the archive migration'
             : 'advisory: ${kb(advisory)} (the maintenance panel\'s own constant)'),
@@ -1091,9 +1154,8 @@ class _CompanyHomeState extends State<CompanyHome> {
           color: owed > 0 ? Colors.amber : null,
         ),
         title: Text('$traffic in the last ${w['hours']}h'),
-        subtitle: owed > 0
-            ? Text('$owed approval(s) awaiting YOU right now')
-            : null,
+        subtitle:
+            owed > 0 ? Text('$owed approval(s) awaiting YOU right now') : null,
       ),
     );
   }
@@ -1107,12 +1169,15 @@ class _CompanyHomeState extends State<CompanyHome> {
     final when = row['createdAt'] is num
         ? DateTime.fromMillisecondsSinceEpoch(
                 (row['createdAt'] as num).toInt() * 1000)
-            .toString().substring(0, 16)
+            .toString()
+            .substring(0, 16)
         : null;
-    return [(row['kind'] as String?) ?? 'artifact', verdict,
-            if (when != null) when,
-            (row['path'] as String?) ?? '?']
-        .join(' · ');
+    return [
+      (row['kind'] as String?) ?? 'artifact',
+      verdict,
+      if (when != null) when,
+      (row['path'] as String?) ?? '?'
+    ].join(' · ');
   }
 
   /// Ledger subtitle: WHO asked · WHAT you decided · WHEN. Names come from

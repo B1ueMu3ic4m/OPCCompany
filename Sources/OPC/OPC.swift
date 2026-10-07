@@ -111,11 +111,15 @@ private func usage() -> String {
                                  reason rides the record verbatim
       opc checkpoints            list the safety checkpoints on disk, newest
                                  first. Pure read.
+      opc doctor [--json]        environment facts before you trust the other
+                                 doors: contract version, state file, tmux,
+                                 live seats, writer-guard state — facts, not
+                                 verdicts. Pure read.
 
     Read commands (status, approvals, history, deliverables, standup,
-    team, stalls, catchup) accept --json: machine-readable output,
-    byte-identical to what the FFI bridge serves the shell (one
-    serializer, no drift).
+    team, stalls, catchup, desk, transcript, doctor) accept --json:
+    machine-readable output, byte-identical to what the FFI bridge
+    serves the shell (one serializer, no drift).
 
     All commands read and write the same local company snapshot the desktop app
     uses, so CLI and GUI stay in sync. State lives under the OPC app-support
@@ -217,6 +221,8 @@ struct OPC {
                 try checkpoint(rest)
             case "checkpoints":
                 try checkpoints(rest)
+            case "doctor":
+                try doctor(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -992,6 +998,50 @@ struct OPC {
                 for message in desk["pendingInbox"] as? [[String: Any]] ?? [] {
                     print("    · \(message["from"] ?? "?") → \(message["subject"] ?? "?")")
                 }
+            }
+        }
+    }
+
+    /// v2.16.0 "the doctor door": the environment facts a visitor needs
+    /// before trusting any other door — contract version, support dir,
+    /// state file, tmux, live seats, writer-guard state — the SAME
+    /// composition the bridge `doctor` verb serves. FACTS, never a verdict
+    /// boolean; warnings name only conditions the boss can act on.
+    /// \`--json\` serves the bridge's exact bytes. Pure read.
+    @MainActor
+    static func doctor(_ rest: [String]) throws {
+        let (json, extra) = splitJSONFlag(rest)
+        guard extra.isEmpty else {
+            throw CLIError(message: "usage: opc doctor [--json]")
+        }
+        try withStore { store in
+            let data = try store.doctorJSON()
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let d = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+            print("opc doctor — contract \(d["contractVersion"] ?? "?")")
+            print("  support dir: \(d["supportDir"] ?? "?")")
+            if let bytes = d["stateFileBytes"] as? Int {
+                print("  state file: present (\(bytes) bytes)")
+            } else {
+                print("  state file: \(d["stateFileExists"] as? Bool == true ? "present" : "missing (first run)")")
+            }
+            print("  tmux: \(d["tmuxAvailable"] as? Bool == true ? "ready" : "not found — seats degrade to local pipe seats")")
+            let exited = d["seatsAliveButExited"] as? Int ?? 0
+            print("  seats running: \(d["seatsRunning"] as? Int ?? 0)\(exited == 0 ? "" : " (plus \(exited) exited)")")
+            let overrideSet = d["overrideSet"] as? Bool ?? false
+            let appRunning = d["appRunning"] as? Bool ?? false
+            if overrideSet {
+                print("  writer guard: OVERRIDDEN (OPC_ALLOW_CONCURRENT_WRITE=1)")
+            } else if appRunning {
+                print("  writer guard: CONFLICT — OPCCompany.app is running")
+            } else {
+                print("  writer guard: clear")
+            }
+            for w in d["warnings"] as? [String] ?? [] {
+                print("  ! \(w)")
             }
         }
     }
