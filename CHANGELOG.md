@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [2.19.0] - 2026-10-08
+
+### Added — v2.19.0 "the message bus"
+- **`opc messages`** — the current product's recent agent traffic,
+  newest first, who → whom: the SAME drill-filtered stream the macOS
+  workflow map renders, with from/to resolved to display names. A
+  quiet bus answers `[]` / its honest placeholder. Bridge contract
+  v1.21, and the Windows shell grows a message bus card. Pure read.
+
 ## [2.18.0] - 2026-10-08
 
 ### Added — v2.18.0 "the risk ledger"

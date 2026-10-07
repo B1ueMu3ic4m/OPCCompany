@@ -249,6 +249,18 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.risksListJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "messages_list":
+                    // v1.21 the message bus: the CURRENT product's recent
+                    // agent messages — the SAME drill-filtered,
+                    // newest-first stream the macOS workflow map renders —
+                    // capped at 50, riding the smuggle channel as a JSON
+                    // ARRAY (.sortedKeys byte-stable). from/to arrive as
+                    // RESOLVED display names. An honest office answers [].
+                    // Payload ignored. Pure read, same guard silence as
+                    // approvals_list.
+                    let data = try store.messagesListJSON()
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

@@ -102,6 +102,11 @@ class FakeOpcBridge {
   String? checkpointRefusal;
   List<String> checkpointReasons = [];
 
+  /// v1.21 the message bus: null => the default one-message bus below.
+  /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
+  /// row) and pin the wrapper's wholesale refusal.
+  List<dynamic>? messagesListResult;
+
   /// v1.20 the risk ledger: null => the default one-risk ledger below.
   /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
   /// row) and pin the wrapper's wholesale refusal.
@@ -324,6 +329,18 @@ class FakeOpcBridge {
       // v1.13 seat roster: a {uuid: bool} object rides the smuggle channel
       'seat_list' => seatListResult ?? const <String, bool>{},
       // v1.18 the doctor: the facts object rides the same smuggle channel
+      'messages_list' => messagesListResult ??
+          const [
+            {
+              'id': 'fake-msg',
+              'kind': 'taskDispatched',
+              'status': 'pending',
+              'from': 'Codex 技术负责人',
+              'to': 'Alice',
+              'subject': '派发：实现 goals 门',
+              'createdAt': 1757001000,
+            },
+          ],
       'risks_list' => risksListResult ??
           const [
             {

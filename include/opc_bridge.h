@@ -270,6 +270,17 @@ char *opc_bridge_snapshot_json(void);
  *       Payload ignored. Pure read, same guard silence as
  *       approvals_list. The CLI's `risks --json` serves THESE EXACT
  *       bytes.
+ *   "messages_list" {}                    (v1.21)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY
+ *       (.sortedKeys byte-stable): the CURRENT product's recent agent
+ *       messages — the SAME drill-filtered, newest-first stream the
+ *       macOS workflow map renders — capped at 50. Each row: {id,
+ *       kind, status, from, to?, subject, taskID?, createdAt (epoch
+ *       seconds)}; from/to are RESOLVED display names (the bus is for
+ *       reading, not for joining). Closure drills never surface. An
+ *       honest office answers []. Payload ignored. Pure read, same
+ *       guard silence as approvals_list. The CLI's `messages --json`
+ *       serves THESE EXACT bytes.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety
