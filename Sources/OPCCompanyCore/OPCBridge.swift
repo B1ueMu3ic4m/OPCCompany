@@ -226,6 +226,17 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.doctorJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "goals_list":
+                    // v1.19 the goal ledger: every goal chain on the
+                    // CURRENT product, newest-touched first, riding the
+                    // smuggle channel as a JSON ARRAY (.sortedKeys
+                    // byte-stable) — the SAME closure traces the macOS
+                    // operations suite renders. One row per goal; an
+                    // empty company answers []. Payload ignored. Pure
+                    // read, same guard silence as approvals_list.
+                    let data = try store.goalsListJSON()
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

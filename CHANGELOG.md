@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.17.0] - 2026-10-08
+
+### Added — v2.17.0 "the goal ledger"
+- **`opc goals`** — every goal chain on the current product, newest-
+  touched first: status, completion score, and the six closure steps —
+  the SAME closure traces the macOS operations suite renders, so the
+  terminal can finally READ what `opc goal` writes. A company with no
+  goals answers its honest placeholder. Bridge contract v1.19, and the
+  Windows shell grows a goal ledger card. Pure read.
+
 ## [2.16.0] - 2026-10-08
 
 ### Added — v2.16.0 "the doctor door"

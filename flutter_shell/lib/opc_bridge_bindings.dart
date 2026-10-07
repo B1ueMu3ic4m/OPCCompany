@@ -275,6 +275,13 @@ class OpcBridge {
   List<Map<String, dynamic>>? deliverablesList() =>
       _listVerb('deliverables_list');
 
+  /// v1.19 the goal ledger: every goal chain on the selected product,
+  /// newest-touched first, capped at 20. Each row: goalID/goal/status/
+  /// completionScore/steps/counts/createdAt/updatedAt (epoch seconds) —
+  /// the same closure traces the macOS operations suite renders.
+  /// Read-only.
+  List<Map<String, dynamic>>? goalsList() => _listVerb('goals_list');
+
   /// v1.8 the stall watch: non-terminal work parked longer than
   /// [overMinutes] (default 30) on the current product. Rows arrive in the
   /// door's order — longest-frozen FIRST, the unattributed row (no

@@ -115,9 +115,14 @@ private func usage() -> String {
                                  doors: contract version, state file, tmux,
                                  live seats, writer-guard state — facts, not
                                  verdicts. Pure read.
+      opc goals [--json]         the goal ledger — every goal chain on the
+                                 current product, newest-touched first:
+                                 status, completion score, closure steps.
+                                 Pure read.
 
     Read commands (status, approvals, history, deliverables, standup,
-    team, stalls, catchup, desk, transcript, doctor) accept --json:
+    team, stalls, catchup, desk, transcript, doctor, goals) accept
+    --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
 
@@ -223,6 +228,8 @@ struct OPC {
                 try checkpoints(rest)
             case "doctor":
                 try doctor(rest)
+            case "goals":
+                try goals(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -1042,6 +1049,40 @@ struct OPC {
             }
             for w in d["warnings"] as? [String] ?? [] {
                 print("  ! \(w)")
+            }
+        }
+    }
+
+    /// v2.17.0 "the goal ledger door": every goal chain on the current
+    /// product, newest-touched first — the SAME closure traces the macOS
+    /// operations suite renders (one serializer, no second opinion about
+    /// what "closed" means). \`--json\` serves the bridge's exact bytes.
+    /// Pure read.
+    @MainActor
+    static func goals(_ rest: [String]) throws {
+        let (json, extra) = splitJSONFlag(rest)
+        guard extra.isEmpty else {
+            throw CLIError(message: "usage: opc goals [--json]")
+        }
+        try withStore { store in
+            let data = try store.goalsListJSON()
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+            guard !rows.isEmpty else {
+                print("no goals yet — send one: opc goal \"one-sentence objective\"")
+                return
+            }
+            for row in rows {
+                let goal = row["goal"] as? String ?? "?"
+                let score = row["completionScore"] as? Int ?? 0
+                let status = row["status"] as? String ?? "?"
+                print("\(goal) — \(score)% · \(status)")
+                for step in row["steps"] as? [[String: Any]] ?? [] {
+                    print("  · [\(step["status"] ?? "?")] \(step["title"] ?? "?") — \(step["detail"] ?? "?")")
+                }
             }
         }
     }

@@ -109,6 +109,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // is a point-in-time diagnosis, not a door that rides every refresh.
   // null = never asked (or the core predates v1.18 — the row says so).
   Map<String, dynamic>? _doctor;
+  // v2.17.0 the goal ledger (bridge v1.19): rides the standard refresh —
+  // the ledger is current state, not a point-in-time diagnosis.
+  List<Map<String, dynamic>>? _goals;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -167,6 +170,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _stalls = _bridge.stallsList();
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
+      _goals = _bridge.goalsList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -200,6 +204,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _stalls = _bridge.stallsList();
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
+      _goals = _bridge.goalsList();
       _syncTranscripts();
     });
   }
@@ -293,6 +298,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _stalls = _bridge.stallsList();
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
+      _goals = _bridge.goalsList();
       _syncTranscripts();
     });
   }
@@ -313,6 +319,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _stalls = _bridge.stallsList();
       _catchup = _bridge.catchupMd();
       _weight = _bridge.weightJson();
+      _goals = _bridge.goalsList();
       _syncTranscripts();
     });
   }
@@ -644,6 +651,15 @@ class _CompanyHomeState extends State<CompanyHome> {
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               _weightCard(),
+              const SizedBox(height: 12),
+              // v2.17.0 "the goal ledger": every goal chain, newest-touched
+              // first — pulled through goals_list (bridge v1.19), the SAME
+              // traces the macOS operations suite renders. An old core
+              // says so; never a fabricated chain.
+              Text('Goal ledger',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _goalsCard(),
               const SizedBox(height: 12),
               // v0.11.0 "the catch-up": ONE page that brings the boss up
               // to speed — pulled through catchup_md (bridge v1.9), the
@@ -1078,6 +1094,51 @@ class _CompanyHomeState extends State<CompanyHome> {
 
   /// v0.15.0 weight card: one honest line — how heavy, how close to the
   /// advisory the maintenance panel enforces. An old core says so.
+  /// v2.17.0 the goal ledger card: one row per chain — goal, score,
+  /// status, step titles with their marks. Facts from the door; an old
+  /// core says so; never a fabricated chain.
+  Widget _goalsCard() {
+    final rows = _goals;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.flag_outlined),
+              title: Text('No goal ledger from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.flag_outlined),
+              title: Text('No goals yet — send one from the command box.')));
+    }
+    return Card(
+      child: Column(
+        children: [
+          for (final row in rows)
+            ListTile(
+              leading: Icon(
+                row['status'] == 'failed'
+                    ? Icons.error_outline
+                    : (row['status'] == 'passed'
+                        ? Icons.check_circle_outline
+                        : Icons.autorenew),
+                color: row['status'] == 'failed' ? Colors.redAccent : null,
+              ),
+              title: Text('${row['goal']} — ${row['completionScore']}%',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                ((row['steps'] as List)
+                    .map((s) => '[${s['status']}] ${s['title']}')
+                    .join(' · ')),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _weightCard() {
     final w = _weight;
     if (w == null) {
