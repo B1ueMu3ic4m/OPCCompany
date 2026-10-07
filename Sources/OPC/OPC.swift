@@ -119,9 +119,14 @@ private func usage() -> String {
                                  current product, newest-touched first:
                                  status, completion score, closure steps.
                                  Pure read.
+      opc risks [--json]         the risk ledger — what went WRONG on the
+                                 current product, newest first (boss view:
+                                 closure drills and backend noise never
+                                 reach it). Pure read.
 
     Read commands (status, approvals, history, deliverables, standup,
-    team, stalls, catchup, desk, transcript, doctor, goals) accept
+    team, stalls, catchup, desk, transcript, doctor, goals, risks)
+    accept
     --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
@@ -230,6 +235,8 @@ struct OPC {
                 try doctor(rest)
             case "goals":
                 try goals(rest)
+            case "risks":
+                try risks(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -1083,6 +1090,41 @@ struct OPC {
                 for step in row["steps"] as? [[String: Any]] ?? [] {
                     print("  · [\(step["status"] ?? "?")] \(step["title"] ?? "?") — \(step["detail"] ?? "?")")
                 }
+            }
+        }
+    }
+
+    /// v2.18.0 "the risk ledger door": what went WRONG on the current
+    /// product, newest first — the SAME boss-view filtered stream the
+    /// macOS command center renders (closure drills and the backend-noise
+    /// whitelist never reach the boss). \`--json\` serves the bridge's
+    /// exact bytes. Pure read.
+    @MainActor
+    static func risks(_ rest: [String]) throws {
+        let (json, extra) = splitJSONFlag(rest)
+        guard extra.isEmpty else {
+            throw CLIError(message: "usage: opc risks [--json]")
+        }
+        try withStore { store in
+            let data = try store.risksListJSON()
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+            guard !rows.isEmpty else {
+                print("no risks on the boss desk — quiet office")
+                return
+            }
+            for row in rows.prefix(12) {
+                let agentID = row["agentID"] as? String
+                let who = agentID.map { " (\($0.prefix(8)))" } ?? ""
+                print("[\(row["createdAt"] ?? "?")] \(row["title"] ?? "?")\(who)")
+                let detail = row["detail"] as? String ?? ""
+                if !detail.isEmpty { print("    \(detail)") }
+            }
+            if rows.count > 12 {
+                print("… and \(rows.count - 12) older (opc risks --json for the full ledger)")
             }
         }
     }

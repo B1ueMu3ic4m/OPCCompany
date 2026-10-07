@@ -313,4 +313,34 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: rows,
                                           options: [.sortedKeys])
     }
+
+    /// The risk ledger as a LIST (bridge v1.20 `risks_list`): the
+    /// boss-view risk events of the CURRENT product — the SAME filtered
+    /// stream the macOS command center renders (closure drills and the
+    /// backend-noise whitelist never reach the boss) — newest-first,
+    /// capped at 50. Rows: {id, title, detail, agentID?, createdAt
+    /// (epoch)}. Order is the contract: createdAt desc, ties by id —
+    /// same store, same list, same bytes. Pure read.
+    public func risksListJSON() throws -> Data {
+        let rows: [[String: Any]] = selectedProductBossRiskEvents
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt > rhs.createdAt
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            .prefix(50)
+            .map { event in
+                var row: [String: Any] = ["id": event.id.uuidString,
+                                          "title": event.title,
+                                          "detail": event.detail,
+                                          "createdAt": Int(event.createdAt.timeIntervalSince1970)]
+                if let agentID = event.agentID {
+                    row["agentID"] = agentID.uuidString
+                }
+                return row
+            }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
 }

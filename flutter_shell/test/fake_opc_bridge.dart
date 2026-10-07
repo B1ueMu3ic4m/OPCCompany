@@ -102,6 +102,11 @@ class FakeOpcBridge {
   String? checkpointRefusal;
   List<String> checkpointReasons = [];
 
+  /// v1.20 the risk ledger: null => the default one-risk ledger below.
+  /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
+  /// row) and pin the wrapper's wholesale refusal.
+  List<dynamic>? risksListResult;
+
   /// v1.19 the goal ledger: null => the default one-goal ledger below.
   /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
   /// row) and pin the wrapper's wholesale refusal.
@@ -319,6 +324,16 @@ class FakeOpcBridge {
       // v1.13 seat roster: a {uuid: bool} object rides the smuggle channel
       'seat_list' => seatListResult ?? const <String, bool>{},
       // v1.18 the doctor: the facts object rides the same smuggle channel
+      'risks_list' => risksListResult ??
+          const [
+            {
+              'id': 'fake-risk',
+              'title': '编译失败：主链路',
+              'detail': '模块 A 编译错误',
+              'agentID': 'fake-alice',
+              'createdAt': 1757000900,
+            },
+          ],
       'goals_list' => goalsListResult ??
           const [
             {

@@ -282,6 +282,12 @@ class OpcBridge {
   /// Read-only.
   List<Map<String, dynamic>>? goalsList() => _listVerb('goals_list');
 
+  /// v1.20 the risk ledger: the boss-view risk events of the selected
+  /// product, newest-first, capped at 50. Rows: id/title/detail/agentID?/
+  /// createdAt — closure drills and whitelisted backend noise never
+  /// reach the boss. Read-only.
+  List<Map<String, dynamic>>? risksList() => _listVerb('risks_list');
+
   /// v1.8 the stall watch: non-terminal work parked longer than
   /// [overMinutes] (default 30) on the current product. Rows arrive in the
   /// door's order — longest-frozen FIRST, the unattributed row (no

@@ -110,6 +110,7 @@ swift build -c release --product opc
 .build/release/opc checkpoints            # v2.15 list the safety checkpoints on disk, newest first
 .build/release/opc doctor                # v2.16 environment facts before you trust the doors
 .build/release/opc goals                # v2.17 the goal ledger — chains, scores, closure steps
+.build/release/opc risks                # v2.18 the risk ledger — what went wrong, newest first
 .build/release/opc desk <agent>           # v2.14 one employee's working surface — chips, session, tasks, queue, inbox
 .build/release/opc report                 # boss-readable progress report
 .build/release/opc approvals              # pending approvals, with their ids
