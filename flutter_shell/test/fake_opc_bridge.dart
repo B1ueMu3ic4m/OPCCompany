@@ -42,22 +42,26 @@ class FakeOpcBridge {
 
   /// v1.7: team_stats_list rows; defaults to a busy-but-honest office.
   List<Map<String, dynamic>>? teamStatsResult;
+
   /// true => simulate a core older than v1.7 (unknown verb, rc=-1).
   bool teamStatsRefused = false;
 
   /// v1.8: stalls_list rows; defaults to a jammed-but-honest watch.
   List<Map<String, dynamic>>? stallsResult;
+
   /// true => simulate a core older than v1.8 (unknown verb, rc=-1).
   bool stallsRefused = false;
 
   /// v1.9: catchup_md page (plain UTF-8 string, NOT JSON); null => the
   /// default one-page composition below.
   String? catchupMdResult;
+
   /// true => simulate a core older than v1.9 (unknown verb, rc=-1).
   bool catchupRefused = false;
 
   /// v1.10: weight_json object; null => the default light snapshot.
   Map<String, dynamic>? weightResult;
+
   /// true => simulate a core older than v1.10 (unknown verb, rc=-1).
   bool weightRefused = false;
 
@@ -98,17 +102,27 @@ class FakeOpcBridge {
   String? checkpointRefusal;
   List<String> checkpointReasons = [];
 
+  /// v1.18 the doctor door: null => the default honest healthy-office
+  /// report below. Typed dynamic so tests can script a MALFORMED payload
+  /// (a non-String contractVersion) and pin the wrapper's wholesale
+  /// refusal.
+  Map<String, dynamic>? doctorResult;
+
   /// v1.6 standup window payload (seven integer counts); null => the
   /// default quiet-but-valid window below.
   Map<String, dynamic>? standupResult;
+
   /// simulate a core OLDER than v1.6: the verb is simply not registered
   bool standupRefused = false;
   Map<String, dynamic>? tailResult;
+
   /// v1.3+ array verbs (approvals/history/deliverables) carry a JSON ARRAY.
   List<dynamic>? approvalsListResult;
+
   /// v1.5: deliverables_list rows (existsNow rides along); defaults to a
   /// one-row shelf shaped like the bridge's answer when unset.
   List<dynamic>? deliverablesListResult;
+
   /// Raw text to smuggle INSTEAD of the JSON-encoded result (tear/truncate
   /// simulation across the C boundary — nothing else can produce that).
   String? rawCarryOverride;
@@ -214,7 +228,8 @@ class FakeOpcBridge {
     }
     // v1.11: a WRITE — success is lastError reset to '', a refusal rides
     // its reason verbatim; the attempt is recorded either way.
-    if (verb == 'terminal_send') {      final agentID = payload['agentID'];
+    if (verb == 'terminal_send') {
+      final agentID = payload['agentID'];
       final line = payload['line'];
       if (agentID is! String || line is! String) {
         nextError = 'terminal_send requires agentID and line';
@@ -262,21 +277,27 @@ class FakeOpcBridge {
     // query verbs carry results through nextError exactly like the bridge
     // does (rc=0 + last_error = payload) — the wrapper's contract test
     final Object? carried = switch (verb) {
-      'approvals_list' =>
-        approvalsListResult ?? const [{'id': 'fake-approval', 'title': 't'}],
+      'approvals_list' => approvalsListResult ??
+          const [
+            {'id': 'fake-approval', 'title': 't'}
+          ],
       // v1.4 ledger rides the SAME array channel (same default rows)
-      'history_list' =>
-        approvalsListResult ?? const [{'id': 'fake-approval', 'title': 't'}],
+      'history_list' => approvalsListResult ??
+          const [
+            {'id': 'fake-approval', 'title': 't'}
+          ],
       // v1.5 shelf: its own field, default row carries the existsNow verdict
-      'deliverables_list' =>
-        deliverablesListResult ??
-            const [
-              {
-                'id': 'fake-shelf', 'title': 't', 'kind': 'report',
-                'path': '/tmp/t', 'existsNow': true,
-                'createdAt': 1757000000,
-              }
-            ],
+      'deliverables_list' => deliverablesListResult ??
+          const [
+            {
+              'id': 'fake-shelf',
+              'title': 't',
+              'kind': 'report',
+              'path': '/tmp/t',
+              'existsNow': true,
+              'createdAt': 1757000000,
+            }
+          ],
       'weight_json' => weightResult ??
           const {
             'totalBytes': 54024,
@@ -292,31 +313,70 @@ class FakeOpcBridge {
       'terminal_digest' => digestResult ?? const <String, dynamic>{},
       // v1.13 seat roster: a {uuid: bool} object rides the smuggle channel
       'seat_list' => seatListResult ?? const <String, bool>{},
+      // v1.18 the doctor: the facts object rides the same smuggle channel
+      'doctor' => doctorResult ??
+          const {
+            'contractVersion': 'v1.18',
+            'supportDir': '/tmp/fake-office',
+            'stateFileExists': true,
+            'stateFileBytes': 8192,
+            'tmuxAvailable': true,
+            'seatsRunning': 0,
+            'seatsAliveButExited': 0,
+            'appRunning': false,
+            'overrideSet': false,
+            'warnings': <String>[],
+          },
       // v1.6 standup: an OBJECT rides the same smuggle channel
       'stalls_list' => stallsResult ??
           const [
             {
-              'itemID': 'fake-jam', 'agentID': 'fake-alice', 'name': 'Alice',
-              'status': 'waitingApproval', 'dwellMinutes': 90,
+              'itemID': 'fake-jam',
+              'agentID': 'fake-alice',
+              'name': 'Alice',
+              'status': 'waitingApproval',
+              'dwellMinutes': 90,
               'waitingOnYou': true,
             },
-            {'itemID': 'fake-lost', 'name': '未分配', 'status': 'running',
-             'dwellMinutes': 45, 'waitingOnYou': false},
+            {
+              'itemID': 'fake-lost',
+              'name': '未分配',
+              'status': 'running',
+              'dwellMinutes': 45,
+              'waitingOnYou': false
+            },
           ],
       'team_stats_list' => teamStatsResult ??
           const [
             {
-              'agentID': 'fake-alice', 'name': 'Alice', 'assigned': 2,
-              'deliveries': 1, 'missing': 0, 'asked': 1, 'risks': 0,
+              'agentID': 'fake-alice',
+              'name': 'Alice',
+              'assigned': 2,
+              'deliveries': 1,
+              'missing': 0,
+              'asked': 1,
+              'risks': 0,
               'activeNow': 1,
             },
-            {'name': '未分配', 'assigned': 0, 'deliveries': 1,
-             'missing': 1, 'asked': 0, 'risks': 0, 'activeNow': 0},
+            {
+              'name': '未分配',
+              'assigned': 0,
+              'deliveries': 1,
+              'missing': 1,
+              'asked': 0,
+              'risks': 0,
+              'activeNow': 0
+            },
           ],
       'standup_window' => standupResult ??
           const <String, dynamic>{
-            'hours': 24, 'newWork': 0, 'decisions': 0, 'deliveries': 0,
-            'missing': 0, 'risks': 0, 'awaitingNow': 0,
+            'hours': 24,
+            'newWork': 0,
+            'decisions': 0,
+            'deliveries': 0,
+            'missing': 0,
+            'risks': 0,
+            'awaitingNow': 0,
           },
       'terminal_tail' => tailResult ??
           {

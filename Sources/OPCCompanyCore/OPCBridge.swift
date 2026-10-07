@@ -214,6 +214,18 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.deskJSON(agentID: agentID)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "doctor":
+                    // v1.18 the doctor: the environment facts a visitor
+                    // needs before trusting any other door — contract
+                    // version, support dir, state file, tmux, live seats,
+                    // writer-guard state — as a JSON OBJECT riding the
+                    // smuggle channel. FACTS, never a verdict boolean; the
+                    // warnings array names only conditions the boss can act
+                    // on. Payload ignored. Pure read, same guard silence as
+                    // approvals_list.
+                    let data = try store.doctorJSON()
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

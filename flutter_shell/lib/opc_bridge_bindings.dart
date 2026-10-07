@@ -259,8 +259,7 @@ class OpcBridge {
   /// v1.3 query: the current product's pending approvals — the same rows
   /// the SwiftUI popover reads, without re-fetching the full snapshot.
   /// Malformed JSON returns null (never a partial list).
-  List<Map<String, dynamic>>? approvalsList() =>
-      _listVerb('approvals_list');
+  List<Map<String, dynamic>>? approvalsList() => _listVerb('approvals_list');
 
   /// v1.4 decision ledger: RESOLVED approvals of the current product,
   /// newest-first, capped at 50 by the bridge. Each row: id/title/reason/
@@ -285,7 +284,8 @@ class OpcBridge {
   /// accusation. Read-only.
   List<Map<String, dynamic>>? stallsList({int? overMinutes}) {
     if (command('stalls_list',
-            overMinutes == null ? const {} : {'over_minutes': overMinutes}) != ok) {
+            overMinutes == null ? const {} : {'over_minutes': overMinutes}) !=
+        ok) {
       return null;
     }
     final source = lastError();
@@ -307,8 +307,9 @@ class OpcBridge {
   /// asked/risks/activeNow (+agentID when attributed). missing rides the
   /// existence door at read time. Read-only.
   List<Map<String, dynamic>>? teamStatsList({int? hours}) {
-    if (command('team_stats_list',
-            hours == null ? const {} : {'hours': hours}) != ok) {
+    if (command(
+            'team_stats_list', hours == null ? const {} : {'hours': hours}) !=
+        ok) {
       return null;
     }
     final source = lastError();
@@ -359,6 +360,31 @@ class OpcBridge {
     if (sections is! List) return null;
     for (final s in sections) {
       if (s is! Map || s['name'] is! String || s['bytes'] is! int) return null;
+    }
+    return raw;
+  }
+
+  /// v1.18 the doctor door: environment FACTS as one object —
+  /// {contractVersion, supportDir, stateFileExists, stateFileBytes|null,
+  /// tmuxAvailable, seatsRunning, seatsAliveButExited, appRunning,
+  /// overrideSet, warnings} — never a verdict boolean; warnings name only
+  /// conditions the boss can act on, and an empty array is the honest
+  /// "nothing to act on". Null = refused or a malformed payload (never a
+  /// partial report).
+  Map<String, dynamic>? doctor() {
+    if (command('doctor') != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    if (raw['contractVersion'] is! String ||
+        raw['supportDir'] is! String ||
+        raw['stateFileExists'] is! bool ||
+        raw['tmuxAvailable'] is! bool ||
+        raw['seatsRunning'] is! int ||
+        raw['seatsAliveButExited'] is! int ||
+        raw['appRunning'] is! bool ||
+        raw['overrideSet'] is! bool ||
+        raw['warnings'] is! List) {
+      return null;
     }
     return raw;
   }
@@ -467,7 +493,12 @@ class OpcBridge {
     final raw = _json(lastError());
     if (raw == null) return null;
     const keys = [
-      'hours', 'newWork', 'decisions', 'deliveries', 'missing', 'risks',
+      'hours',
+      'newWork',
+      'decisions',
+      'deliveries',
+      'missing',
+      'risks',
       'awaitingNow',
     ];
     final result = <String, int>{};

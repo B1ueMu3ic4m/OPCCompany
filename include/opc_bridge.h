@@ -231,6 +231,20 @@ char *opc_bridge_snapshot_json(void);
  *       UUID or no such agent. Pure read, same guard silence as
  *       approvals_list. The CLI's `desk --json` serves THESE EXACT
  *       bytes.
+ *   "doctor" {}                           (v1.18)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       (.sortedKeys byte-stable): the environment facts a visitor
+ *       needs before trusting any other door — {contractVersion,
+ *       supportDir, stateFileExists, stateFileBytes|null, tmuxAvailable,
+ *       seatsRunning, seatsAliveButExited, appRunning, overrideSet,
+ *       warnings:[...]} — composed from the SAME accessors the GUI's
+ *       terminal-hall rows and the write guard use. FACTS, never a
+ *       verdict boolean; "warnings" names only conditions the boss can
+ *       act on (app running, guard overridden, no state file yet, tmux
+ *       missing) and an empty array is the honest "nothing to act on".
+ *       payload ignored. Pure read, same guard silence as
+ *       approvals_list. The CLI's `doctor --json` serves THESE EXACT
+ *       bytes.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety

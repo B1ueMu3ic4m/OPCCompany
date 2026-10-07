@@ -1,6 +1,16 @@
 # Changelog
 
 All notable changes to this project are documented here.
+
+## [2.16.0] - 2026-10-08
+
+### Added — v2.16.0 "the doctor door"
+- **`opc doctor`** — the environment facts a visitor needs before
+  trusting any other door: contract version, support dir, state file,
+  tmux, live seats, writer-guard state. FACTS, never a verdict boolean;
+  warnings name only conditions the boss can act on. Composed from the
+  same accessors the GUI and the write guard use. Bridge contract v1.18,
+  and the Windows shell grows a doctor button. Pure read.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]

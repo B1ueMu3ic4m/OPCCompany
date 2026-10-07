@@ -231,4 +231,56 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: object,
                                           options: [.sortedKeys])
     }
+
+    /// The doctor's report as an OBJECT (bridge v1.18 `doctor`): the
+    /// environment facts a visitor needs before trusting any other door —
+    /// contract version, support dir, state file, tmux, live seats,
+    /// writer-guard state — FACTS, never a verdict boolean. Composed from
+    /// the SAME accessors the GUI's terminal-hall rows and the write guard
+    /// use, so no surface grows a second opinion. Pure read. The warnings
+    /// array names only conditions the boss can act on; an empty array is
+    /// the honest "nothing to act on".
+    public func doctorJSON(
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) throws -> Data {
+        let stateURL = CompanyPersistence.stateURL
+        let stateExists = FileManager.default.fileExists(atPath: stateURL.path)
+        let stateBytes: Int? = stateExists
+            ? (try? FileManager.default.attributesOfItem(atPath: stateURL.path))?[.size] as? Int
+            : nil
+        let tmuxAvailable = AgentProcessRunner.resolvedExecutablePath(for: "tmux") != nil
+        let seats = localSeatStatuses()
+        let seatsRunning = seats.values.filter { $0 }.count
+        let appRunning = OPCWriteGuard.isAppRunning()
+        let overrideSet = environment["OPC_ALLOW_CONCURRENT_WRITE"] == "1"
+
+        var warnings: [String] = []
+        if appRunning {
+            warnings.append("OPCCompany.app is running — last writer wins on the shared snapshot")
+        }
+        if overrideSet {
+            warnings.append("OPC_ALLOW_CONCURRENT_WRITE=1 — the cross-process writer guard is OFF")
+        }
+        if !stateExists {
+            warnings.append("no state file yet — the company boots empty on first run")
+        }
+        if !tmuxAvailable {
+            warnings.append("tmux not found — terminal seats degrade to local pipe seats")
+        }
+
+        let object: [String: Any] = [
+            "contractVersion": "v1.18",
+            "supportDir": CompanyPersistence.supportDirectory.path,
+            "stateFileExists": stateExists,
+            "stateFileBytes": stateBytes ?? NSNull(),
+            "tmuxAvailable": tmuxAvailable,
+            "seatsRunning": seatsRunning,
+            "seatsAliveButExited": seats.values.filter { !$0 }.count,
+            "appRunning": appRunning,
+            "overrideSet": overrideSet,
+            "warnings": warnings,
+        ]
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
 }
