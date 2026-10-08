@@ -394,6 +394,33 @@ class _CompanyHomeState extends State<CompanyHome> {
     );
   }
 
+  /// v2.21.0 the ack door: ONE pending inbox message flips to
+  /// acknowledged — the same store rule the macOS envelope tap runs.
+  /// The verbatim refusal (or the ok) lands in the status line, and
+  /// every door reloads after the write. The bus card carries display
+  /// names, so the route resolves through the roster snapshot.
+  void _ackMessage(String messageID, String agentName) {
+    final id = _agentID(forName: agentName);
+    if (id == null) {
+      setState(() =>
+          _lastAction = 'ack: refused — "$agentName" is not on this roster');
+      return;
+    }
+    _runWrite('ack', () => _bridge.messageAck(messageID, id));
+  }
+
+  /// The roster's name → id resolution for doors that carry display
+  /// names: an exact, case-sensitive match over the CURRENT snapshot —
+  /// never a guess. Null sends the caller to its own honest refusal.
+  String? _agentID({required String forName}) {
+    final agents = _snap?.raw['agents'];
+    if (agents is! List) return null;
+    for (final a in agents) {
+      if (a is Map && a['displayName'] == forName) return a['id'] as String?;
+    }
+    return null;
+  }
+
   void _fileCheckpoint() {
     final reason = _checkpointField.text.trim();
     if (reason.isEmpty) {
@@ -1154,6 +1181,18 @@ class _CompanyHomeState extends State<CompanyHome> {
                   overflow: TextOverflow.ellipsis),
               subtitle: Text('${row['subject']}',
                   maxLines: 1, overflow: TextOverflow.ellipsis),
+              // v2.21.0 the ack door: a PENDING message offers its ack —
+              // the same store rule the macOS envelope tap runs; a
+              // refusal lands verbatim in the status line.
+              trailing: (row['status'] == 'pending' && row['to'] != null)
+                  ? IconButton(
+                      key: ValueKey('ack-${row['id']}'),
+                      tooltip: 'Acknowledge',
+                      icon: const Icon(Icons.done_all_outlined, size: 18),
+                      onPressed: () =>
+                          _ackMessage('${row['id']}', '${row['to']}'),
+                    )
+                  : null,
             ),
           if (rows.length > 5)
             ListTile(

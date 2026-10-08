@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.21.0] - 2026-10-09
+
+### Added — v2.21.0 "the ack door"
+- **`opc ack <message-id> <agent>`** — acknowledge one pending inbox
+  message for an employee: the SAME store rule the macOS envelope tap
+  runs (current product, right recipient, still pending), now
+  agent-parameterized — one rule, one place. Stale/double/wrong-
+  recipient acks refuse loudly. Bridge contract v1.23, and the Windows
+  shell's bus card grows an ack button on pending rows.
+
 ## [2.20.0] - 2026-10-09
 
 ### Added — v2.20.0 "the task file"

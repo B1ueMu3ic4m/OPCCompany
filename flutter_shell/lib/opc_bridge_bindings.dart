@@ -408,6 +408,19 @@ class OpcBridge {
     return raw;
   }
 
+  /// v1.23 the ack door: ONE pending inbox message flips to
+  /// acknowledged — the same store rule the macOS envelope tap runs
+  /// (current product, right recipient, still pending). Returns '' on
+  /// success and the verbatim refusal otherwise. Never throws; call on
+  /// the platform thread.
+  String messageAck(String messageID, String agentID) {
+    final rc =
+        command('message_ack', {'messageID': messageID, 'agentID': agentID});
+    if (rc == ok) return '';
+    final reason = lastError();
+    return reason.isEmpty ? 'message_ack refused' : reason;
+  }
+
   /// v1.11 seat steering from the shell: ONE line into an agent's live
   /// tmux seat. Returns '' on success — a WRITE rides the same channel,
   /// so silence IS success — and the verbatim refusal reason otherwise

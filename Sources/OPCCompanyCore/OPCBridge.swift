@@ -199,6 +199,24 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     guard store.createSafetyCheckpointChecked(reason: reason) else {
                         throw OPCBridgeRefusal(message: "checkpoint failed to land — the risk event names the error")
                     }
+                case "message_ack":
+                    // v1.23 the shell's ack: a pending message addressed
+                    // to THIS agent flips to acknowledged — the SAME
+                    // store rule the macOS envelope tap runs (current
+                    // product, right recipient, still pending; anything
+                    // else refuses by rule, never a silent no-op).
+                    // Honors the cross-process writer guard.
+                    guard let midString = payload["messageID"] as? String,
+                          let messageID = UUID(uuidString: midString),
+                          let aidString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: aidString) else {
+                        throw OPCBridgeRefusal(message: "message_ack requires UUID messageID and agentID")
+                    }
+                    try OPCWriteGuard.ensureExclusiveAccess()
+                    guard store.acknowledgeAgentMessage(messageID, for: agentID) else {
+                        throw OPCBridgeRefusal(message:
+                            "message_ack refused — the message must be PENDING and addressed to this agent on the current product")
+                    }
                 case "desk":
                     // v1.17 the agent desk: one employee's working
                     // surface — profile chips, session, assigned tasks,

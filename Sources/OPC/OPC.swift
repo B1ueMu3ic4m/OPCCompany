@@ -126,6 +126,12 @@ private func usage() -> String {
       opc messages [--json]      the message bus — the current product's
                                  recent agent traffic, newest first, who →
                                  whom. Pure read.
+      opc ack <message-id> <agent>
+                                 acknowledge one pending inbox message for
+                                 an employee — the same store rule the
+                                 app's envelope tap runs (current product,
+                                 right recipient, still pending). Boss-side
+                                 write.
       opc task <id> [--json]     one task's full file — work items,
                                  artifacts (existence judged now),
                                  approvals, referencing messages. Pure
@@ -249,6 +255,8 @@ struct OPC {
                 try messages(rest)
             case "task":
                 try task(rest)
+            case "ack":
+                try ack(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -1215,6 +1223,27 @@ struct OPC {
             for message in d["messages"] as? [[String: Any]] ?? [] {
                 print("  · [\(message["kind"] ?? "?")] \(message["from"] ?? "?") — \(message["subject"] ?? "?")")
             }
+        }
+    }
+
+    /// v2.21.0 "the ack door": acknowledge one pending inbox message
+    /// for an employee — the SAME store rule the macOS envelope tap
+    /// runs. Stale/double/wrong-recipient acks refuse loudly; a landed
+    /// ack names the message. Write: honors the writer guard.
+    @MainActor
+    static func ack(_ rest: [String]) throws {
+        guard rest.count == 2 else {
+            throw CLIError(message: "usage: opc ack <message-id> <agent>  (agent: uuid or exact display name; roster: opc team)")
+        }
+        guard let messageID = UUID(uuidString: rest[0]) else {
+            throw CLIError(message: "usage: opc ack <message-id> <agent>  (`\(rest[0])` is not a message id)")
+        }
+        try withStore { store in
+            let agent = try resolveAgent(store, rest[1])
+            guard store.acknowledgeAgentMessage(messageID, for: agent.id) else {
+                throw CLIError(message: "ack refused — the message must be PENDING and addressed to \(agent.displayName) on the current product")
+            }
+            print("acknowledged: \(messageID.uuidString) → \(agent.displayName)")
         }
     }
 

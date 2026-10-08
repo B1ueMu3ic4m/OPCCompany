@@ -45,9 +45,14 @@ extension CompanyStore {
         saveSnapshot()
         return record
     }
+    /// The ONE ack rule, agent-parameterized (v2.21.0 extraction): a
+    /// message flips to acknowledged only when it belongs to the CURRENT
+    /// product, is addressed to THIS agent, and is still pending —
+    /// anything else refuses by returning false (the checked-facade
+    /// discipline: no silent no-ops). The selection-bound variant below
+    /// is just this rule with the selected agent.
     @discardableResult
-    public func acknowledgeSelectedAgentMessage(_ messageID: UUID) -> Bool {
-        let agentID = selectedAgentID
+    public func acknowledgeAgentMessage(_ messageID: UUID, for agentID: UUID) -> Bool {
         let productID = selectedProductID
         guard let index = agentMessages.firstIndex(where: { $0.id == messageID }) else { return false }
         guard agentMessages[index].productID == productID,
@@ -64,6 +69,11 @@ extension CompanyStore {
         )
         saveSnapshot()
         return true
+    }
+
+    @discardableResult
+    public func acknowledgeSelectedAgentMessage(_ messageID: UUID) -> Bool {
+        acknowledgeAgentMessage(messageID, for: selectedAgentID)
     }
     @discardableResult
     public func acknowledgeSelectedAgentMessages() -> Int {
