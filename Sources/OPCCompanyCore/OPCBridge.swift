@@ -261,6 +261,22 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.messagesListJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "task_show":
+                    // v1.22 the task file: one task's full surface — the
+                    // task itself plus every edge that matters (work
+                    // items, artifacts with existsNow judged at read
+                    // time, approvals, referencing messages) — as a JSON
+                    // OBJECT riding the smuggle channel, composed from
+                    // the SAME accessors the macOS inspector renders.
+                    // payload: taskID (UUID, required). Pure read; an
+                    // unknown id refuses.
+                    guard let idString = payload["taskID"] as? String,
+                          let taskID = UUID(uuidString: idString) else {
+                        throw OPCBridgeRefusal(message: "task_show requires a UUID taskID")
+                    }
+                    let data = try store.taskJSON(taskID: taskID)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's
