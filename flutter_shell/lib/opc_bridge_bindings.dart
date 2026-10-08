@@ -122,6 +122,19 @@ class OpcSnapshot {
           if (p is Map<String, dynamic>)
             (p['id'] as String? ?? '?', p['name'] as String? ?? '?'),
       ];
+
+  /// v2.22.0 the task picker: (id, title, status) of every task the
+  /// snapshot carries — the snapshot's Swift encoder is the single
+  /// formatting authority; malformed rows are skipped, never guessed.
+  List<(String, String, String)> get taskList => [
+        for (final t in (raw['tasks'] as List? ?? const []))
+          if (t is Map<String, dynamic> && t['id'] is String)
+            (
+              t['id'] as String,
+              t['title'] as String? ?? '?',
+              t['status'] as String? ?? '?',
+            ),
+      ];
 }
 
 /// Thin object wrapper over the six C entry points. All calls are synchronous
@@ -403,6 +416,26 @@ class OpcBridge {
         raw['appRunning'] is! bool ||
         raw['overrideSet'] is! bool ||
         raw['warnings'] is! List) {
+      return null;
+    }
+    return raw;
+  }
+
+  /// v1.22 the task file door: one task's full surface — work items,
+  /// artifacts (existence judged at read time), approvals, referencing
+  /// messages. Malformed JSON or a refused verb returns null (never a
+  /// partial file).
+  Map<String, dynamic>? taskShow(String taskID) {
+    if (command('task_show', {'taskID': taskID}) != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    if (raw['taskID'] is! String ||
+        raw['title'] is! String ||
+        raw['status'] is! String ||
+        raw['workItems'] is! List ||
+        raw['artifacts'] is! List ||
+        raw['approvals'] is! List ||
+        raw['messages'] is! List) {
       return null;
     }
     return raw;

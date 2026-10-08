@@ -31,7 +31,7 @@ handles — both directions.
 | Goal ledger | `goalsListJSON()` — the closure traces the operations suite renders, newest-touched first | `goals_list` | v1.19 | `opc goals` | ✓ operations suite | ✓ goals card (v2.17.0) |
 | Risk ledger | `risksListJSON()` — the boss-view filtered risk stream (drills + backend noise never reach it), newest first | `risks_list` | v1.20 | `opc risks` | ✓ command center (boss view) | ✓ risks card (v2.18.0) |
 | Message bus | `messagesListJSON()` — the drill-filtered agent traffic, newest first, names resolved | `messages_list` | v1.21 | `opc messages` | ✓ workflow map | ✓ bus card (v2.19.0) |
-| Task file | `taskJSON(taskID:)` — task + work items + artifacts (existence at read time) + approvals + referencing messages | `task_show` | v1.22 | `opc task` | ✓ inspector | — (ids are uuids; a shell selector comes later) |
+| Task file | `taskJSON(taskID:)` — task + work items + artifacts (existence at read time) + approvals + referencing messages | `task_show` | v1.22 | `opc task` | ✓ inspector | ✓ task board selects, file renders (v2.22.0) |
 | Open windows | `openTerminalWindowAgentIDs()` (one `tmux list-windows` probe) | — (store read, v2.5.0) | — | `opc watch` seats line · `opc hall` | ✓ hall chip (throttled, v2.11.0) | — |
 | Snapshot | `snapshotJSONData()` | `opc_bridge_snapshot_json` | v1.0 | `opc status --json` | ✓ | ✓ |
 

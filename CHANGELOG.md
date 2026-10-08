@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [2.22.0] - 2026-10-09
+
+### Added — v2.22.0 "the task board selects"
+- **Windows shell**: the task board is now the task door's selector —
+  a tap pulls the tapped task's full file through `task_show` and
+  renders it (owner, criteria, edge counts, artifacts judged OK/MISSING
+  at read time). A refusal lands verbatim; the view never pretends.
+  This erases the task door's "—" in the shell column.
+
 ## [2.21.0] - 2026-10-09
 
 ### Added — v2.21.0 "the ack door"
