@@ -102,6 +102,12 @@ class FakeOpcBridge {
   String? checkpointRefusal;
   List<String> checkpointReasons = [];
 
+  /// v1.23 the ack door: null => success (lastError reset to ''); a
+  /// string => the verbatim refusal. Every (messageID, agentID) ask is
+  /// recorded in [ackCalls].
+  String? messageAckRefusal;
+  final List<(String messageID, String agentID)> ackCalls = [];
+
   /// v1.21 the message bus: null => the default one-message bus below.
   /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
   /// row) and pin the wrapper's wholesale refusal.
@@ -236,6 +242,23 @@ class FakeOpcBridge {
       autopilotCalls++;
       if (autopilotRefusal != null) {
         nextError = autopilotRefusal!;
+        return -1;
+      }
+      nextError = '';
+      return rc;
+    }
+    // v1.23 the shell's ack: a write — '' on success, refusal verbatim;
+    // the ask is recorded either way.
+    if (verb == 'message_ack') {
+      final messageID = payload['messageID'];
+      final agentID = payload['agentID'];
+      if (messageID is! String || agentID is! String) {
+        nextError = 'message_ack requires messageID and agentID';
+        return -1;
+      }
+      ackCalls.add((messageID, agentID));
+      if (messageAckRefusal != null) {
+        nextError = messageAckRefusal!;
         return -1;
       }
       nextError = '';

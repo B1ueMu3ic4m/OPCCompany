@@ -295,6 +295,15 @@ char *opc_bridge_snapshot_json(void);
  *       selected product. Pure read, same guard silence as
  *       approvals_list. The CLI's `task --json` serves THESE EXACT
  *       bytes.
+ *   "message_ack" {"messageID":"<uuid>","agentID":"<uuid>"}  (v1.23)
+ *       rc=0 → the message flipped to acknowledged — the SAME store
+ *       rule the macOS envelope tap runs: current product, addressed
+ *       to THIS agent, still PENDING; anything else (unknown id,
+ *       wrong recipient, already read, another product) refuses by
+ *       rule — never a silent no-op. An event rides the record. Write:
+ *       honors the cross-process writer guard, then saves. rc=-1 with
+ *       a reason in last_error: bad payload or the refusal above. The
+ *       CLI's `opc ack <message-id> <agent>` drives the same path.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety

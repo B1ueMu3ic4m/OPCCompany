@@ -49,6 +49,7 @@ handles — both directions.
 | **Steering** | `terminalSendLine` | `terminal_send` | v1.11 | `opc tell` (+ `-` stdin, v2.4.0) | ✓ send line (v2.1.0) | ✓ input (v0.18) |
 | Seat spawn/stop | `spawnLocalSeat`/`stopLocalSeat` | `seat_spawn` / `seat_stop` | v1.12 | — (deliberate: pipe seats belong to a long-lived office) | — (tmux seats are the macOS shape) | ✓ toggle (v2.0.0) |
 | Seat roster | `localSeatStatuses()` | `seat_list` | v1.13 | — (a visitor sees no seats) | — | ✓ drives the toggle (v2.3.0) |
+| Message ack | `acknowledgeAgentMessage(_:for:)` — one rule, agent-parameterized (v2.21.0) | `message_ack` | v1.23 | `opc ack <id> <agent>` | ✓ envelope tap | ✓ ack button (v2.21.0) |
 
 ## The honest-refusal discipline
 
