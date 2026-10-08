@@ -118,6 +118,11 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v2.19.0 the message bus (bridge v1.21): rides the standard refresh —
   // the drill-filtered traffic, newest first, names resolved.
   List<Map<String, dynamic>>? _messages;
+  // v2.22.0 the task picker: the snapshot's list SELECTS, the task door
+  // RENDERS — the file is pulled on demand (bridge v1.22 task_show) and
+  // never cached across refreshes. null = nothing opened (or refused —
+  // the status line says which).
+  Map<String, dynamic>? _taskFile;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -421,6 +426,18 @@ class _CompanyHomeState extends State<CompanyHome> {
     return null;
   }
 
+  /// v2.22.0 the task picker: opening a task pulls its file through the
+  /// task door NOW — a refusal (or an old core) lands verbatim in the
+  /// status line; the view never pretends.
+  void _openTask(String taskID) {
+    setState(() {
+      final file = _bridge.taskShow(taskID);
+      _taskFile = file;
+      _lastAction =
+          file == null ? 'task: refused — ${_bridge.lastError()}' : 'task: ok';
+    });
+  }
+
   void _fileCheckpoint() {
     final reason = _checkpointField.text.trim();
     if (reason.isEmpty) {
@@ -572,10 +589,20 @@ class _CompanyHomeState extends State<CompanyHome> {
                               leading: Icon(_taskIcon(entry.key)),
                               title: Text(t['title'] as String? ?? '?',
                                   maxLines: 1, overflow: TextOverflow.ellipsis),
+                              // v2.22.0 the task door: the board SELECTS,
+                              // the file RENDERS — pulled on demand through
+                              // task_show, never cached across refreshes.
+                              onTap: t['id'] is String
+                                  ? () => _openTask(t['id'] as String)
+                                  : null,
                             ),
                           ),
                       ],
                     const SizedBox(height: 12),
+                    if (_taskFile != null) ...[
+                      _taskFileCard(_taskFile!),
+                      const SizedBox(height: 12),
+                    ],
                     Text('Employees — tap to watch the transcript',
                         style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
@@ -1152,6 +1179,51 @@ class _CompanyHomeState extends State<CompanyHome> {
 
   /// v0.15.0 weight card: one honest line — how heavy, how close to the
   /// advisory the maintenance panel enforces. An old core says so.
+  /// v2.22.0 the task file view: the door's own object, rendered row by
+  /// row — edges counted, artifacts judged (OK/MISSING at read time).
+  Widget _taskFileCard(Map<String, dynamic> f) {
+    final workItems = (f['workItems'] as List).length;
+    final artifacts = (f['artifacts'] as List).cast<Map<String, dynamic>>();
+    final approvals = (f['approvals'] as List).length;
+    final messages = (f['messages'] as List).length;
+    return Container(
+      key: const ValueKey('task-file'),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${f['title']} — ${f['status']}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text('owner: ${f['owner'] ?? '—'}',
+              style: const TextStyle(fontSize: 11)),
+          Text('criteria: ${f['successCriteria']}',
+              style: const TextStyle(fontSize: 11),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
+          Text(
+              'work items: $workItems · approvals: $approvals · messages: $messages',
+              style: const TextStyle(fontSize: 11)),
+          for (final a in artifacts)
+            Text(
+                '[${a['existsNow'] == true ? "OK" : "MISSING"}] ${a['title']} (${a['kind']})',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: a['existsNow'] == true ? null : Colors.redAccent),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
   /// v2.19.0 the message bus card: kind + route + subject. Facts from
   /// the door; an old core says so; never a fabricated message.
   Widget _messagesCard() {

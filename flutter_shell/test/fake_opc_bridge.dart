@@ -102,6 +102,11 @@ class FakeOpcBridge {
   String? checkpointRefusal;
   List<String> checkpointReasons = [];
 
+  /// v1.22 the task file door: null => the default one-edge file below.
+  /// Typed dynamic so tests can script a MALFORMED payload (a non-List
+  /// workItems) and pin the wrapper's wholesale refusal.
+  Map<String, dynamic>? taskShowResult;
+
   /// v1.23 the ack door: null => success (lastError reset to ''); a
   /// string => the verbatim refusal. Every (messageID, agentID) ask is
   /// recorded in [ackCalls].
@@ -400,6 +405,35 @@ class FakeOpcBridge {
               'updatedAt': 1757000600,
             },
           ],
+      // v1.22 the task file: the object rides the smuggle channel
+      'task_show' => taskShowResult ??
+          {
+            'taskID': payload['taskID'],
+            'title': '实现 goals 门',
+            'status': 'running',
+            'owner': 'Alice',
+            'successCriteria': 'opc goals 能读出链',
+            'artifactPath': null,
+            'workItems': [
+              {
+                'itemID': 'wi1',
+                'status': 'running',
+                'agent': 'Alice',
+                'promptPreview': '写实现'
+              },
+            ],
+            'artifacts': [
+              {
+                'id': 'a1',
+                'title': '实现报告',
+                'kind': 'report',
+                'path': '/tmp/ship.md',
+                'existsNow': true
+              },
+            ],
+            'approvals': <dynamic>[],
+            'messages': <dynamic>[],
+          },
       'doctor' => doctorResult ??
           const {
             'contractVersion': 'v1.18',
