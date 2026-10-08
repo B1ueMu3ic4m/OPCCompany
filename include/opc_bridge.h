@@ -281,6 +281,20 @@ char *opc_bridge_snapshot_json(void);
  *       honest office answers []. Payload ignored. Pure read, same
  *       guard silence as approvals_list. The CLI's `messages --json`
  *       serves THESE EXACT bytes.
+ *   "task_show" {"taskID":"<uuid>"}       (v1.22)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       (.sortedKeys byte-stable): one task's full surface — {taskID,
+ *       title, status, owner|null, successCriteria, artifactPath|null,
+ *       workItems:[{itemID,status,agent,promptPreview}],
+ *       artifacts:[{id,title,kind,path,existsNow}],
+ *       approvals:[{id,title,status}], messages:[{kind,from,subject}]}
+ *       — composed from the SAME accessors the macOS inspector
+ *       renders; artifacts' existsNow is judged AT READ TIME, never
+ *       serialized. payload: taskID (UUID, required). rc=-1 with a
+ *       reason in last_error: not a UUID or no such task on the
+ *       selected product. Pure read, same guard silence as
+ *       approvals_list. The CLI's `task --json` serves THESE EXACT
+ *       bytes.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety

@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [2.20.0] - 2026-10-09
+
+### Added — v2.20.0 "the task file"
+- **`opc task <id>`** — one task's full surface: work items, artifacts
+  (existence judged at READ time — a deleted claim says MISSING),
+  approvals, and the messages that reference it — the SAME composition
+  the macOS inspector renders. Unknown ids refuse honestly. Bridge
+  contract v1.22. Pure read.
+
 ## [2.19.0] - 2026-10-08
 
 ### Added — v2.19.0 "the message bus"

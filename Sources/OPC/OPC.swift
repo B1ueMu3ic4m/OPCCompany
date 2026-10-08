@@ -126,10 +126,15 @@ private func usage() -> String {
       opc messages [--json]      the message bus — the current product's
                                  recent agent traffic, newest first, who →
                                  whom. Pure read.
+      opc task <id> [--json]     one task's full file — work items,
+                                 artifacts (existence judged now),
+                                 approvals, referencing messages. Pure
+                                 read. (ids: `opc status --json` or
+                                 `opc desk <agent>`)
 
     Read commands (status, approvals, history, deliverables, standup,
     team, stalls, catchup, desk, transcript, doctor, goals, risks,
-    messages) accept
+    messages, task) accept
     --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
@@ -242,6 +247,8 @@ struct OPC {
                 try risks(rest)
             case "messages":
                 try messages(rest)
+            case "task":
+                try task(rest)
             default:
                 FileHandle.standardError.write(Data("unknown command: \(command)\n\n".utf8))
                 print(usage())
@@ -1166,6 +1173,47 @@ struct OPC {
             }
             if rows.count > 15 {
                 print("… and \(rows.count - 15) older (opc messages --json for the full bus)")
+            }
+        }
+    }
+
+    /// v2.20.0 "the task file door": one task's full surface from the
+    /// visitor's seat — work items, artifacts (existence judged at read
+    /// time), approvals, and the messages that reference it — the SAME
+    /// composition the macOS inspector renders. \`--json\` serves the
+    /// bridge's exact bytes. Pure read.
+    @MainActor
+    static func task(_ rest: [String]) throws {
+        let (json, positional) = splitJSONFlag(rest)
+        guard let key = positional.first else {
+            throw CLIError(message: "usage: opc task <task-id> [--json]  (ids: `opc status --json` or `opc desk <agent>`)")
+        }
+        guard let taskID = UUID(uuidString: key) else {
+            throw CLIError(message: "usage: opc task <task-id> [--json]  (`\(key)` is not a task id; ids: `opc status --json` or `opc desk <agent>`)")
+        }
+        try withStore { store in
+            let data = try store.taskJSON(taskID: taskID)
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let d = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+            print("\(d["title"] ?? "?") — \(d["status"] ?? "?")\(d["owner"] == nil ? "" : " · \(d["owner"] ?? "?")")")
+            let criteria = d["successCriteria"] as? String ?? ""
+            if !criteria.isEmpty { print("  criteria: \(criteria)") }
+            if let path = d["artifactPath"] as? String { print("  artifact path: \(path)") }
+            for item in d["workItems"] as? [[String: Any]] ?? [] {
+                print("  · [\(item["status"] ?? "?")] \(item["agent"] ?? "?"): \(item["promptPreview"] ?? "?")")
+            }
+            for artifact in d["artifacts"] as? [[String: Any]] ?? [] {
+                let verdict = artifact["existsNow"] as? Bool == true ? "OK" : "MISSING"
+                print("  · [\(verdict)] \(artifact["title"] ?? "?") (\(artifact["kind"] ?? "?")) → \(artifact["path"] ?? "?")")
+            }
+            for approval in d["approvals"] as? [[String: Any]] ?? [] {
+                print("  · [approval:\(approval["status"] ?? "?")] \(approval["title"] ?? "?")")
+            }
+            for message in d["messages"] as? [[String: Any]] ?? [] {
+                print("  · [\(message["kind"] ?? "?")] \(message["from"] ?? "?") — \(message["subject"] ?? "?")")
             }
         }
     }

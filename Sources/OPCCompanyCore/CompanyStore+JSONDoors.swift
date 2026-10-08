@@ -365,4 +365,45 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: rows,
                                           options: [.sortedKeys])
     }
+
+    /// One task's full file as an OBJECT (bridge v1.22 `task_show`): the
+    /// task itself plus every edge that matters — work items, artifacts
+    /// (with existsNow judged AT READ TIME), approvals, and the messages
+    /// that reference it — composed from the SAME accessors the macOS
+    /// inspector renders. Unknown ids refuse. Pure read.
+    public func taskJSON(taskID: UUID) throws -> Data {
+        guard let task = selectedProductTasks.first(where: { $0.id == taskID }) else {
+            throw OPCBridgeRefusal(message:
+                "task_show: no task with id \(taskID.uuidString) on the selected product")
+        }
+        let queue = selectedProductWorkQueue.filter { $0.taskID == taskID }
+        let artifacts = selectedProductArtifacts.filter { $0.taskID == taskID }
+        let approvals = selectedProductApprovals.filter { $0.taskID == taskID }
+        let messages = selectedProductRecentAgentMessages.filter { $0.taskID == taskID }
+        var object: [String: Any] = [
+            "taskID": task.id.uuidString,
+            "title": task.title,
+            "status": task.status.rawValue,
+            "successCriteria": task.successCriteria,
+            "workItems": queue.map { ["itemID": $0.id.uuidString,
+                                      "status": $0.status.rawValue,
+                                      "agent": agentName($0.agentID),
+                                      "promptPreview": $0.promptPreview] },
+            "artifacts": artifacts.map { ["id": $0.id.uuidString,
+                                          "title": $0.title,
+                                          "kind": $0.kind.rawValue,
+                                          "path": $0.path,
+                                          "existsNow": $0.existsOnDisk] },
+            "approvals": approvals.map { ["id": $0.id.uuidString,
+                                          "title": $0.title,
+                                          "status": $0.status.rawValue] },
+            "messages": messages.prefix(10).map { ["kind": $0.kind.rawValue,
+                                                   "from": agentName($0.fromAgentID),
+                                                   "subject": $0.subject] },
+        ]
+        object["owner"] = task.ownerID.map { agentName($0) } ?? NSNull()
+        object["artifactPath"] = task.artifactPath ?? NSNull()
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
 }
