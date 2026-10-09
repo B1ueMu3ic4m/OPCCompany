@@ -217,6 +217,27 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                         throw OPCBridgeRefusal(message:
                             "message_ack refused — the message must be PENDING and addressed to this agent on the current product")
                     }
+                case "message_ack_all":
+                    // v1.25 the shell's batch ack: every PENDING message
+                    // addressed to THIS agent on the CURRENT product
+                    // flips to acknowledged — the SAME store rule the
+                    // macOS mark-all-read runs, one event riding the
+                    // batch. The count is the honest receipt: zero
+                    // pending answers {"acked":0}, never a fake success.
+                    // Honors the cross-process writer guard.
+                    guard let aidString = payload["agentID"] as? String,
+                          let agentID = UUID(uuidString: aidString) else {
+                        throw OPCBridgeRefusal(message: "message_ack_all requires a UUID agentID")
+                    }
+                    try OPCWriteGuard.ensureExclusiveAccess()
+                    let acked = store.acknowledgeAgentMessages(for: agentID)
+                    guard let data = try? JSONSerialization.data(
+                        withJSONObject: ["acked": acked],
+                        options: [.sortedKeys]) else {
+                        throw OPCBridgeRefusal(message: "message_ack_all: serialization failed")
+                    }
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "desk":
                     // v1.17 the agent desk: one employee's working
                     // surface — profile chips, session, assigned tasks,
