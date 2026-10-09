@@ -75,9 +75,14 @@ extension CompanyStore {
     public func acknowledgeSelectedAgentMessage(_ messageID: UUID) -> Bool {
         acknowledgeAgentMessage(messageID, for: selectedAgentID)
     }
+    /// The ONE batch-ack rule, agent-parameterized (v2.24.0 extraction):
+    /// every PENDING message addressed to THIS agent on the CURRENT
+    /// product flips to acknowledged, one event rides the batch, and the
+    /// count is the honest receipt (zero pending answers 0 — nothing to
+    /// pretend). The selection-bound variant is this rule with the
+    /// selected agent.
     @discardableResult
-    public func acknowledgeSelectedAgentMessages() -> Int {
-        let agentID = selectedAgentID
+    public func acknowledgeAgentMessages(for agentID: UUID) -> Int {
         let productID = selectedProductID
         var count = 0
         let now = Date()
@@ -99,6 +104,11 @@ extension CompanyStore {
             saveSnapshot()
         }
         return count
+    }
+
+    @discardableResult
+    public func acknowledgeSelectedAgentMessages() -> Int {
+        acknowledgeAgentMessages(for: selectedAgentID)
     }
     @discardableResult
     public func acknowledgeSelectedProductAgentMessages() -> Int {
