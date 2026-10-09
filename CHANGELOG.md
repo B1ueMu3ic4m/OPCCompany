@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.23.0] - 2026-10-10
+
+### Added — v2.23.0 "the search door"
+- **`opc search <query>`** — ONE keyword across the current product's
+  read surfaces (tasks, artifacts, drill-filtered agent messages,
+  events), case-insensitive, newest first, each hit naming its door so
+  the boss knows where to open next. `--limit` caps (default 30); an
+  empty query refuses; zero hits answer honestly. Bridge contract
+  v1.24. Pure read.
+
 ## [2.22.0] - 2026-10-09
 
 ### Added — v2.22.0 "the task board selects"

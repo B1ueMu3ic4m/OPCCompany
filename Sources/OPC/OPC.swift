@@ -126,6 +126,11 @@ private func usage() -> String {
       opc messages [--json]      the message bus — the current product's
                                  recent agent traffic, newest first, who →
                                  whom. Pure read.
+      opc search <query> [--limit N] [--json]
+                                 one keyword across the current product —
+                                 tasks, artifacts, messages, events —
+                                 newest first, each hit names its door.
+                                 Pure read.
       opc ack <message-id> <agent>
                                  acknowledge one pending inbox message for
                                  an employee — the same store rule the
@@ -140,7 +145,7 @@ private func usage() -> String {
 
     Read commands (status, approvals, history, deliverables, standup,
     team, stalls, catchup, desk, transcript, doctor, goals, risks,
-    messages, task) accept
+    messages, task, search) accept
     --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
@@ -255,6 +260,8 @@ struct OPC {
                 try messages(rest)
             case "task":
                 try task(rest)
+            case "search":
+                try search(rest)
             case "ack":
                 try ack(rest)
             default:
@@ -1244,6 +1251,54 @@ struct OPC {
                 throw CLIError(message: "ack refused — the message must be PENDING and addressed to \(agent.displayName) on the current product")
             }
             print("acknowledged: \(messageID.uuidString) → \(agent.displayName)")
+        }
+    }
+
+    /// v2.23.0 "the search door": ONE keyword across the current
+    /// product's read surfaces — the same bytes the bridge serves.
+    /// An empty query refuses; zero hits answers honestly.
+    @MainActor
+    static func search(_ rest: [String]) throws {
+        var json = false
+        var positional: [String] = []
+        var limit = 30
+        var index = 0
+        while index < rest.count {
+            let token = rest[index]
+            if token == "--json" { json = true }
+            else if token == "--limit", index + 1 < rest.count {
+                guard let parsed = Int(rest[index + 1]), parsed > 0 else {
+                    throw CLIError(message: "usage: opc search <query> [--limit N] [--json]  (limit: a positive count, default 30)")
+                }
+                limit = parsed
+                index += 1
+            } else {
+                positional.append(token)
+            }
+            index += 1
+        }
+        guard let query = positional.first, positional.count == 1 else {
+            throw CLIError(message: "usage: opc search <query> [--limit N] [--json]  (one query, quoted if it has spaces)")
+        }
+        try withStore { store in
+            let data = try store.searchJSON(query: query, limit: limit)
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+            guard !rows.isEmpty else {
+                print("no hits for \(query) — the product is quiet on it")
+                return
+            }
+            for row in rows.prefix(15) {
+                print("[\(row["kind"] ?? "?")] \(row["title"] ?? "?")")
+                let detail = row["detail"] as? String ?? ""
+                if !detail.isEmpty { print("    \(detail)") }
+            }
+            if rows.count > 15 {
+                print("… and \(rows.count - 15) more (opc search \(query) --json for the full list)")
+            }
         }
     }
 

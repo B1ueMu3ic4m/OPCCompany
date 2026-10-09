@@ -406,4 +406,62 @@ extension CompanyStore {
         return try JSONSerialization.data(withJSONObject: object,
                                           options: [.sortedKeys])
     }
+
+    /// The search door as a LIST (bridge v1.24 `search`): one keyword
+    /// across the CURRENT product's four read surfaces — tasks, artifacts,
+    /// agent messages (drill-filtered), events — case-insensitive
+    /// substring, newest-first, capped at the asked limit (default 30,
+    /// hard cap 50). Rows: {kind, id, title, detail, createdAt (epoch)} —
+    /// kind names the surface so the boss knows which door to open next.
+    /// An empty query refuses; zero hits answers []. Pure read.
+    public func searchJSON(query: String, limit: Int = 30) throws -> Data {
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else {
+            throw OPCBridgeRefusal(message: "search requires a non-empty query")
+        }
+        let capped = min(max(limit, 1), 50)
+        var hits: [[String: Any]] = []
+
+        // tasks carry no date — createdAt 0 orders them last among equals
+        for task in selectedProductTasks
+        where task.title.localizedCaseInsensitiveContains(needle)
+            || task.successCriteria.localizedCaseInsensitiveContains(needle) {
+            hits.append(["kind": "task", "id": task.id.uuidString,
+                         "title": task.title,
+                         "detail": task.successCriteria,
+                         "createdAt": 0])
+        }
+        // tasks carry no dates — the id keeps rows unique; order them last
+        for artifact in selectedProductArtifacts
+        where artifact.title.localizedCaseInsensitiveContains(needle)
+            || artifact.summary.localizedCaseInsensitiveContains(needle)
+            || artifact.path.localizedCaseInsensitiveContains(needle) {
+            hits.append(["kind": "artifact", "id": artifact.id.uuidString,
+                         "title": artifact.title, "detail": artifact.summary,
+                         "createdAt": Int(artifact.createdAt.timeIntervalSince1970)])
+        }
+        for message in selectedProductRecentAgentMessages
+        where message.subject.localizedCaseInsensitiveContains(needle)
+            || message.body.localizedCaseInsensitiveContains(needle) {
+            hits.append(["kind": "message", "id": message.id.uuidString,
+                         "title": message.subject, "detail": message.body,
+                         "createdAt": Int(message.createdAt.timeIntervalSince1970)])
+        }
+        for event in selectedProductEvents
+        where event.title.localizedCaseInsensitiveContains(needle)
+            || event.detail.localizedCaseInsensitiveContains(needle) {
+            hits.append(["kind": "event", "id": event.id.uuidString,
+                         "title": event.title, "detail": event.detail,
+                         "createdAt": Int(event.createdAt.timeIntervalSince1970)])
+        }
+
+        let ordered = hits.sorted { lhs, rhs in
+            let l = lhs["createdAt"] as? Int ?? 0
+            let r = rhs["createdAt"] as? Int ?? 0
+            if l != r { return l > r }
+            return (lhs["id"] as? String ?? "") < (rhs["id"] as? String ?? "")
+        }.prefix(capped)
+        return try JSONSerialization.data(withJSONObject: Array(ordered),
+                                          options: [.sortedKeys])
+    }
 }

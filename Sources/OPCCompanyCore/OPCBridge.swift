@@ -295,6 +295,22 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.taskJSON(taskID: taskID)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "search":
+                    // v1.24 the search door: ONE keyword across the
+                    // CURRENT product's read surfaces (tasks, artifacts,
+                    // drill-filtered messages, events) — case-insensitive
+                    // substring, newest-first, capped (default 30, hard
+                    // cap 50), riding the smuggle channel as a JSON
+                    // ARRAY. An empty query refuses; zero hits answers
+                    // []. Pure read, same guard silence as
+                    // approvals_list.
+                    guard let query = payload["query"] as? String else {
+                        throw OPCBridgeRefusal(message: "search requires a query")
+                    }
+                    let limit = payload["limit"] as? Int ?? 30
+                    let data = try store.searchJSON(query: query, limit: limit)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's
