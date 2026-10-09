@@ -126,6 +126,10 @@ private func usage() -> String {
       opc messages [--json]      the message bus — the current product's
                                  recent agent traffic, newest first, who →
                                  whom. Pure read.
+      opc ack --all <agent>      acknowledge EVERY pending inbox message
+                                 for an employee — one batch, one event,
+                                 the count is the honest receipt.
+                                 Boss-side write.
       opc ack <message-id> <agent>
                                  acknowledge one pending inbox message for
                                  an employee — the same store rule the
@@ -1232,8 +1236,19 @@ struct OPC {
     /// ack names the message. Write: honors the writer guard.
     @MainActor
     static func ack(_ rest: [String]) throws {
+        if rest.first == "--all" {
+            guard rest.count == 2 else {
+                throw CLIError(message: "usage: opc ack --all <agent>  (agent: uuid or exact display name; roster: opc team)")
+            }
+            try withStore { store in
+                let agent = try resolveAgent(store, rest[1])
+                let acked = store.acknowledgeAgentMessages(for: agent.id)
+                print("acknowledged \(acked) message\(acked == 1 ? "" : "s") for \(agent.displayName)\(acked == 0 ? " — the inbox was already clear" : "")")
+            }
+            return
+        }
         guard rest.count == 2 else {
-            throw CLIError(message: "usage: opc ack <message-id> <agent>  (agent: uuid or exact display name; roster: opc team)")
+            throw CLIError(message: "usage: opc ack <message-id> <agent>  (or `opc ack --all <agent>`; agent: uuid or exact display name; roster: opc team)")
         }
         guard let messageID = UUID(uuidString: rest[0]) else {
             throw CLIError(message: "usage: opc ack <message-id> <agent>  (`\(rest[0])` is not a message id)")

@@ -304,6 +304,15 @@ char *opc_bridge_snapshot_json(void);
  *       honors the cross-process writer guard, then saves. rc=-1 with
  *       a reason in last_error: bad payload or the refusal above. The
  *       CLI's `opc ack <message-id> <agent>` drives the same path.
+ *   "message_ack_all" {"agentID":"<uuid>"}  (v1.25)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       {"acked":N}: every PENDING message addressed to THIS agent on
+ *       the CURRENT product flipped to acknowledged — the SAME store
+ *       rule the macOS mark-all-read runs, one event riding the batch.
+ *       N is the honest receipt (zero pending answers 0 — never a fake
+ *       success). Write: honors the cross-process writer guard, then
+ *       saves. rc=-1 with a reason in last_error: not a UUID. The
+ *       CLI's `opc ack --all <agent>` drives the same path.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety
