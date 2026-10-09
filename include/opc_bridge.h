@@ -304,6 +304,19 @@ char *opc_bridge_snapshot_json(void);
  *       honors the cross-process writer guard, then saves. rc=-1 with
  *       a reason in last_error: bad payload or the refusal above. The
  *       CLI's `opc ack <message-id> <agent>` drives the same path.
+ *   "search" {"query":"<text>","limit":N?}  (v1.24)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY
+ *       (.sortedKeys byte-stable): ONE keyword across the CURRENT
+ *       product's read surfaces — tasks, artifacts, drill-filtered
+ *       agent messages, events — case-insensitive substring, newest-
+ *       first, capped at the asked limit (default 30, hard cap 50).
+ *       Each row: {kind ("task"|"artifact"|"message"|"event"), id,
+ *       title, detail, createdAt (epoch seconds; tasks carry no date
+ *       and answer 0 — they order last among equals)}. kind names the
+ *       surface so the boss knows which door to open next. An empty
+ *       query refuses (rc=-1); zero hits answers []. Pure read, same
+ *       guard silence as approvals_list. The CLI's `search --json`
+ *       serves THESE EXACT bytes.
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety
