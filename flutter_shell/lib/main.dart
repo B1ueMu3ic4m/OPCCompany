@@ -82,6 +82,8 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v1.16 the checkpoint door: the reason IS the record — the boss
   // types why, the button files it verbatim.
   final TextEditingController _checkpointField = TextEditingController();
+  // v2.26.0 the search box: the query is typed, the ask is on demand.
+  final TextEditingController _searchField = TextEditingController();
   OpcSnapshot? _snap;
   String? _lastAction;
   // v0.6.0 decision ledger (v1.4 history_list): event-driven exactly like
@@ -123,6 +125,10 @@ class _CompanyHomeState extends State<CompanyHome> {
   // never cached across refreshes. null = nothing opened (or refused —
   // the status line says which).
   Map<String, dynamic>? _taskFile;
+  // v2.23.0 the search door: pulled on demand from the field — a query
+  // is a point-in-time ask, not a door that rides every refresh.
+  // null = nothing asked yet (or refused — the status line says which).
+  List<Map<String, dynamic>>? _searchHits;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -361,6 +367,39 @@ class _CompanyHomeState extends State<CompanyHome> {
     });
   }
 
+  /// v2.26.0 the search hits: each hit NAMES its door (kind) so the
+  /// boss knows where to open next. Facts from the door; a refusal
+  /// never renders as if it were facts.
+  Widget _searchHitsCard(List<Map<String, dynamic>> hits) {
+    if (hits.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.search_off),
+              title: Text('No hits — the product is quiet on it.')));
+    }
+    return Card(
+      key: const ValueKey('search-hits'),
+      child: Column(
+        children: [
+          for (final row in hits.take(6))
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.search, size: 18),
+              title: Text('[${row['kind']}] ${row['title']}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text('${row['detail'] ?? ''}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          if (hits.length > 6)
+            ListTile(
+                dense: true,
+                title: Text('… and ${hits.length - 6} more',
+                    style: const TextStyle(fontSize: 12))),
+        ],
+      ),
+    );
+  }
+
   /// v2.16.0 the doctor's rows: FACTS, never a verdict stamp — the boss
   /// reads the warnings and decides.
   Widget _doctorReport(Map<String, dynamic> d) {
@@ -435,6 +474,24 @@ class _CompanyHomeState extends State<CompanyHome> {
       _taskFile = file;
       _lastAction =
           file == null ? 'task: refused — ${_bridge.lastError()}' : 'task: ok';
+    });
+  }
+
+  /// v2.26.0 the search box: the query IS the ask — an empty field
+  /// refuses locally (zero bridge traffic, nothing pretended); the hits
+  /// render with their door names, a refusal lands verbatim.
+  void _runSearch() {
+    final query = _searchField.text.trim();
+    if (query.isEmpty) {
+      setState(() => _lastAction = 'search: empty — type what to look for');
+      return;
+    }
+    setState(() {
+      final hits = _bridge.search(query);
+      _searchHits = hits;
+      _lastAction = hits == null
+          ? 'search: refused — ${_bridge.lastError()}'
+          : 'search: ok';
     });
   }
 
@@ -859,6 +916,32 @@ class _CompanyHomeState extends State<CompanyHome> {
                 label: const Text('Doctor — environment facts'),
               ),
               if (_doctor != null) _doctorReport(_doctor!),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const ValueKey('search-field'),
+                      controller: _searchField,
+                      style: const TextStyle(fontSize: 12),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                        hintText: 'Search this product…',
+                      ),
+                      onSubmitted: (_) => _runSearch(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    key: const ValueKey('search-button'),
+                    onPressed: _runSearch,
+                    icon: const Icon(Icons.search),
+                    label: const Text('Search'),
+                  ),
+                ],
+              ),
+              if (_searchHits != null) _searchHitsCard(_searchHits!),
             ],
           ),
         ),

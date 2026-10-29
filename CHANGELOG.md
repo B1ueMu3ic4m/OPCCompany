@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [2.26.0] - 2026-10-10
+
+### Added — v2.26.0 "the search box"
+- **Windows shell**: the search door grows its box — type a keyword,
+  hit Search, and the hits render with their door names (`[task]`,
+  `[event]`, …). An empty field refuses locally with zero bridge
+  traffic; a refusal lands verbatim; zero hits say so honestly. This
+  erases the search door's "—" in the shell column.
+
 ## [2.25.0] - 2026-10-10
 
 ### Added — v2.25.0 "the ledger in the frame"
