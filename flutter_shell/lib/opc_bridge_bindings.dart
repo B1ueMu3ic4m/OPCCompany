@@ -441,6 +441,32 @@ class OpcBridge {
     return raw;
   }
 
+  /// v1.24 the search door: ONE keyword across the product's read
+  /// surfaces. Each row carries its `kind` so the boss knows which door
+  /// to open next. Malformed JSON or a refused verb returns null (never
+  /// a partial list).
+  List<Map<String, dynamic>>? search(String query) {
+    if (command('search', {'query': query}) != ok) return null;
+    final source = lastError();
+    if (source.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(source);
+      if (decoded is! List) return null;
+      final rows = decoded.whereType<Map<String, dynamic>>().toList();
+      if (rows.length != decoded.length) return null;
+      for (final r in rows) {
+        if (r['kind'] is! String ||
+            r['id'] is! String ||
+            r['title'] is! String) {
+          return null;
+        }
+      }
+      return rows;
+    } on FormatException {
+      return null;
+    }
+  }
+
   /// v1.23 the ack door: ONE pending inbox message flips to
   /// acknowledged — the same store rule the macOS envelope tap runs
   /// (current product, right recipient, still pending). Returns '' on

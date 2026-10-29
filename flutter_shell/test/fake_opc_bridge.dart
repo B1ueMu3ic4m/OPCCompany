@@ -107,6 +107,11 @@ class FakeOpcBridge {
   /// workItems) and pin the wrapper's wholesale refusal.
   Map<String, dynamic>? taskShowResult;
 
+  /// v1.24 the search door: null => the default two-hit page below.
+  /// Typed dynamic so tests can script a MALFORMED payload (a row
+  /// without `kind`) and pin the wrapper's wholesale refusal.
+  List<dynamic>? searchResult;
+
   /// v1.23 the ack door: null => success (lastError reset to ''); a
   /// string => the verbatim refusal. Every (messageID, agentID) ask is
   /// recorded in [ackCalls].
@@ -377,6 +382,24 @@ class FakeOpcBridge {
               'detail': '模块 A 编译错误',
               'agentID': 'fake-alice',
               'createdAt': 1757000900,
+            },
+          ],
+      // v1.24 the search door: an ARRAY of {kind,id,title,...} rows
+      'search' => searchResult ??
+          const [
+            {
+              'kind': 'task',
+              'id': 't1',
+              'title': '实现 goals 门',
+              'detail': '读出链',
+              'createdAt': 1757001000
+            },
+            {
+              'kind': 'event',
+              'id': 'e1',
+              'title': 'goals 门编译失败',
+              'detail': '',
+              'createdAt': 1757000900
             },
           ],
       'goals_list' => goalsListResult ??
