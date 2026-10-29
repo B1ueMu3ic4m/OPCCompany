@@ -842,6 +842,21 @@ struct OPC {
         let pending = store.selectedProductPendingApprovals.count
         frame.append("  awaiting you: \(pending) approval\(pending == 1 ? "" : "s")")
 
+        // v2.25.0 the goals line: the ledger's leading edge — the most
+        // recently touched chain and its completion score, from the SAME
+        // closure traces the goals door serves.
+        let traces = store.selectedProductClosureTraces
+        if traces.isEmpty {
+            frame.append("  goals: none yet — opc goal starts one")
+        } else {
+            let top = traces[0]
+            var goal = top.goal
+            if goal.count > 30 {
+                goal = String(goal.prefix(30)) + "…"
+            }
+            frame.append("  goals: \(traces.count) chain\(traces.count == 1 ? "" : "s") — leading \"\(goal)\" at \(top.completionScore)% (\(top.status.rawValue))")
+        }
+
         // v2.5.0 the seats line: who has a physically open tmux window
         // RIGHT NOW — one list-windows probe feeds the whole frame.
         let open = store.openTerminalWindowAgentIDs()

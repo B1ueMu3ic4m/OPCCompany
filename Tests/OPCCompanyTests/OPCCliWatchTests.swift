@@ -78,6 +78,7 @@ private func runCLI(_ args: [String], supportDir: URL) throws
                       status: .waitingApproval, promptPreview: "p",
                       updatedAt: now.addingTimeInterval(-90 * 60)),
     ]
+    #expect(store.startCTOSupervisorGoal(goal: "ship the watch ledger line") != nil)
     store.saveSnapshot()
     // pure-read baseline = the SEEDED state (the comparison below must
     // use these bytes, not whatever preceded the seed)
@@ -94,12 +95,17 @@ private func runCLI(_ args: [String], supportDir: URL) throws
     // the frame quotes the doors
     #expect(s.out.contains("OPC Company — "))
     #expect(s.out.contains("· "), "the wall-clock stamp is present")
-    #expect(s.out.contains("tasks (1):"), "task counts ride the frame")
-    #expect(s.out.contains("last 24h: 1 new"), "standup door rides the frame")
+    #expect(s.out.contains("tasks (5):"),
+            "task counts ride the frame (the goal chain adds its 4): \(s.out)")
+    #expect(s.out.contains("last 24h: 2 new"),
+            "standup door rides the frame (seed + goal start): \(s.out)")
     #expect(s.out.contains("stuck: 1 parked over 30 min"),
             "stall door rides the frame: \(s.out)")
     #expect(s.out.contains("(WAITS ON YOU)"), "approval-parked wording intact")
     #expect(s.out.contains("awaiting you: 1 approval"), "desk count rides the frame")
+    #expect(s.out.contains("goals: 1 chain — leading \"ship the watch ledger"),
+            "the ledger's leading edge rides the frame (truncated): \(s.out)")
+    #expect(s.out.contains("% ("), "the completion score and status ride too")
 
     // pure read: bytes must not move
     #expect(try Data(contentsOf: stateFile) == seededBytes,
@@ -134,5 +140,7 @@ private func runCLI(_ args: [String], supportDir: URL) throws
     // no workspace started: the frame's seats line is honest about it
     let s = try runCLI(["watch", "--once"], supportDir: supportDir)
     #expect(s.rc == 0, "watch --once must exit 0: \(s.err)")
+    #expect(s.out.contains("goals: none yet — opc goal starts one"),
+            "an empty ledger says so in the frame: \(s.out)")
     #expect(s.out.contains("seats: no windows open"))
 }
