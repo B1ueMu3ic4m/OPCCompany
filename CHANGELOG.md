@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [2.24.0] - 2026-10-10
+
+### Added — v2.24.0 "the batch ack"
+- **`opc ack --all <agent>`** — acknowledge EVERY pending inbox
+  message for an employee in one batch: the same rule the macOS
+  mark-all-read runs, one event riding the batch. The count is the
+  honest receipt — a clear inbox answers 0 and writes nothing. Bridge
+  contract v1.25 (`message_ack_all`).
+
 ## [2.23.0] - 2026-10-10
 
 ### Added — v2.23.0 "the search door"
