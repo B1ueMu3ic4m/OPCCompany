@@ -17898,7 +17898,11 @@ extension OPCPersistentTerminalDoorTests {
             startedAt: Date(),
             lastPrewarmedAt: Date()
         )
-        let revived = try #require(await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: ["/bin/echo", "revived-seat"], timeoutSeconds: 2))
+        // Revival headroom: a fresh tmux window + runner script can take
+        // >2s while the rest of the suite runs in parallel (the serialized
+        // suite only serializes ITSELF). The assertion is that revival
+        // WORKS, not that it fits in two seconds.
+        let revived = try #require(await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: ["/bin/echo", "revived-seat"], timeoutSeconds: 8))
         #expect(revived.exitCode == 0)
         #expect(revived.standardOutput.contains("revived-seat"))
         let revivedWindows = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
