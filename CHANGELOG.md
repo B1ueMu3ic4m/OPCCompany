@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [2.25.0] - 2026-10-10
+
+### Added — v2.25.0 "the ledger in the frame"
+- **`opc watch`** now carries the goal ledger's leading edge: chain
+  count, the most recently touched goal (truncated) and its completion
+  score — the SAME closure traces the goals door serves, one line per
+  frame. An empty ledger says so and names the door that starts one.
+
 ## [2.24.0] - 2026-10-10
 
 ### Added — v2.24.0 "the batch ack"
