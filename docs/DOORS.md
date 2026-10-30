@@ -29,6 +29,7 @@ handles — both directions.
 | Agent desk | profile chips + session + assigned tasks + work queue + inbox accessors | `desk` | v1.17 | `opc desk` | ✓ agent desk | ✓ Desk button + card (v2.27.0) |
 | Doctor | `doctorJSON()` — environment facts (contract version, state file, tmux, seats, writer guard); warnings, never verdicts | `doctor` | v1.18 | `opc doctor` | — (the app IS the writer the doctor reports) | ✓ doctor button (v2.16.0) |
 | Checkpoint archive | `checkpointsListJSON(limit:)` — the on-disk archive, newest first, bytes + mtime | `checkpoints_list` | v1.26 | `opc checkpoints` | ✓ maintenance sheet | ✓ checkpoints card (v2.28.0) |
+| Product roster | `productsListJSON()` — every product, id/name/stage/selected, snapshot order | `products_list` | v1.27 | `opc products` | ✓ sidebar | ✓ (snapshot; switcher, v0.4.0) |
 | Goal ledger | `goalsListJSON()` — the closure traces the operations suite renders, newest-touched first | `goals_list` | v1.19 | `opc goals` | ✓ operations suite | ✓ goals card (v2.17.0) |
 | Risk ledger | `risksListJSON()` — the boss-view filtered risk stream (drills + backend noise never reach it), newest first | `risks_list` | v1.20 | `opc risks` | ✓ command center (boss view) | ✓ risks card (v2.18.0) |
 | Message bus | `messagesListJSON()` — the drill-filtered agent traffic, newest first, names resolved | `messages_list` | v1.21 | `opc messages` | ✓ workflow map | ✓ bus card (v2.19.0) |

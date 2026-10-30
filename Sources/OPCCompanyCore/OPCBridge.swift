@@ -345,6 +345,15 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.checkpointsListJSON(limit: limit)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "products_list":
+                    // v1.27 the product roster: every product — id, name,
+                    // stage, and whether it is the CURRENT selection —
+                    // riding the smuggle channel as a JSON ARRAY in the
+                    // snapshot's own order. Payload ignored. Pure read,
+                    // same guard silence as approvals_list.
+                    let data = try store.productsListJSON()
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

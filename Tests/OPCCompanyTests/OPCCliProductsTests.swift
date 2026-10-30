@@ -89,3 +89,34 @@ private func runCLI(_ args: [String], supportDir: URL) throws
     #expect(junk.rc != 0)
     #expect((junk.out + junk.err).contains("usage: opc use"))
 }
+
+// v2.29.0: `products --json` serves the bridge products_list verb's exact
+// shape — ids a script can feed straight into `opc use`.
+@Test(.enabled(if: FileManager.default.fileExists(
+    atPath: cliBinaryURL.path)))
+@MainActor func cliProductsJSONServesTheBridgeShape() throws {
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-products-json-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
+    }
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    store.saveSnapshot()
+
+    let j = try runCLI(["products", "--json"], supportDir: supportDir)
+    #expect(j.rc == 0, "\(j.err)")
+    let rows = try #require(JSONSerialization.jsonObject(
+        with: Data(j.out.utf8)) as? [[String: Any]])
+    #expect(rows.count == store.products.count)
+    let selected = rows.filter { $0["selected"] as? Bool == true }
+    #expect(selected.count == 1)
+    #expect(selected[0]["id"] as? String == store.selectedProductID.uuidString)
+
+    // the id a script sees is the id `opc use` consumes: round-trip
+    let use = try runCLI(["use", selected[0]["id"] as! String],
+                         supportDir: supportDir)
+    #expect(use.rc == 0, "the served id must be usable: \(use.err)")
+}

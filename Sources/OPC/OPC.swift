@@ -103,7 +103,7 @@ private func usage() -> String {
                                  other doors composed, zero new math
                                  (defaults: 24h window, 30min stuck threshold).
                                  Pure read: nothing here writes state.
-      opc products               list all products (ids included)
+      opc products [--json]      list all products (ids included)
       opc use <id>               switch the selected product (same store path
                                  as the GUI sidebar; unknown ids refused)
       opc checkpoint <reason>    file a safety checkpoint — the same primitive
@@ -149,7 +149,7 @@ private func usage() -> String {
 
     Read commands (status, approvals, history, deliverables, standup,
     team, stalls, catchup, desk, transcript, doctor, goals, risks,
-    messages, task, search, checkpoints) accept --json:
+    messages, task, search, checkpoints, weight, products) accept --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
 
@@ -246,7 +246,7 @@ struct OPC {
             case "desk":
                 try desk(rest)
             case "products":
-                try products()
+                try products(rest)
             case "use":
                 try use(rest)
             case "checkpoint":
@@ -986,8 +986,13 @@ struct OPC {
     }
 
     @MainActor
-    static func products() throws {
+    static func products(_ rest: [String] = []) throws {
+        let (json, _) = splitJSONFlag(rest)
         try withStore { store in
+            if json {
+                printJSON(store, try store.productsListJSON())
+                return
+            }
             print("Products (\(store.products.count)) — switch with: opc use <id>")
             for p in store.products {
                 let marker = p.id == store.selectedProductID ? "*" : " "
