@@ -17889,22 +17889,36 @@ extension OPCPersistentTerminalDoorTests {
         let listOutput = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
         #expect(!listOutput.contains(windowName))
 
-        store.runtimeSessions[engineer.id] = AgentRuntimeSession(
-            agentID: engineer.id,
-            productID: store.selectedProductID,
-            state: .ready,
-            capability: .persistentProtocol,
-            backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
-            startedAt: Date(),
-            lastPrewarmedAt: Date()
-        )
-        // Revival headroom: a fresh tmux window + runner script can take
-        // >2s while the rest of the suite runs in parallel (the serialized
-        // suite only serializes ITSELF). The assertion is that revival
-        // WORKS, not that it fits in two seconds.
-        let revived = try #require(await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: ["/bin/echo", "revived-seat"], timeoutSeconds: 8))
-        #expect(revived.exitCode == 0)
-        #expect(revived.standardOutput.contains("revived-seat"))
+        // Revival under suite load: the serialized suite serializes
+        // ITSELF, not the tmux SERVER — parallel files' tmux work (CLI
+        // hall/tell subprocesses, workspace tests) can hold the server
+        // long enough to consume a single attempt's timeout (observed:
+        // 2s AND 8s attempts both starved in full-suite runs, while the
+        // same attempt passes standalone in ~2s). The assertion is that
+        // revival WORKS, so the revive gets two attempts; both failing
+        // is a real signal.
+        var revived: CommandExecutionResult?
+        for _ in 0..<2 {
+            store.runtimeSessions[engineer.id] = AgentRuntimeSession(
+                agentID: engineer.id,
+                productID: store.selectedProductID,
+                state: .ready,
+                capability: .persistentProtocol,
+                backendSignature: CLIAgentCommandBuilder.backendSignature(for: engineer),
+                startedAt: Date(),
+                lastPrewarmedAt: Date()
+            )
+            guard let attempt = await store.persistentTerminalTimeoutRunForTesting(agentID: engineer.id, command: ["/bin/echo", "revived-seat"], timeoutSeconds: 8) else {
+                continue
+            }
+            if attempt.exitCode == 0 && attempt.standardOutput.contains("revived-seat") {
+                revived = attempt
+                break
+            }
+        }
+        let revivedResult = try #require(revived, "revival failed twice under suite load — a real signal")
+        #expect(revivedResult.exitCode == 0)
+        #expect(revivedResult.standardOutput.contains("revived-seat"))
         let revivedWindows = runTestProcessOutput(tmuxPath, ["list-windows", "-t", sessionName, "-F", "#{window_name}"])
         #expect(revivedWindows.contains(windowName))
     }
