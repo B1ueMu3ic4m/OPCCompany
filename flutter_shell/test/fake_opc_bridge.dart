@@ -107,6 +107,12 @@ class FakeOpcBridge {
   /// workItems) and pin the wrapper's wholesale refusal.
   Map<String, dynamic>? taskShowResult;
 
+  /// v1.17 the desk door: null => the default one-chip desk below,
+  /// echoing the asked agentID. Typed dynamic so tests can script a
+  /// MALFORMED payload (a non-String role) and pin the wrapper's
+  /// wholesale refusal.
+  Map<String, dynamic>? deskResult;
+
   /// v1.24 the search door: null => the default two-hit page below.
   /// Typed dynamic so tests can script a MALFORMED payload (a row
   /// without `kind`) and pin the wrapper's wholesale refusal.
@@ -384,6 +390,25 @@ class FakeOpcBridge {
               'createdAt': 1757000900,
             },
           ],
+      // v1.17 the desk door: the object rides the smuggle channel,
+      // echoing the asked agentID
+      'desk' => {
+          ...(deskResult ??
+              const {
+                'displayName': 'Fake Employee',
+                'role': '代码工程师',
+                'onTeam': true,
+                'profileChips': [
+                  {'label': '状态', 'value': 'coding'},
+                ],
+                'assignedTasks': <dynamic>[],
+                'workQueue': <dynamic>[],
+                'pendingInboxCount': 0,
+                'pendingInbox': <dynamic>[],
+              }),
+          'agentID': payload['agentID'],
+          'session': null,
+        },
       // v1.24 the search door: an ARRAY of {kind,id,title,...} rows
       'search' => searchResult ??
           const [

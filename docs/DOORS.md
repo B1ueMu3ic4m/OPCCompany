@@ -26,7 +26,7 @@ handles — both directions.
 | Weight | `snapshotWeightReport()` | `weight_json` | v1.10 | `opc weight` | ✓ panel | ✓ card |
 | Transcripts | per-seat log keys + byte cursor | `terminal_digest` / `terminal_tail` | v1.1/v1.2 | `opc watch` | ✓ hall | ✓ hall |
 | Visible transcript | `visibleTerminalLog()` (product-scoped, sanitized, compacted) | `transcript` | v1.14 | `opc transcript` | ✓ hall card | ✓ visible/raw toggle |
-| Agent desk | profile chips + session + assigned tasks + work queue + inbox accessors | `desk` | v1.17 | `opc desk` | ✓ agent desk | — |
+| Agent desk | profile chips + session + assigned tasks + work queue + inbox accessors | `desk` | v1.17 | `opc desk` | ✓ agent desk | ✓ Desk button + card (v2.27.0) |
 | Doctor | `doctorJSON()` — environment facts (contract version, state file, tmux, seats, writer guard); warnings, never verdicts | `doctor` | v1.18 | `opc doctor` | — (the app IS the writer the doctor reports) | ✓ doctor button (v2.16.0) |
 | Goal ledger | `goalsListJSON()` — the closure traces the operations suite renders, newest-touched first | `goals_list` | v1.19 | `opc goals` | ✓ operations suite | ✓ goals card (v2.17.0) |
 | Risk ledger | `risksListJSON()` — the boss-view filtered risk stream (drills + backend noise never reach it), newest first | `risks_list` | v1.20 | `opc risks` | ✓ command center (boss view) | ✓ risks card (v2.18.0) |

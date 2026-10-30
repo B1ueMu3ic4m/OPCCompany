@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.27.0] - 2026-10-30
+
+### Added — v2.27.0 "the desk reaches the shell"
+- **Windows shell**: the Desk button pulls the SELECTED employee's
+  working surface through `desk` (contract v1.17) — chips, session,
+  task/queue counts, pending inbox — rendered from the door's own
+  object. Nothing selected refuses locally with zero bridge traffic;
+  a malformed desk never renders as if it were facts. This erases the
+  desk door's "—" in the shell column.
+
 ## [2.26.0] - 2026-10-10
 
 ### Added — v2.26.0 "the search box"

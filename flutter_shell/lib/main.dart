@@ -129,6 +129,10 @@ class _CompanyHomeState extends State<CompanyHome> {
   // is a point-in-time ask, not a door that rides every refresh.
   // null = nothing asked yet (or refused — the status line says which).
   List<Map<String, dynamic>>? _searchHits;
+  // v2.27.0 the desk door: pulled on demand for the SELECTED employee —
+  // a desk is a point-in-time look, never cached across refreshes.
+  // null = nothing asked (or refused — the status line says which).
+  Map<String, dynamic>? _desk;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -367,6 +371,46 @@ class _CompanyHomeState extends State<CompanyHome> {
     });
   }
 
+  /// v2.27.0 the desk card: the door's own object, rendered row by row —
+  /// chips, session, task/queue counts, pending inbox. Facts from the
+  /// door; a refusal never renders as if it were facts.
+  Widget _deskCard(Map<String, dynamic> d) {
+    final chips = (d['profileChips'] as List)
+        .map((c) => '${c['label']}: ${c['value']}')
+        .join(' · ');
+    final session = d['session'];
+    return Container(
+      key: const ValueKey('desk-card'),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${d['displayName']} — ${d['role']}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text(chips.isEmpty ? '—' : chips,
+              style: const TextStyle(fontSize: 11),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
+          Text(
+              'session: ${session == null ? 'not running' : '${session['state']} · ${session['capability']}'}',
+              style: const TextStyle(fontSize: 11)),
+          Text(
+              'assigned tasks: ${(d['assignedTasks'] as List).length} · '
+              'work queue: ${(d['workQueue'] as List).length} · '
+              'pending inbox: ${d['pendingInboxCount']}',
+              style: const TextStyle(fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
   /// v2.26.0 the search hits: each hit NAMES its door (kind) so the
   /// boss knows where to open next. Facts from the door; a refusal
   /// never renders as if it were facts.
@@ -492,6 +536,23 @@ class _CompanyHomeState extends State<CompanyHome> {
       _lastAction = hits == null
           ? 'search: refused — ${_bridge.lastError()}'
           : 'search: ok';
+    });
+  }
+
+  /// v2.27.0 the desk door: the SELECTED employee's working surface,
+  /// pulled on demand — nothing selected refuses locally (zero bridge
+  /// traffic); a refusal lands verbatim.
+  void _pullDesk() {
+    final id = _selectedAgentID;
+    if (id == null || id.isEmpty) {
+      setState(() => _lastAction = 'desk: empty — tap an employee first');
+      return;
+    }
+    setState(() {
+      final desk = _bridge.desk(id);
+      _desk = desk;
+      _lastAction =
+          desk == null ? 'desk: refused — ${_bridge.lastError()}' : 'desk: ok';
     });
   }
 
@@ -660,9 +721,25 @@ class _CompanyHomeState extends State<CompanyHome> {
                       _taskFileCard(_taskFile!),
                       const SizedBox(height: 12),
                     ],
-                    Text('Employees — tap to watch the transcript',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text('Employees — tap to watch the transcript',
+                              style: Theme.of(context).textTheme.titleMedium),
+                        ),
+                        OutlinedButton.icon(
+                          key: const ValueKey('desk-button'),
+                          onPressed: _pullDesk,
+                          icon: const Icon(Icons.badge_outlined, size: 16),
+                          label: const Text('Desk'),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
+                    if (_desk != null) ...[
+                      _deskCard(_desk!),
+                      const SizedBox(height: 12),
+                    ],
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
