@@ -407,6 +407,27 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The checkpoint archive as a LIST (bridge v1.26 `checkpoints_list`):
+    /// the archive on disk, newest-first — the SAME directory and the SAME
+    /// ordering the CLI's `checkpoints` text and the GUI's maintenance
+    /// sheet read. Rows: {file, bytes, modifiedAt (epoch)} — an empty
+    /// archive answers [] honestly. Pure read.
+    public func checkpointsListJSON(limit: Int = 20) throws -> Data {
+        let capped = min(max(limit, 1), 50)
+        let urls = safetyCheckpointURLs(limit: capped)
+        let rows: [[String: Any]] = urls.map { url in
+            let modified = ((try? url.resourceValues(forKeys: [.contentModificationDateKey]))?
+                .contentModificationDate) ?? .distantPast
+            let bytes = ((try? FileManager.default.attributesOfItem(
+                atPath: url.path))?[.size] as? Int) ?? 0
+            return ["file": url.lastPathComponent,
+                    "bytes": bytes,
+                    "modifiedAt": Int(modified.timeIntervalSince1970)]
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
     /// The search door as a LIST (bridge v1.24 `search`): one keyword
     /// across the CURRENT product's four read surfaces — tasks, artifacts,
     /// agent messages (drill-filtered), events — case-insensitive

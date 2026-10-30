@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [2.28.0] - 2026-10-31
+
+### Added — v2.28.0 "the archive reaches every door"
+- **`checkpoints_list`** (bridge contract v1.26) + **`opc checkpoints
+  --json`** + a Windows-shell checkpoints card: what safety checkpoints
+  exist on disk, newest first — the SAME archive, directory, and
+  ordering the CLI text and the GUI maintenance sheet read. An empty
+  archive answers `[]` honestly; `{"limit":N}` clamps 1…50. Pure read.
+
 ## [2.27.0] - 2026-10-30
 
 ### Added — v2.27.0 "the desk reaches the shell"

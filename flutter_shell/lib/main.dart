@@ -133,6 +133,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // a desk is a point-in-time look, never cached across refreshes.
   // null = nothing asked (or refused — the status line says which).
   Map<String, dynamic>? _desk;
+  // v2.28.0 the checkpoint archive (bridge v1.26): rides the standard
+  // refresh — what filings exist, newest first.
+  List<Map<String, dynamic>>? _checkpoints;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -194,6 +197,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
       _messages = _bridge.messagesList();
+      _checkpoints = _bridge.checkpointsList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -230,6 +234,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
       _messages = _bridge.messagesList();
+      _checkpoints = _bridge.checkpointsList();
       _syncTranscripts();
     });
   }
@@ -326,6 +331,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
       _messages = _bridge.messagesList();
+      _checkpoints = _bridge.checkpointsList();
       _syncTranscripts();
     });
   }
@@ -349,6 +355,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _goals = _bridge.goalsList();
       _risks = _bridge.risksList();
       _messages = _bridge.messagesList();
+      _checkpoints = _bridge.checkpointsList();
       _syncTranscripts();
     });
   }
@@ -406,6 +413,47 @@ class _CompanyHomeState extends State<CompanyHome> {
               'work queue: ${(d['workQueue'] as List).length} · '
               'pending inbox: ${d['pendingInboxCount']}',
               style: const TextStyle(fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  /// v2.28.0 the checkpoints card: file (truncated), bytes, age — facts
+  /// from the door; an old core says so; never a fabricated filing.
+  Widget _checkpointsCard() {
+    final rows = _checkpoints;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.archive_outlined),
+              title: Text('No checkpoint archive from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.archive_outlined),
+              title: Text('No filings yet — risky ops file one first.')));
+    }
+    String kb(int b) => b >= 1024 * 1024
+        ? '${(b / 1024 / 1024).toStringAsFixed(1)} MB'
+        : '${(b / 1024).toStringAsFixed(0)} KB';
+    return Card(
+      child: Column(
+        children: [
+          for (final row in rows.take(3))
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.archive_outlined, size: 18),
+              title: Text(row['file'].toString(),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(kb(row['bytes'] as int),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          if (rows.length > 3)
+            ListTile(
+                dense: true,
+                title: Text('… and ${rows.length - 3} older filings',
+                    style: const TextStyle(fontSize: 12))),
         ],
       ),
     );
@@ -883,6 +931,17 @@ class _CompanyHomeState extends State<CompanyHome> {
               // v0.11.0 "the catch-up": ONE page that brings the boss up
               // to speed — pulled through catchup_md (bridge v1.9), the
               // store's own doors composed. An old core says so.
+              // v2.28.0 "the checkpoint archive": what filings exist on
+              // disk, newest first — pulled through checkpoints_list
+              // (bridge v1.26), the SAME archive the maintenance sheet
+              // reads. An old core says so; never a fabricated filing.
+              Text('Checkpoints',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _checkpointsCard(),
+              const SizedBox(height: 12),
+              // v0.11.0 "the catch-up": ONE page that brings the boss up
+              // to speed — pulled through catchup_md (bridge v1.9), the
               Text('Catch-up — one page',
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),

@@ -62,3 +62,36 @@ func checkpointsListAnswersEmptyThenCountsFilings() throws {
     #expect(listed.out.contains("本机检查点已保存"), "\(listed.out)")
     #expect(!listed.out.contains("暂无"), "a filing replaces the empty state")
 }
+
+// v2.28.0: `checkpoints --json` serves the bridge checkpoints_list verb's
+// exact shape (the one-serializer discipline); junk JSON flag forms stay
+// refused; the read never moves the archive.
+@Test(.enabled(if: FileManager.default.fileExists(
+    atPath: cliBinaryURL.path)))
+@MainActor
+func checkpointsJSONServesTheBridgeShape() throws {
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-checkpoints-json-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: tmp)
+    }
+    CompanyStore.bootstrap(loadPersisted: false).saveSnapshot()
+    _ = try runCLI(["checkpoint", "json shape"], supportDir: tmp)
+
+    let j = try runCLI(["checkpoints", "--json"], supportDir: tmp)
+    #expect(j.rc == 0, "\(j.err)")
+    let rows = try #require(JSONSerialization.jsonObject(
+        with: Data(j.out.utf8)) as? [[String: Any]])
+    #expect(rows.count == 1)
+    #expect((rows[0]["file"] as? String)?.hasPrefix("checkpoint-") == true)
+    #expect(rows[0]["bytes"] is Int && rows[0]["modifiedAt"] is Int)
+
+    // archive bytes on disk: listing must not add or touch filings
+    let archive = tmp.appendingPathComponent("checkpoints")
+    let countBefore = try FileManager.default.contentsOfDirectory(atPath: archive.path).count
+    _ = try runCLI(["checkpoints", "--json"], supportDir: tmp)
+    let countAfter = try FileManager.default.contentsOfDirectory(atPath: archive.path).count
+    #expect(countAfter == countBefore, "a listing never mints filings")
+}

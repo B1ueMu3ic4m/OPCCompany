@@ -332,6 +332,19 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.searchJSON(query: query, limit: limit)
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "checkpoints_list":
+                    // v1.26 the checkpoint archive: what safety
+                    // checkpoints exist on disk, newest-first — the SAME
+                    // directory and ordering the CLI's `checkpoints` text
+                    // and the GUI's maintenance sheet read — riding the
+                    // smuggle channel as a JSON ARRAY. An empty archive
+                    // answers []. Payload may carry {"limit":N} (default
+                    // 20, clamped 1…50). Pure read, same guard silence as
+                    // approvals_list.
+                    let limit = payload["limit"] as? Int ?? 20
+                    let data = try store.checkpointsListJSON(limit: limit)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

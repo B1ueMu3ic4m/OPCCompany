@@ -107,6 +107,11 @@ class FakeOpcBridge {
   /// workItems) and pin the wrapper's wholesale refusal.
   Map<String, dynamic>? taskShowResult;
 
+  /// v1.26 the checkpoint archive: null => the default one-filing list
+  /// below. Typed dynamic so tests can script a MALFORMED payload (a
+  /// non-Map row) and pin the wrapper's wholesale refusal.
+  List<dynamic>? checkpointsListResult;
+
   /// v1.17 the desk door: null => the default one-chip desk below,
   /// echoing the asked agentID. Typed dynamic so tests can script a
   /// MALFORMED payload (a non-String role) and pin the wrapper's
@@ -388,6 +393,15 @@ class FakeOpcBridge {
               'detail': '模块 A 编译错误',
               'agentID': 'fake-alice',
               'createdAt': 1757000900,
+            },
+          ],
+      // v1.26 the checkpoint archive: rows ride the smuggle channel
+      'checkpoints_list' => checkpointsListResult ??
+          const [
+            {
+              'file': 'checkpoint-2026-10-31T00-30-00-abc12345.json',
+              'bytes': 8192,
+              'modifiedAt': 1757001200
             },
           ],
       // v1.17 the desk door: the object rides the smuggle channel,

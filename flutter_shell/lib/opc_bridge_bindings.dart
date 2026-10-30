@@ -441,6 +441,12 @@ class OpcBridge {
     return raw;
   }
 
+  /// v1.26 the checkpoint archive: what safety checkpoints exist on
+  /// disk, newest-first. Rows: file/bytes/modifiedAt. Malformed JSON or
+  /// a refused verb returns null (never a partial list).
+  List<Map<String, dynamic>>? checkpointsList() =>
+      _listVerb('checkpoints_list');
+
   /// v1.17 the desk door: one employee's working surface — chips,
   /// session, assigned tasks, work queue, pending inbox. Malformed JSON
   /// or a refused verb returns null (never a partial desk).

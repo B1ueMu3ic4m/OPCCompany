@@ -109,7 +109,7 @@ private func usage() -> String {
       opc checkpoint <reason>    file a safety checkpoint — the same primitive
                                  the app runs before risky operations; the
                                  reason rides the record verbatim
-      opc checkpoints            list the safety checkpoints on disk, newest
+      opc checkpoints [--json]   list the safety checkpoints on disk, newest
                                  first. Pure read.
       opc doctor [--json]        environment facts before you trust the other
                                  doors: contract version, state file, tmux,
@@ -149,7 +149,7 @@ private func usage() -> String {
 
     Read commands (status, approvals, history, deliverables, standup,
     team, stalls, catchup, desk, transcript, doctor, goals, risks,
-    messages, task, search) accept --json:
+    messages, task, search, checkpoints) accept --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
 
@@ -1001,7 +1001,12 @@ struct OPC {
     /// renders. Pure read by construction.
     @MainActor
     static func checkpoints(_ rest: [String]) throws {
+        let (json, _) = splitJSONFlag(rest)
         try withStore { store in
+            if json {
+                printJSON(store, try store.checkpointsListJSON())
+                return
+            }
             print(store.safetyCheckpointListText())
         }
     }
