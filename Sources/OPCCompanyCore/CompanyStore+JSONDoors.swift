@@ -407,6 +407,22 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The product roster as a LIST (bridge v1.27 `products_list`): every
+    /// product with its id, name, stage, and whether it is the CURRENT
+    /// selection — the SAME array order the snapshot carries. Rows are
+    /// what `opc use` consumes; the selected flag is the store's own
+    /// fact, never a guess. Pure read.
+    public func productsListJSON() throws -> Data {
+        let rows: [[String: Any]] = products.map { product in
+            ["id": product.id.uuidString,
+             "name": product.name,
+             "stage": product.stage.title,
+             "selected": product.id == selectedProductID]
+        }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
     /// The checkpoint archive as a LIST (bridge v1.26 `checkpoints_list`):
     /// the archive on disk, newest-first — the SAME directory and the SAME
     /// ordering the CLI's `checkpoints` text and the GUI's maintenance

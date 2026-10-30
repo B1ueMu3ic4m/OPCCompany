@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.29.0] - 2026-10-31
+
+### Added — v2.29.0 "the roster door"
+- **`products_list`** (bridge contract v1.27) + **`opc products
+  --json`**: every product — id, name, stage, and whether it is the
+  CURRENT selection — in the snapshot's own order. The ids a script
+  sees are the ids `opc use` consumes (round-trip pinned). Also
+  removes a stray conflict-debris line the v2.24 rebase left inside
+  the bridge header's contract block. Pure read.
+
 ## [2.28.0] - 2026-10-31
 
 ### Added — v2.28.0 "the archive reaches every door"

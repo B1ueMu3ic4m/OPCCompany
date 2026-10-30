@@ -327,6 +327,13 @@ char *opc_bridge_snapshot_json(void);
  *       clamped 1…50). Pure read, same guard silence as
  *       approvals_list. The CLI's `checkpoints --json` serves THESE
  *       EXACT bytes.
+ *   "products_list" {}                    (v1.27)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY
+ *       (.sortedKeys byte-stable): every product — {id, name, stage,
+ *       selected (bool, the store's own current selection)} — in the
+ *       snapshot's own array order. Payload ignored. Pure read, same
+ *       guard silence as approvals_list. The CLI's `products --json`
+ *       serves THESE EXACT bytes.
  *   "message_ack_all" {"agentID":"<uuid>"}  (v1.25)
  *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
  *       {"acked":N}: every PENDING message addressed to THIS agent on
@@ -336,7 +343,6 @@ char *opc_bridge_snapshot_json(void);
  *       success). Write: honors the cross-process writer guard, then
  *       saves. rc=-1 with a reason in last_error: not a UUID. The
  *       CLI's `opc ack --all <agent>` drives the same path.
-5bf (feat: the batch ack (v2.24.0) — opc ack --all, one receipt (#189))
  *   "autopilot" {}                        (v1.15)
  *       rc=0 → ONE full store dispatch: the same primitive the desktop
  *       app's autopilot button and `opc autopilot` drive (safety
