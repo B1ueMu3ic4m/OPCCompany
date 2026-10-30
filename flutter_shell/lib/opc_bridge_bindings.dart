@@ -441,6 +441,26 @@ class OpcBridge {
     return raw;
   }
 
+  /// v1.17 the desk door: one employee's working surface — chips,
+  /// session, assigned tasks, work queue, pending inbox. Malformed JSON
+  /// or a refused verb returns null (never a partial desk).
+  Map<String, dynamic>? desk(String agentID) {
+    if (command('desk', {'agentID': agentID}) != ok) return null;
+    final raw = _json(lastError());
+    if (raw == null) return null;
+    if (raw['agentID'] is! String ||
+        raw['displayName'] is! String ||
+        raw['role'] is! String ||
+        raw['onTeam'] is! bool ||
+        raw['profileChips'] is! List ||
+        raw['assignedTasks'] is! List ||
+        raw['workQueue'] is! List ||
+        raw['pendingInboxCount'] is! int) {
+      return null;
+    }
+    return raw;
+  }
+
   /// v1.24 the search door: ONE keyword across the product's read
   /// surfaces. Each row carries its `kind` so the boss knows which door
   /// to open next. Malformed JSON or a refused verb returns null (never
