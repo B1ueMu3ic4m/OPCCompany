@@ -317,6 +317,16 @@ char *opc_bridge_snapshot_json(void);
  *       query refuses (rc=-1); zero hits answers []. Pure read, same
  *       guard silence as approvals_list. The CLI's `search --json`
  *       serves THESE EXACT bytes.
+ *   "checkpoints_list" {"limit":N?}       (v1.26)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY
+ *       (.sortedKeys byte-stable): the safety-checkpoint archive on
+ *       disk, newest-first — the SAME directory and ordering the CLI's
+ *       `checkpoints` text and the GUI's maintenance sheet read.
+ *       Each row: {file, bytes, modifiedAt (epoch seconds)}. An empty
+ *       archive answers []. Payload may carry {"limit":N} (default 20,
+ *       clamped 1…50). Pure read, same guard silence as
+ *       approvals_list. The CLI's `checkpoints --json` serves THESE
+ *       EXACT bytes.
  *   "message_ack_all" {"agentID":"<uuid>"}  (v1.25)
  *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
  *       {"acked":N}: every PENDING message addressed to THIS agent on
