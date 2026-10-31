@@ -334,6 +334,18 @@ char *opc_bridge_snapshot_json(void);
  *       snapshot's own array order. Payload ignored. Pure read, same
  *       guard silence as approvals_list. The CLI's `products --json`
  *       serves THESE EXACT bytes.
+ *   "hall" {}                             (v1.28)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
+ *       (.sortedKeys byte-stable): the tmux workspace facts on THIS
+ *       machine — {tmuxAvailable, tmuxPath|null, sessionName,
+ *       sessionRunning, seats:[{agentID, name, open}]} — composed from
+ *       the SAME accessors the CLI's `hall` text and the GUI's hall
+ *       chip render, with ONE `tmux list-windows` probe feeding every
+ *       seat row. Local pipe seats are deliberately absent (they are
+ *       facts of the office process that spawned them — see
+ *       seat_list). Payload ignored. Pure read, same guard silence as
+ *       approvals_list. The CLI's `hall --json` serves THESE EXACT
+ *       bytes.
  *   "message_ack_all" {"agentID":"<uuid>"}  (v1.25)
  *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
  *       {"acked":N}: every PENDING message addressed to THIS agent on

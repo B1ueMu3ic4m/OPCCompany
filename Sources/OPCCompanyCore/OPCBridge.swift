@@ -354,6 +354,18 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.productsListJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "hall":
+                    // v1.28 the terminal hall: the tmux workspace facts on
+                    // THIS machine — tmux presence + path, the workspace
+                    // session's name and liveness, per-employee window
+                    // liveness — as a JSON OBJECT riding the smuggle
+                    // channel, ONE list-windows probe feeding every seat
+                    // row. Local pipe seats are deliberately absent (see
+                    // seat_list). Payload ignored. Pure read, same guard
+                    // silence as approvals_list.
+                    let data = try store.hallJSON()
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "autopilot":
                     // v1.15 the shell's autopilot: ONE full store dispatch
                     // per call — the same primitive the desktop app's

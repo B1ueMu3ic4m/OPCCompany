@@ -35,7 +35,7 @@ handles — both directions.
 | Message bus | `messagesListJSON()` — the drill-filtered agent traffic, newest first, names resolved | `messages_list` | v1.21 | `opc messages` | ✓ workflow map | ✓ bus card (v2.19.0) |
 | Task file | `taskJSON(taskID:)` — task + work items + artifacts (existence at read time) + approvals + referencing messages | `task_show` | v1.22 | `opc task` | ✓ inspector | ✓ task board selects, file renders (v2.22.0) |
 | Search | `searchJSON(query:limit:)` — one keyword across tasks, artifacts, messages, events; newest first | `search` | v1.24 | `opc search` | — | ✓ search box (v2.26.0) |
-| Open windows | `openTerminalWindowAgentIDs()` (one `tmux list-windows` probe) | — (store read, v2.5.0) | — | `opc watch` seats line · `opc hall` | ✓ hall chip (throttled, v2.11.0) | — |
+| Terminal hall | `hallJSON()` — tmux presence, session name/liveness, per-agent window liveness (ONE list-windows probe) | `hall` | v1.28 | `opc hall` | ✓ hall chip (throttled, v2.11.0) | — (the shell cannot probe the Mac's tmux — honest) |
 | Snapshot | `snapshotJSONData()` | `opc_bridge_snapshot_json` | v1.0 | `opc status --json` | ✓ | ✓ |
 
 ## Write doors

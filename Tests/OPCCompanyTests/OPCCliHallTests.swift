@@ -14,6 +14,28 @@ private var cliBinaryURL: URL {
         .appendingPathComponent(".build/debug/opc")
 }
 
+private func runCLI(_ args: [String], supportDir: URL) throws
+    -> (rc: Int32, out: String, err: String)
+{
+    let process = Process()
+    process.executableURL = cliBinaryURL
+    process.arguments = args
+    var env = ProcessInfo.processInfo.environment
+    env["OPC_COMPANY_SUPPORT_DIR"] = supportDir.path
+    env["OPC_ALLOW_CONCURRENT_WRITE"] = "1"
+    process.environment = env
+    let out = Pipe(), err = Pipe()
+    process.standardOutput = out
+    process.standardError = err
+    try process.run()
+    process.waitUntilExit()
+    let read: (Pipe) -> String = { pipe in
+        String(data: pipe.fileHandleForReading.readDataToEndOfFile(),
+               encoding: .utf8) ?? ""
+    }
+    return (process.terminationStatus, read(out), read(err))
+}
+
 private func runCLIWithStdin(_ args: [String], supportDir: URL, stdin: String) throws
     -> (rc: Int32, out: String, err: String)
 {
@@ -165,4 +187,38 @@ private func cleanuptmux(_ tmuxPath: String, _ sessionName: String) {
                                     supportDir: supportDir, stdin: "\n\n")
     #expect(empty.rc != 0)
     #expect(empty.err.contains("stdin produced no lines"))
+}
+
+// v2.30.0: `hall --json` serves the bridge hall verb's exact shape; the
+// text form stays untouched; a listing never moves state.
+@Test(.enabled(if: FileManager.default.fileExists(
+    atPath: cliBinaryURL.path)))
+@MainActor func cliHallJSONServesTheBridgeShape() throws {
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-hall-json-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
+    let stateFile = supportDir.appendingPathComponent("company-state.json")
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
+    }
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    store.saveSnapshot()
+    let seededBytes = try Data(contentsOf: stateFile)
+
+    let j = try runCLI(["hall", "--json"], supportDir: supportDir)
+    #expect(j.rc == 0, "\(j.err)")
+    let d = try #require(JSONSerialization.jsonObject(
+        with: Data(j.out.utf8)) as? [String: Any])
+    #expect(d["sessionName"] as? String ==
+        store.terminalWorkspaceSessionNameForTesting())
+    #expect(d["seats"] is [[String: Any]])
+
+    // the text form still prints its paragraph
+    let s = try runCLI(["hall"], supportDir: supportDir)
+    #expect(s.rc == 0 && s.out.contains("Terminal hall — "))
+
+    // pure-read: neither run moved the seeded snapshot
+    #expect(try Data(contentsOf: stateFile) == seededBytes)
 }

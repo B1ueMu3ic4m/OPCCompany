@@ -116,6 +116,7 @@ swift build -c release --product opc
 .build/release/opc ack <id> <agent>    # v2.21 acknowledge one pending inbox message
 .build/release/opc search <query>      # v2.23 one keyword across every read door
 .build/release/opc ack --all <agent>   # v2.24 acknowledge an employee's whole inbox
+.build/release/opc hall --json        # v2.30 the tmux workspace facts, machine-readable
 .build/release/opc desk <agent>           # v2.14 one employee's working surface — chips, session, tasks, queue, inbox
 .build/release/opc report                 # boss-readable progress report
 .build/release/opc approvals              # pending approvals, with their ids
