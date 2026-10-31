@@ -407,6 +407,23 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The goal write receipt (bridge v1.29 `goal`): the handed goal plus
+    /// the chain's just-created tasks — ids ready for `opc task <id>` —
+    /// composed by the CALLER's before/after diff (the store's start
+    /// primitive returns only the CTO task; the receipt lists all four).
+    /// The text form quotes the same rows. Not a read door: it rides a
+    /// WRITE (the receipt lands on the smuggle channel after the save).
+    public func goalReceiptJSON(goal: String, created: [CompanyTask]) throws -> Data {
+        let object: [String: Any] = [
+            "goal": goal,
+            "tasks": created.map { ["id": $0.id.uuidString,
+                                    "title": $0.title,
+                                    "status": $0.status.rawValue] },
+        ]
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
+
     /// The terminal hall as an OBJECT (bridge v1.28 `hall`): the tmux
     /// workspace facts on THIS machine — tmux presence + path, the
     /// workspace session's name and liveness, and per-employee window

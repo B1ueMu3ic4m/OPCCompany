@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.31.0] - 2026-11-01
+
+### Added — v2.31.0 "the goal writes a receipt"
+- **`goal` write receipt** (bridge contract v1.29) + **`opc goal
+  --json`**: after the save, the handed goal plus the chain's
+  just-created tasks ride the smuggle channel as a JSON OBJECT — ids
+  ready for `opc task <id>` (round-trip pinned on the bridge's own
+  task_show). The text form now names the chain's file too. Empty
+  goals still refuse.
+
 ## [2.30.0] - 2026-11-01
 
 ### Added — v2.30.0 "the hall speaks JSON"
