@@ -42,7 +42,7 @@ handles — both directions.
 
 | Door | Store math | Bridge verb | Since | CLI | macOS GUI | Shell |
 |---|---|---|---|---|---|---|
-| Goal | goal chain | `goal` | v1.0 | `opc goal` | ✓ | ✓ |
+| Goal | goal chain | `goal` | v1.0 (receipt v1.29) | `opc goal` (receipt ids ready for `opc task`) | ✓ | ✓ |
 | Advance | supervisor step | `advance` | v1.0 | `opc advance` | ✓ | ✓ |
 | Decide | `decideApprovalChecked` | `decide` | v1.0 | `opc decide` | ✓ popover | ✓ |
 | Product select | product switch | `product_select` | v1.0 | `opc use` | ✓ sidebar | ✓ |

@@ -98,3 +98,35 @@ private func runCLI(_ args: [String], supportDir: URL) throws
     #expect(s.out.contains("no goals yet"),
             "an empty ledger says so, and names the door that fixes it: \(s.out)")
 }
+
+// v2.31.0: `opc goal --json` serves the bridge goal verb's receipt bytes —
+// ids ready for `opc task <id>`; the write still honors the writer guard.
+@Test(.enabled(if: FileManager.default.fileExists(
+    atPath: cliBinaryURL.path)))
+@MainActor func cliGoalJSONServesTheReceipt() throws {
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-goal-receipt-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
+    }
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    store.saveSnapshot()
+
+    let s = try runCLI(["goal", "print the receipt", "--json"],
+                       supportDir: supportDir)
+    #expect(s.rc == 0, "stderr: \(s.err)")
+    let d = try #require(JSONSerialization.jsonObject(
+        with: Data(s.out.utf8)) as? [String: Any])
+    #expect(d["goal"] as? String == "print the receipt")
+    let tasks = try #require(d["tasks"] as? [[String: Any]])
+    #expect(tasks.count == 4)
+
+    // the CTO task id round-trips into `opc task`
+    let ctoRow = try #require(tasks.first { ($0["title"] as? String)?.contains("拆解") == true })
+    let t = try runCLI(["task", ctoRow["id"] as! String], supportDir: supportDir)
+    #expect(t.rc == 0, "the receipt id feeds opc task: \(t.err)")
+    #expect(t.out.contains("print the receipt"))
+}

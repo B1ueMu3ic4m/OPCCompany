@@ -318,9 +318,10 @@ struct OPC {
 
     @MainActor
     static func goal(_ rest: [String]) throws {
-        let text = rest.joined(separator: " ")
+        let (json, words) = splitJSONFlag(rest)
+        let text = words.joined(separator: " ")
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else {
-            throw CLIError(message: "usage: opc goal \"one-sentence objective\"")
+            throw CLIError(message: "usage: opc goal \"one-sentence objective\" [--json]")
         }
         try guardNoConcurrentWriter()
         try withStore { store in
@@ -330,9 +331,16 @@ struct OPC {
                 throw CLIError(message: "goal rejected (empty after trimming)")
             }
             let created = store.tasks.filter { !before.contains($0.id) }
+            let receipt = try store.goalReceiptJSON(goal: text, created: created)
+            if json {
+                printJSON(store, receipt)
+                return
+            }
             print("Goal handed to the CTO. \(created.count) task(s) created:")
             for t in created { print("  [\(t.status.title)] \(t.title)") }
-            print("Next: `opc advance` to move the chain, `opc status` to watch.")
+            let ids = created.map { $0.id.uuidString }
+            print("Next: `opc advance` to move the chain, `opc status` to watch, "
+                + "`opc task \(ids.first ?? "?")` for the chain's file.")
         }
     }
 

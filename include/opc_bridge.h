@@ -38,6 +38,11 @@ char *opc_bridge_snapshot_json(void);
 
 /* Execute a boss-level command. payload_json is a UTF-8 JSON object:
  *   "goal"    {"text": "..."}
+ *       Since v1.29 the WRITE RECEIPT rides last_error as a JSON
+ *       OBJECT (.sortedKeys byte-stable): {goal, tasks:[{id, title,
+ *       status}]} — the chain's just-created tasks, ids ready for
+ *       task_show. The shell may ignore it; the CLI's `goal --json`
+ *       serves THESE EXACT bytes.
  *   "advance" {}
  *   "decide"  {"approvalID": "<uuid>", "approved": true}
  *       Unknown IDs and already-decided approvals return -1 with a reason

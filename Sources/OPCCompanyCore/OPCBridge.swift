@@ -172,14 +172,24 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
             do {
                 switch verbString {
                 case "goal":
+                    // v1.29 the write receipt: after the save, the handed
+                    // goal plus the chain's just-created tasks (ids ready
+                    // for \`task_show\`) ride the smuggle channel as a JSON
+                    // OBJECT. Honors the cross-process writer guard.
                     let text = (payload["text"] as? String) ?? ""
                     guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                         throw OPCBridgeRefusal(message: "goal text is empty")
                     }
                     try OPCWriteGuard.ensureExclusiveAccess()
+                    let before = Set(store.tasks.map(\.id))
                     if store.startCTOSupervisorGoal(goal: text) != nil {
                         store.saveSnapshot()
+                        let created = store.tasks.filter { !before.contains($0.id) }
+                        let data = try store.goalReceiptJSON(goal: text, created: created)
+                        box.lastError = String(decoding: data, as: UTF8.self)
+                        return 0
                     }
+                    return 0
                 case "advance":
                     try OPCWriteGuard.ensureExclusiveAccess()
                     _ = store.advanceCTOSupervisorLoop()
