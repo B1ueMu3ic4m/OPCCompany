@@ -57,7 +57,7 @@ private func usage() -> String {
                                  the terminal. <agent> is the uuid or the
                                  exact display name. Honest refusals: unknown
                                  name, no live seat, empty/oversize line.
-      opc hall                   the terminal office on THIS machine, one
+      opc hall [--json]          the terminal office on THIS machine, one
                                  honest paragraph: tmux present, workspace
                                  session state, per-agent seat liveness.
                                  Pure read: nothing here starts or stops.
@@ -149,7 +149,7 @@ private func usage() -> String {
 
     Read commands (status, approvals, history, deliverables, standup,
     team, stalls, catchup, desk, transcript, doctor, goals, risks,
-    messages, task, search, checkpoints, weight, products) accept --json:
+    messages, task, search, checkpoints, weight, products, hall) accept --json:
     machine-readable output, byte-identical to what the FFI bridge
     serves the shell (one serializer, no drift).
 
@@ -579,7 +579,12 @@ struct OPC {
     /// of the office process that spawned them, invisible to a visitor.
     @MainActor
     static func hall(_ rest: [String]) throws {
+        let (json, _) = splitJSONFlag(rest)
         try withStore { store in
+            if json {
+                printJSON(store, try store.hallJSON())
+                return
+            }
             let product = store.selectedProduct?.name ?? "— (no product yet)"
             print("Terminal hall — \(product)")
 

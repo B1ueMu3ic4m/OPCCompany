@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.30.0] - 2026-11-01
+
+### Added — v2.30.0 "the hall speaks JSON"
+- **`hall`** (bridge contract v1.28) + **`opc hall --json`**: the tmux
+  workspace facts on THIS machine — tmux presence + path, the
+  workspace session's name and liveness, per-employee window liveness
+  — ONE `tmux list-windows` probe feeding every seat row, the same
+  accessors the CLI text and the GUI hall chip render. Local pipe
+  seats are deliberately absent (see `seat_list`). Pure read.
+
 ## [2.29.0] - 2026-10-31
 
 ### Added — v2.29.0 "the roster door"

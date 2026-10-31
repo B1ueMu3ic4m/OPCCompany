@@ -407,6 +407,33 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The terminal hall as an OBJECT (bridge v1.28 `hall`): the tmux
+    /// workspace facts on THIS machine — tmux presence + path, the
+    /// workspace session's name and liveness, and per-employee window
+    /// liveness — composed from the SAME accessors the CLI's `hall` text
+    /// and the GUI's hall chip render, with ONE `tmux list-windows`
+    /// probe feeding every seat row. Local pipe seats are deliberately
+    /// absent: they are facts of the office process that spawned them
+    /// (bridge verb: seat_list). Pure read.
+    public func hallJSON() throws -> Data {
+        let tmuxPath = AgentProcessRunner.resolvedExecutablePath(for: "tmux")
+        let open = openTerminalWindowAgentIDs()
+        let seats: [[String: Any]] = agents
+            .filter { $0.role != .boss }
+            .map { ["agentID": $0.id.uuidString,
+                    "name": $0.displayName,
+                    "open": open.contains($0.id)] }
+        var object: [String: Any] = [
+            "tmuxAvailable": tmuxPath != nil,
+            "sessionName": terminalWorkspaceSessionNameForTesting(),
+            "sessionRunning": terminalWorkspaceSessionIsRunning(),
+            "seats": seats,
+        ]
+        object["tmuxPath"] = tmuxPath ?? NSNull()
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
+
     /// The product roster as a LIST (bridge v1.27 `products_list`): every
     /// product with its id, name, stage, and whether it is the CURRENT
     /// selection — the SAME array order the snapshot carries. Rows are
