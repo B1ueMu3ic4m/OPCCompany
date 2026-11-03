@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [2.32.0] - 2026-11-03
+
+### Added — v2.32.0 "the decision writes a receipt"
+- **`decide` write receipt** (bridge contract v1.30) + **`opc decide
+  --json`**: after the save, the just-decided approval rides the
+  smuggle channel — {approvalID, title, status, decidedAt, taskID?,
+  taskStatus?} — the linked task's new status included. Stale/double
+  decisions still refuse loudly. Pure-read doors stay pure.
+
 ## [2.31.0] - 2026-11-01
 
 ### Added — v2.31.0 "the goal writes a receipt"

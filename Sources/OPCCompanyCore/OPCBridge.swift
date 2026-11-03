@@ -405,6 +405,13 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                         throw OPCBridgeRefusal(message: e.bridgeReason(idString: idString))
                     }
                     store.saveSnapshot()
+                    // v1.30 the write receipt: the just-decided approval —
+                    // status, decidedAt, the linked task's new status —
+                    // rides the smuggle channel (ids ready for
+                    // history/task).
+                    let data = try store.decisionReceiptJSON(approvalID: approvalID)
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "save":
                     try OPCWriteGuard.ensureExclusiveAccess()
                     store.saveSnapshot()

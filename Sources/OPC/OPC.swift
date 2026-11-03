@@ -486,10 +486,11 @@ struct OPC {
 
     @MainActor
     static func decide(_ rest: [String]) throws {
-        guard rest.count == 2,
-              let approvalID = UUID(uuidString: rest[0]),
-              let approved = ["approve": true, "reject": false][rest[1]] else {
-            throw CLIError(message: "usage: opc decide <approval-id> approve|reject  (ids from: opc approvals)")
+        let (json, positional) = splitJSONFlag(rest)
+        guard positional.count == 2,
+              let approvalID = UUID(uuidString: positional[0]),
+              let approved = ["approve": true, "reject": false][positional[1]] else {
+            throw CLIError(message: "usage: opc decide <approval-id> approve|reject [--json]  (ids from: opc approvals)")
         }
         try guardNoConcurrentWriter()
         try withStore { store in
@@ -502,6 +503,11 @@ struct OPC {
                 throw CLIError(message: e.bridgeReason(idString: approvalID.uuidString))
             }
             store.saveSnapshot()
+            let receipt = try store.decisionReceiptJSON(approvalID: approvalID)
+            if json {
+                printJSON(store, receipt)
+                return
+            }
             print(approved ? "Approved." : "Rejected.")
         }
     }

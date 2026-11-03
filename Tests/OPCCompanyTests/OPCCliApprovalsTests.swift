@@ -114,3 +114,39 @@ private func runCLI(_ args: [String], supportDir: URL) throws
     #expect(emptyAgain.rc == 0)
     #expect(!emptyAgain.out.contains("CLI 回归审批"))
 }
+
+// v2.32.0: `opc decide --json` serves the bridge decide verb's receipt
+// bytes — the decided approval plus its linked task's new status.
+@Test(.enabled(if: FileManager.default.fileExists(
+    atPath: cliBinaryURL.path)))
+@MainActor func cliDecideJSONServesTheReceipt() throws {
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-decide-json-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
+    }
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    var approval = ApprovalRequest(productID: store.selectedProductID,
+                                   requesterID: store.agents.first!.id,
+                                   title: "终端待批", reason: "cli smoke",
+                                   status: .pending)
+    store.approvals = [approval]
+    approval = store.approvals[0]
+    store.saveSnapshot()
+
+    let s = try runCLI(["decide", approval.id.uuidString, "approve", "--json"],
+                       supportDir: supportDir)
+    #expect(s.rc == 0, "stderr: \(s.err)")
+    let d = try #require(JSONSerialization.jsonObject(
+        with: Data(s.out.utf8)) as? [String: Any])
+    #expect(d["approvalID"] as? String == approval.id.uuidString)
+    #expect(d["status"] as? String == "approved")
+
+    // the decided id shows up in the history door (ids feed history)
+    let h = try runCLI(["history", "--json"], supportDir: supportDir)
+    #expect(h.rc == 0 && h.out.contains(approval.id.uuidString),
+            "the receipt id feeds the ledger: \(h.out)")
+}

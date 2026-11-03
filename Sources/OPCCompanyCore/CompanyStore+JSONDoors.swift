@@ -407,6 +407,32 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The decision receipt (bridge v1.30 `decide`): the just-decided
+    /// approval — status, decidedAt, and the linked task's new status —
+    /// composed from the store AFTER decideApprovalChecked landed. The
+    /// ids a script sees feed `opc history` / `opc task`.
+    public func decisionReceiptJSON(approvalID: UUID) throws -> Data {
+        guard let approval = approvals.first(where: { $0.id == approvalID }) else {
+            throw OPCBridgeRefusal(message: "decide: no approval with id \(approvalID.uuidString)")
+        }
+        var row: [String: Any] = [
+            "approvalID": approval.id.uuidString,
+            "title": approval.title,
+            "status": approval.status.rawValue,
+        ]
+        if let decidedAt = approval.decidedAt {
+            row["decidedAt"] = Int(decidedAt.timeIntervalSince1970)
+        }
+        if let taskID = approval.taskID {
+            row["taskID"] = taskID.uuidString
+            if let task = tasks.first(where: { $0.id == taskID }) {
+                row["taskStatus"] = task.status.rawValue
+            }
+        }
+        return try JSONSerialization.data(withJSONObject: row,
+                                          options: [.sortedKeys])
+    }
+
     /// The goal write receipt (bridge v1.29 `goal`): the handed goal plus
     /// the chain's just-created tasks — ids ready for `opc task <id>` —
     /// composed by the CALLER's before/after diff (the store's start
