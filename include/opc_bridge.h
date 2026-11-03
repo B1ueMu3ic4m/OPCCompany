@@ -230,6 +230,12 @@ char *opc_bridge_snapshot_json(void);
  *       failed to land (the checked facade reads the store's verdict —
  *       no silent no-ops). Archives carry a short UUID suffix, so
  *       same-second checkpoints never overwrite each other.
+ *       Since v1.31 the WRITE RECEIPT rides last_error as a JSON
+ *       OBJECT (.sortedKeys byte-stable): {file, bytes, reason} — the
+ *       just-created filing read back from the archive (newest filing
+ *       IS this one; the v2.12.0 UUID suffix keeps same-second filings
+ *       distinct). The CLI's `checkpoint --json` serves THESE EXACT
+ *       bytes.
  *   "desk" {"agentID":"<uuid>"}          (v1.17)
  *       rc=0; the RESULT rides opc_bridge_last_error as a JSON OBJECT
  *       (.sortedKeys byte-stable): one employee's working surface —

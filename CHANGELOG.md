@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.33.0] - 2026-11-04
+
+### Added — v2.33.0 "the filing answers with its name"
+- **`checkpoint` write receipt** (bridge contract v1.31) + **`opc
+  checkpoint <reason> --json`**: after the save, the just-created
+  filing rides the smuggle channel — {file, bytes, reason} — read back
+  from the archive (newest filing IS this one; the v2.12.0 UUID suffix
+  keeps same-second filings distinct). The receipt's file exists on
+  disk with exactly those bytes (pinned). Empty reasons still refuse.
+
 ## [2.32.0] - 2026-11-03
 
 ### Added — v2.32.0 "the decision writes a receipt"
