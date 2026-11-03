@@ -1369,14 +1369,20 @@ struct OPC {
     /// no-ops). Boss-side write.
     @MainActor
     static func checkpoint(_ rest: [String]) throws {
-        let reason = rest.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        let (json, words) = splitJSONFlag(rest)
+        let reason = words.joined(separator: " ").trimmingCharacters(in: .whitespaces)
         guard !reason.isEmpty else {
-            throw CLIError(message: "usage: opc checkpoint <reason>  (e.g. `opc checkpoint before migrating the task graph`)")
+            throw CLIError(message: "usage: opc checkpoint <reason> [--json]  (e.g. `opc checkpoint before migrating the task graph`)")
         }
         try guardNoConcurrentWriter()
         try withStore { store in
             guard store.createSafetyCheckpointChecked(reason: reason) else {
                 throw CLIError(message: "checkpoint failed to land — the risk event names the error")
+            }
+            let receipt = try store.checkpointReceiptJSON(reason: reason)
+            if json {
+                printJSON(store, receipt)
+                return
             }
             let dir = CompanyPersistence.stateURL.deletingLastPathComponent()
                 .appendingPathComponent("checkpoints", isDirectory: true)

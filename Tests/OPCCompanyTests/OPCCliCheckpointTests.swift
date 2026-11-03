@@ -89,3 +89,34 @@ func checkpointDoorRefusesAnEmptyReason() throws {
         #expect(s.err.contains("usage: opc checkpoint"), "\(args) must name the usage: \(s.err)")
     }
 }
+
+// v2.33.0: `opc checkpoint <reason> --json` serves the bridge checkpoint
+// verb's receipt bytes — the filing's name and real size.
+@Test(.enabled(if: FileManager.default.fileExists(
+    atPath: cliBinaryURL.path)))
+@MainActor func cliCheckpointJSONServesTheReceipt() throws {
+    let supportDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("opc-cli-cp-json-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+    CompanyPersistence.testSupportDirectoryOverride = supportDir
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
+    }
+    CompanyStore.bootstrap(loadPersisted: false).saveSnapshot()
+
+    let s = try runCLI(["checkpoint", "json receipt smoke", "--json"],
+                       supportDir: supportDir)
+    #expect(s.rc == 0, "stderr: \(s.err)")
+    let d = try #require(JSONSerialization.jsonObject(
+        with: Data(s.out.utf8)) as? [String: Any])
+    #expect((d["file"] as? String)?.hasPrefix("checkpoint-") == true)
+    #expect(d["reason"] as? String == "json receipt smoke")
+
+    // the receipt's file REALLY exists on disk with those bytes
+    let filing = supportDir.appendingPathComponent("checkpoints")
+        .appendingPathComponent(d["file"] as! String)
+    #expect(FileManager.default.fileExists(atPath: filing.path))
+    #expect((d["bytes"] as? Int) ==
+        (try FileManager.default.attributesOfItem(atPath: filing.path)[.size] as? Int))
+}

@@ -407,6 +407,25 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The checkpoint write receipt (bridge v1.31 `checkpoint`): the
+    /// just-created filing — file, bytes, and the reason that rode the
+    /// record verbatim — read back from the archive (the newest filing
+    /// IS this one; the v2.12.0 UUID suffix keeps same-second filings
+    /// distinct). Refuses when no filing exists (the checked facade
+    /// already refused a failed creation).
+    public func checkpointReceiptJSON(reason: String) throws -> Data {
+        guard let url = safetyCheckpointURLs(limit: 1).first else {
+            throw OPCBridgeRefusal(message: "checkpoint: no filing found after creation")
+        }
+        let bytes = ((try? FileManager.default.attributesOfItem(
+            atPath: url.path))?[.size] as? Int) ?? 0
+        let object: [String: Any] = ["file": url.lastPathComponent,
+                                      "bytes": bytes,
+                                      "reason": reason]
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys])
+    }
+
     /// The decision receipt (bridge v1.30 `decide`): the just-decided
     /// approval — status, decidedAt, and the linked task's new status —
     /// composed from the store AFTER decideApprovalChecked landed. The

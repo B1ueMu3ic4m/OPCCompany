@@ -209,6 +209,12 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     guard store.createSafetyCheckpointChecked(reason: reason) else {
                         throw OPCBridgeRefusal(message: "checkpoint failed to land — the risk event names the error")
                     }
+                    // v1.31 the write receipt: the just-created filing —
+                    // file, bytes, the reason verbatim — rides the
+                    // smuggle channel.
+                    let receipt = try store.checkpointReceiptJSON(reason: reason)
+                    box.lastError = String(decoding: receipt, as: UTF8.self)
+                    return 0
                 case "message_ack":
                     // v1.23 the shell's ack: a pending message addressed
                     // to THIS agent flips to acknowledged — the SAME
