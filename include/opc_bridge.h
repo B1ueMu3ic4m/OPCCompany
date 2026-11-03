@@ -48,6 +48,11 @@ char *opc_bridge_snapshot_json(void);
  *       Unknown IDs and already-decided approvals return -1 with a reason
  *       (the bare store call is a silent no-op for both — a double-tap or
  *       a stale approval list must never read as success).
+ *       Since v1.30 the WRITE RECEIPT rides last_error as a JSON
+ *       OBJECT (.sortedKeys byte-stable): {approvalID, title, status,
+ *       decidedAt, taskID?, taskStatus?} — the just-decided approval
+ *       and the linked task's new status, ids ready for history/task.
+ *       The CLI's `decide --json` serves THESE EXACT bytes.
  *   "save"    {}
  *   "product_select" {"productID": "<uuid>"}
  *       Switches the selected product through the same store path the
