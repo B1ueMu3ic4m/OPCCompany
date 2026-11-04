@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [2.35.0] - 2026-11-05
+
+### Added — v2.35.0 "the receipt lands in the status line"
+- **Flutter shell: the write-receipt family surfaced** — goal (v1.29),
+  decide (v1.30), checkpoint (v1.31) answer with their JSON object on
+  SUCCESS, verbatim in the status line; plain writes (advance, save,
+  product_select) stay plain because the channel resets on success; a
+  refusal rides its reason exactly as before, never dressed up as a
+  receipt. The fake core now mirrors the real switch tail (a write
+  resets `lastError` to `''`) — a fidelity gap the receipt display
+  exposed and closed. `_run` reuses `_reloadDoors()`.
+
 ## [2.34.0] - 2026-11-04
 
 ### Added — v2.34.0 "mark all read answers with its count"
