@@ -46,7 +46,11 @@ fi
 # would still fail every brew install — sha equality alone can't see it.
 # v2.34.0 shipped exactly that wrong shape for ~40 minutes before a
 # dist/ inventory caught it; this check makes the shape a gate.
-if ! unzip -l "$TMP" | grep -q 'OPCCompany.app/Contents/MacOS/OPCCompany'; then
+# NOTE: `grep -c` (not `-q`): with `set -o pipefail`, `-q`'s early exit
+# SIGPIPEs unzip mid-listing and the nonzero pipeline flips this check
+# even on a match — the flake this guard itself showed twice.
+SHAPE_HITS=$(unzip -l "$TMP" | grep -c 'OPCCompany.app/Contents/MacOS/OPCCompany' || true)
+if [ "${SHAPE_HITS:-0}" -eq 0 ]; then
   echo "FAIL: zip is not an app-bundle package — the cask installs OPCCompany.app"
   exit 1
 fi
