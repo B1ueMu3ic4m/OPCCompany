@@ -129,6 +129,16 @@ class FakeOpcBridge {
   String? messageAckRefusal;
   final List<(String messageID, String agentID)> ackCalls = [];
 
+  /// v1.25 the batch ack door: null => success with the receipt
+  /// [messageAckAllReceipt] riding the channel; a string => the verbatim
+  /// refusal. Every agentID ask is recorded in [ackAllCalls].
+  String? messageAckAllRefusal;
+  final List<String> ackAllCalls = [];
+
+  /// The receipt the fake answers on success — the honest shape a real
+  /// core writes (zero pending answers {"acked":0}, never a fake number).
+  String messageAckAllReceipt = '{"acked":2}';
+
   /// v1.21 the message bus: null => the default one-message bus below.
   /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
   /// row) and pin the wrapper's wholesale refusal.
@@ -283,6 +293,23 @@ class FakeOpcBridge {
         return -1;
       }
       nextError = '';
+      return rc;
+    }
+    // v1.25 the shell's batch ack: a write — '' on success (the receipt
+    // {"acked":N} rides the channel verbatim), refusal verbatim; the ask
+    // is recorded either way.
+    if (verb == 'message_ack_all') {
+      final agentID = payload['agentID'];
+      if (agentID is! String) {
+        nextError = 'message_ack_all requires a UUID agentID';
+        return -1;
+      }
+      ackAllCalls.add(agentID);
+      if (messageAckAllRefusal != null) {
+        nextError = messageAckAllRefusal!;
+        return -1;
+      }
+      nextError = messageAckAllReceipt;
       return rc;
     }
     // v1.11: a WRITE — success is lastError reset to '', a refusal rides

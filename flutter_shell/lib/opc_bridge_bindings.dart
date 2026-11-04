@@ -506,6 +506,19 @@ class OpcBridge {
     return reason.isEmpty ? 'message_ack refused' : reason;
   }
 
+  /// v1.25 the batch ack door: EVERY pending inbox message addressed to
+  /// THIS agent on the current product flips to acknowledged — the same
+  /// store rule the macOS mark-all-read runs, one event riding the batch.
+  /// Returns '' on success (the honest receipt {"acked":N} — zero pending
+  /// answers included — rides lastError verbatim) and the verbatim refusal
+  /// otherwise. Never throws; call on the platform thread.
+  String messageAckAll(String agentID) {
+    final rc = command('message_ack_all', {'agentID': agentID});
+    if (rc == ok) return '';
+    final reason = lastError();
+    return reason.isEmpty ? 'message_ack_all refused' : reason;
+  }
+
   /// v1.11 seat steering from the shell: ONE line into an agent's live
   /// tmux seat. Returns '' on success — a WRITE rides the same channel,
   /// so silence IS success — and the verbatim refusal reason otherwise
