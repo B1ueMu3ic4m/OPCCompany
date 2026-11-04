@@ -346,6 +346,26 @@ enum OPCProcessRunner {
                 let outputBuffer = ProcessOutputBuffer()
                 let timeoutState = ProcessTimeoutState()
 
+                // v2.35.0 the in-flight handshake: `readabilityHandler = nil`
+                // does NOT interrupt a handler that is already executing — a
+                // handler may have consumed bytes from the kernel fd (availableData)
+                // and still not have appended them when the drain path reaches
+                // snapshot(). Under CI load that scheduling gap stretches wide
+                // enough to swallow a whole marker (runStreamingCapturesTailOutputAfterExit
+                // lost stderr once on the pin PR). Each handler marks itself
+                // in-flight BEFORE consuming; the drain path waits (bounded)
+                // for in-flight to reach zero before snapshotting. Bytes a
+                // queued-but-unstarted handler would have taken stay in the
+                // kernel and land in readDataToEndOfFile — no second window.
+                final class HandlerJoin: @unchecked Sendable {
+                    private let lock = NSLock()
+                    private var count = 0
+                    func enter() { lock.lock(); count += 1; lock.unlock() }
+                    func exit() { lock.lock(); count -= 1; lock.unlock() }
+                    var inFlight: Int { lock.lock(); defer { lock.unlock() }; return count }
+                }
+                let handlerJoin = HandlerJoin()
+
                 let appendOutput: @Sendable (Data, Bool) -> Void = { data, isError in
                     guard !data.isEmpty, let text = String(data: data, encoding: .utf8), !text.isEmpty else { return }
                     outputBuffer.append(text, isError: isError)
@@ -353,9 +373,13 @@ enum OPCProcessRunner {
                 }
 
                 outputPipe.fileHandleForReading.readabilityHandler = { handle in
+                    handlerJoin.enter()
+                    defer { handlerJoin.exit() }
                     appendOutput(handle.availableData, false)
                 }
                 errorPipe.fileHandleForReading.readabilityHandler = { handle in
+                    handlerJoin.enter()
+                    defer { handlerJoin.exit() }
                     appendOutput(handle.availableData, true)
                 }
 
@@ -411,6 +435,17 @@ enum OPCProcessRunner {
                         appendOutput(trailingOutput, false)
                         let trailingError = errorPipe.fileHandleForReading.readDataToEndOfFile()
                         appendOutput(trailingError, true)
+                    }
+                    // v2.35.0 the handshake's second half: an in-flight handler
+                    // (already consumed bytes, append not yet landed) must be
+                    // allowed to finish BEFORE the snapshot — this wait closes
+                    // the loss window the drain alone cannot. A handler that
+                    // holds bytes is O(µs) from appending; the bound only
+                    // guards a pathological scheduler, never a hang (the
+                    // handlers are already nil'd — no NEW in-flight can start).
+                    let joinDeadline = Date().addingTimeInterval(2.0)
+                    while handlerJoin.inFlight != 0 && Date() <= joinDeadline {
+                        Thread.sleep(forTimeInterval: 0.001)
                     }
                     let snapshot = outputBuffer.snapshot()
                     let output = snapshot.output
