@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.36.0] - 2026-11-05
+
+### Fixed — v2.36.0 "the gate holds its own shape"
+- **verify-release: the shape gate stops flaking on itself** — the guard
+  used `grep -q`, whose early exit SIGPIPEs `unzip` mid-listing under
+  `set -o pipefail`; the nonzero pipeline flipped the check even on a
+  perfectly-shaped zip (shown twice during the v2.35.0 verification).
+  `grep -c` consumes the whole listing; the count decides. The guard
+  itself shipped in v2.35.0 after the app-shape incident below.
+
 ## [2.35.0] - 2026-11-05
 
 ### Added — v2.35.0 "the receipt lands in the status line"
