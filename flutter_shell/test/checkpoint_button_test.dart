@@ -81,7 +81,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fake.checkpointReasons, ['before the jump']);
-    expect(find.text('checkpoint: ok'), findsOneWidget);
+    // v2.35.0 the receipt lands verbatim: the filing answers with
+    // {file, bytes, reason} in the status line, not a bare ok.
+    expect(find.textContaining('checkpoint: ok — {"file"'), findsOneWidget);
+    expect(find.textContaining('"bytes":2048'), findsOneWidget);
     expect(
         fake.commands.where((c) => c.$1 == 'standup_window').length,
         greaterThanOrEqualTo(1));

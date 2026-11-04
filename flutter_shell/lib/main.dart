@@ -317,22 +317,16 @@ class _CompanyHomeState extends State<CompanyHome> {
   void _run(String label, int Function() action) {
     setState(() {
       final rc = action();
+      // v2.35.0 the receipt lands verbatim: the write-receipt family
+      // (goal v1.29, decide v1.30, checkpoint v1.31) rides the smuggle
+      // channel on SUCCESS — the status line answers with the object,
+      // not just "ok". Plain writes leave the channel empty and stay
+      // plain; a refusal rides its reason exactly as before.
+      final channel = _bridge.lastError();
       _lastAction = rc == OpcBridge.ok
-          ? '$label: ok'
-          : '$label: refused — ${_bridge.lastError()}';
-      _snap = _bridge.snapshot();
-      _history = _bridge.historyList();
-      _deliverables = _bridge.deliverablesList();
-      _standup = _bridge.standupWindow();
-      _team = _bridge.teamStatsList();
-      _stalls = _bridge.stallsList();
-      _catchup = _bridge.catchupMd();
-      _weight = _bridge.weightJson();
-      _goals = _bridge.goalsList();
-      _risks = _bridge.risksList();
-      _messages = _bridge.messagesList();
-      _checkpoints = _bridge.checkpointsList();
-      _syncTranscripts();
+          ? (channel.isEmpty ? '$label: ok' : '$label: ok — $channel')
+          : '$label: refused — $channel';
+      _reloadDoors();
     });
   }
 
@@ -639,7 +633,17 @@ class _CompanyHomeState extends State<CompanyHome> {
           _lastAction = 'checkpoint: empty — a checkpoint needs its reason');
       return;
     }
-    _runWrite('checkpoint', () => _bridge.checkpoint(reason));
+    // v2.35.0 the checkpoint receipt (bridge v1.31) lands verbatim: the
+    // filing answers with {file, bytes, reason} — disk truth in the
+    // status line, not a bare ok.
+    setState(() {
+      final refusal = _bridge.checkpoint(reason);
+      final receipt = refusal.isEmpty ? _bridge.lastError() : '';
+      _lastAction = refusal.isEmpty
+          ? (receipt.isEmpty ? 'checkpoint: ok' : 'checkpoint: ok — $receipt')
+          : 'checkpoint: refused — $refusal';
+      _reloadDoors();
+    });
     _checkpointField.clear();
   }
 

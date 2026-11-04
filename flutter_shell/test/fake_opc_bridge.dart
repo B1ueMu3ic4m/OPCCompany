@@ -139,6 +139,20 @@ class FakeOpcBridge {
   /// core writes (zero pending answers {"acked":0}, never a fake number).
   String messageAckAllReceipt = '{"acked":2}';
 
+  /// v1.29/v1.30/v1.31 the write-receipt family: on success these ride
+  /// the channel verbatim (the shapes a real core writes); a refusal
+  /// knob overrides with the verbatim refusal instead.
+  String goalReceipt =
+      '{"goal":"ship it","tasks":[{"id":"t1"},{"id":"t2"},{"id":"t3"},{"id":"t4"}]}';
+  String? goalRefusal;
+  final List<String> goalWrites = [];
+  String decideReceipt =
+      '{"approvalID":"AP1","title":"Spend budget","status":"approved","decidedAt":1757001999}';
+  String? decideRefusal;
+  final List<(String approvalID, bool approved)> decideCalls = [];
+  String checkpointReceipt =
+      '{"file":"checkpoint-20261105T000000Z-fake.json","bytes":2048,"reason":"smoke"}';
+
   /// v1.21 the message bus: null => the default one-message bus below.
   /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
   /// row) and pin the wrapper's wholesale refusal.
@@ -264,7 +278,40 @@ class FakeOpcBridge {
         nextError = checkpointRefusal!;
         return -1;
       }
-      nextError = '';
+      nextError = checkpointReceipt;
+      return rc;
+    }
+    // v1.29 the goal write: on success the receipt chain rides the
+    // channel ({"goal":...,"tasks":[...]}) — a real core answers with
+    // the facts, the ask is recorded either way.
+    if (verb == 'goal') {
+      final text = payload['text'];
+      if (text is! String || text.trim().isEmpty) {
+        nextError = 'goal requires a non-empty text';
+        return -1;
+      }
+      goalWrites.add(text);
+      if (goalRefusal != null) {
+        nextError = goalRefusal!;
+        return -1;
+      }
+      nextError = goalReceipt;
+      return rc;
+    }
+    // v1.30 the decide write: on success the decided approval rides the
+    // channel ({"approvalID":...,"status":...}); recorded either way.
+    if (verb == 'decide') {
+      final approvalID = payload['approvalID'];
+      if (approvalID is! String) {
+        nextError = 'decide requires approvalID';
+        return -1;
+      }
+      decideCalls.add((approvalID, payload['approved'] == true));
+      if (decideRefusal != null) {
+        nextError = decideRefusal!;
+        return -1;
+      }
+      nextError = decideReceipt;
       return rc;
     }
     // v1.15 the shell's autopilot: ONE full dispatch per call — a write
@@ -597,6 +644,11 @@ class FakeOpcBridge {
     };
     if (carried != null) {
       nextError = rawCarryOverride ?? jsonEncode(carried);
+    } else {
+      // v2.35.0 the channel mirrors the real core's switch tail: a write
+      // (or any verb without a carried payload) RESETS lastError to ''
+      // on success — stale read content never masquerades as a receipt.
+      nextError = '';
     }
     return rc;
   }
