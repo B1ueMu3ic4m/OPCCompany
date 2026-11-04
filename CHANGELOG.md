@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [2.34.0] - 2026-11-04
+
+### Added — v2.34.0 "mark all read answers with its count"
+- **Flutter shell: the batch ack door surfaced** (bridge contract v1.25,
+  the last write verb without a shell face): one mark-all-read row per
+  pending bus recipient; the tap resolves the name through the roster
+  snapshot and the honest receipt `{"acked":N}` — zero pending answers
+  included — lands verbatim in the status line. The count answers for
+  the WHOLE inbox, so it may exceed what the top-5 card shows; a refusal
+  lands verbatim; a name off the roster never reaches the bridge. The
+  per-write door-reload list becomes one `_reloadDoors()` — one place.
+
 ## [2.33.0] - 2026-11-04
 
 ### Added — v2.33.0 "the filing answers with its name"

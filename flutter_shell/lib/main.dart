@@ -339,24 +339,30 @@ class _CompanyHomeState extends State<CompanyHome> {
   /// v1.15 write-style verbs answer '' on success and the verbatim
   /// refusal otherwise (the seat-write contract) — one pipeline here so
   /// the shell can't drift between the two shapes.
+  /// v2.34.0 every door reloads after a write — one list, one place; a
+  /// receipt-bearing write reuses it verbatim.
+  void _reloadDoors() {
+    _snap = _bridge.snapshot();
+    _history = _bridge.historyList();
+    _deliverables = _bridge.deliverablesList();
+    _standup = _bridge.standupWindow();
+    _team = _bridge.teamStatsList();
+    _stalls = _bridge.stallsList();
+    _catchup = _bridge.catchupMd();
+    _weight = _bridge.weightJson();
+    _goals = _bridge.goalsList();
+    _risks = _bridge.risksList();
+    _messages = _bridge.messagesList();
+    _checkpoints = _bridge.checkpointsList();
+    _syncTranscripts();
+  }
+
   void _runWrite(String label, String Function() action) {
     setState(() {
       final refusal = action();
       _lastAction =
           refusal.isEmpty ? '$label: ok' : '$label: refused — $refusal';
-      _snap = _bridge.snapshot();
-      _history = _bridge.historyList();
-      _deliverables = _bridge.deliverablesList();
-      _standup = _bridge.standupWindow();
-      _team = _bridge.teamStatsList();
-      _stalls = _bridge.stallsList();
-      _catchup = _bridge.catchupMd();
-      _weight = _bridge.weightJson();
-      _goals = _bridge.goalsList();
-      _risks = _bridge.risksList();
-      _messages = _bridge.messagesList();
-      _checkpoints = _bridge.checkpointsList();
-      _syncTranscripts();
+      _reloadDoors();
     });
   }
 
@@ -543,6 +549,28 @@ class _CompanyHomeState extends State<CompanyHome> {
       return;
     }
     _runWrite('ack', () => _bridge.messageAck(messageID, id));
+  }
+
+  /// v2.34.0 the batch ack door (bridge v1.25): EVERY pending inbox
+  /// message addressed to THIS agent flips to acknowledged — the same
+  /// store rule the macOS mark-all-read runs. The receipt {"acked":N}
+  /// lands verbatim in the status line: zero pending answers acked:0,
+  /// never a fake success; the count may exceed what the top-5 card
+  /// shows (the door answers for the whole inbox).
+  void _ackAllMessages(String agentName) {
+    final id = _agentID(forName: agentName);
+    if (id == null) {
+      setState(() => _lastAction =
+          'ack-all: refused — "$agentName" is not on this roster');
+      return;
+    }
+    setState(() {
+      final refusal = _bridge.messageAckAll(id);
+      _lastAction = refusal.isEmpty
+          ? 'ack-all: ok — ${_bridge.lastError()}'
+          : 'ack-all: refused — $refusal';
+      _reloadDoors();
+    });
   }
 
   /// The roster's name → id resolution for doors that carry display
@@ -1459,6 +1487,15 @@ class _CompanyHomeState extends State<CompanyHome> {
               leading: Icon(Icons.forum_outlined),
               title: Text('The bus is quiet.')));
     }
+    // v2.34.0 the batch ack door (bridge v1.25): one row per pending
+    // RECIPIENT — the receipt answers for the whole inbox, so the acked
+    // count may exceed what this top-5 card shows. Never fabricated:
+    // recipients come verbatim from the rows the door answered.
+    final pendingTos = <String>{
+      for (final row in rows)
+        if (row['status'] == 'pending' && row['to'] != null) '${row['to']}'
+    }.toList()
+      ..sort();
     return Card(
       child: Column(
         children: [
@@ -1484,6 +1521,19 @@ class _CompanyHomeState extends State<CompanyHome> {
                           _ackMessage('${row['id']}', '${row['to']}'),
                     )
                   : null,
+            ),
+          for (final to in pendingTos)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.done_all_outlined),
+              title: Text('Mark all read — $to',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: IconButton(
+                key: ValueKey('ack-all-$to'),
+                tooltip: 'Acknowledge all for $to',
+                icon: const Icon(Icons.done_all, size: 18),
+                onPressed: () => _ackAllMessages(to),
+              ),
             ),
           if (rows.length > 5)
             ListTile(
