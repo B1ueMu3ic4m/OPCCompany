@@ -13,6 +13,11 @@ All notable changes to this project are documented here.
   receipt. The fake core now mirrors the real switch tail (a write
   resets `lastError` to `''`) — a fidelity gap the receipt display
   exposed and closed. `_run` reuses `_reloadDoors()`.
+- **verify-release gains the shape guard (4→5 gates)**: the cask is an
+  app cask, so a sha-matching zip that carries the CLI binary instead
+  of `OPCCompany.app` would still fail every brew install. v2.34.0
+  shipped exactly that wrong shape for ~40 minutes before a dist/
+  inventory caught it; the gate makes the shape permanent.
 
 ## [2.34.0] - 2026-11-04
 

@@ -15,13 +15,13 @@ REPO="B1ueMu3ic4m/OPCCompany"
 TAP="B1ueMu3ic4m/homebrew-tap"
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-echo "[1/4] release state…"
+echo "[1/5] release state…"
 TAG=$(gh api "repos/$REPO/releases/latest" --jq '.tag_name + " draft=" + (.draft|tostring)')
 echo "  $TAG"
 case "$TAG" in *"draft=true"*) echo "FAIL: latest release is a draft — brew/README downloads 404"; exit 1;; esac
 VERSION=${TAG%% *}
 
-echo "[2/4] public asset download…"
+echo "[2/5] public asset download…"
 URL="https://github.com/$REPO/releases/download/$VERSION/OPCCompany-$VERSION.zip"
 TMP=$(mktemp)
 SHELL_TMP=$(mktemp)
@@ -32,7 +32,7 @@ if [ "$HTTP" != "200" ]; then echo "FAIL: $URL → HTTP $HTTP"; exit 1; fi
 ACTUAL=$(shasum -a 256 "$TMP" | cut -d' ' -f1)
 echo "  ok ($(wc -c < "$TMP" | tr -d ' ') bytes)"
 
-echo "[3/4] cask sha256 match…"
+echo "[3/5] cask sha256 match…"
 DECLARED=$(gh api "repos/$TAP/contents/Casks/opc-company.rb" --jq '.content' | base64 -d | sed -n 's/.*sha256 "\(.*\)".*/\1/p')
 if [ "$ACTUAL" = "$DECLARED" ]; then
   echo "  ok: $ACTUAL"
@@ -41,7 +41,18 @@ else
   exit 1
 fi
 
-echo "[4/4] Windows shell preview package exports…"
+# v2.35.0 shape guard: the cask is an APP cask (`app "OPCCompany.app"`),
+# so a sha-matching zip that carries the CLI binary instead of the bundle
+# would still fail every brew install — sha equality alone can't see it.
+# v2.34.0 shipped exactly that wrong shape for ~40 minutes before a
+# dist/ inventory caught it; this check makes the shape a gate.
+if ! unzip -l "$TMP" | grep -q 'OPCCompany.app/Contents/MacOS/OPCCompany'; then
+  echo "FAIL: zip is not an app-bundle package — the cask installs OPCCompany.app"
+  exit 1
+fi
+echo "  ok: zip carries OPCCompany.app (cask-installable shape)"
+
+echo "[5/5] Windows shell preview package exports…"
 # The shell package is versioned but not covered by the cask; find it by
 # listing the release's assets. A release without one (macOS-only tags)
 # passes vacuously but says so explicitly.
