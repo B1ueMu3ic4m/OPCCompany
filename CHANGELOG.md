@@ -10,7 +10,13 @@ All notable changes to this project are documented here.
   SUCCESS, verbatim in the status line; plain writes (advance, save,
   product_select) stay plain because the channel resets on success; a
   refusal rides its reason exactly as before, never dressed up as a
-  receipt. The fake core now mirrors the real switch tail (a write
+  receipt.
+- **Streaming tail-join fix**: `readabilityHandler = nil` does not
+  interrupt an already-running pipe handler — under CI load a handler
+  could consume bytes and lose them before the snapshot
+  (`runStreamingCapturesTailOutputAfterExit` stderr loss). Handlers now
+  mark in-flight before consuming; the drain path joins (≤2s) before
+  snapshotting. The fake core now mirrors the real switch tail (a write
   resets `lastError` to `''`) — a fidelity gap the receipt display
   exposed and closed. `_run` reuses `_reloadDoors()`.
 - **verify-release gains the shape guard (4→5 gates)**: the cask is an
