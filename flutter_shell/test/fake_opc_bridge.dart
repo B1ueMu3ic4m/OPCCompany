@@ -163,6 +163,11 @@ class FakeOpcBridge {
   /// row) and pin the wrapper's wholesale refusal.
   List<dynamic>? risksListResult;
 
+  /// v1.27 the product shelf: null => the default two-product shelf
+  /// below. Typed dynamic so tests can script a MALFORMED payload (a
+  /// non-Map row) and pin the wrapper's wholesale refusal.
+  List<dynamic>? productsListResult;
+
   /// v1.19 the goal ledger: null => the default one-goal ledger below.
   /// Typed dynamic so tests can script a MALFORMED payload (a non-Map
   /// row) and pin the wrapper's wholesale refusal.
@@ -180,6 +185,10 @@ class FakeOpcBridge {
 
   /// simulate a core OLDER than v1.6: the verb is simply not registered
   bool standupRefused = false;
+
+  // v1.27 the product shelf refusal: the "old core" knob — the verb
+  // answers -1 exactly like a pre-v1.27 dylib.
+  bool productsRefused = false;
   Map<String, dynamic>? tailResult;
 
   /// v1.3+ array verbs (approvals/history/deliverables) carry a JSON ARRAY.
@@ -244,6 +253,7 @@ class FakeOpcBridge {
     if (rc != OpcBridge.ok) return rc; // preserve the scripted refusal text
     // a core older than v1.6: the verb simply does not exist (rc=-1),
     // exactly what a pre-standup dylib answers
+    if (verb == 'products_list' && productsRefused) return -1;
     if (verb == 'standup_window' && standupRefused) return -1;
     if (verb == 'team_stats_list' && teamStatsRefused) return -1;
     if (verb == 'stalls_list' && stallsRefused) return -1;
@@ -623,6 +633,11 @@ class FakeOpcBridge {
               'risks': 0,
               'activeNow': 0
             },
+          ],
+      'products_list' => productsListResult ??
+          const [
+            {'id': 'P1', 'name': 'Alpha', 'stage': 'building', 'selected': true},
+            {'id': 'P2', 'name': 'Beta', 'stage': 'shipping', 'selected': false},
           ],
       'standup_window' => standupResult ??
           const <String, dynamic>{

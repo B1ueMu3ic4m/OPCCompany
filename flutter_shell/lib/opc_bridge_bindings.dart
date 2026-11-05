@@ -447,6 +447,12 @@ class OpcBridge {
   List<Map<String, dynamic>>? checkpointsList() =>
       _listVerb('checkpoints_list');
 
+  /// v1.27 the product shelf: every product with its lifecycle STAGE —
+  /// the fact the snapshot's switcher list doesn't carry. Rows:
+  /// id/name/stage/selected. Malformed JSON or a refused verb returns
+  /// null (never a partial shelf).
+  List<Map<String, dynamic>>? productsList() => _listVerb('products_list');
+
   /// v1.17 the desk door: one employee's working surface — chips,
   /// session, assigned tasks, work queue, pending inbox. Malformed JSON
   /// or a refused verb returns null (never a partial desk).
