@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [2.37.0] - 2026-11-05
+
+### Added — v2.37.0 "the shelf answers with its stage"
+- **Flutter shell: the product shelf surfaced** (bridge contract v1.27,
+  the last read verb without a shell face): every product with its
+  lifecycle STAGE — the fact the snapshot's switcher list doesn't
+  carry — pulled through products_list, the SAME rows the CLI prints.
+  The selected row is marked; an old core says so; a malformed row
+  refuses the whole shelf (never a partial one). Hall (v1.28) stays
+  honestly absent — the shell cannot probe the Mac's tmux.
+
 ## [2.36.0] - 2026-11-05
 
 ### Fixed — v2.36.0 "the gate holds its own shape"

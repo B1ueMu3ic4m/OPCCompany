@@ -136,6 +136,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v2.28.0 the checkpoint archive (bridge v1.26): rides the standard
   // refresh — what filings exist, newest first.
   List<Map<String, dynamic>>? _checkpoints;
+  // v2.37.0 the product shelf (bridge v1.27): rides the standard
+  // refresh — every product with its lifecycle stage.
+  List<Map<String, dynamic>>? _products;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -198,6 +201,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _risks = _bridge.risksList();
       _messages = _bridge.messagesList();
       _checkpoints = _bridge.checkpointsList();
+      _products = _bridge.productsList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -235,6 +239,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _risks = _bridge.risksList();
       _messages = _bridge.messagesList();
       _checkpoints = _bridge.checkpointsList();
+      _products = _bridge.productsList();
       _syncTranscripts();
     });
   }
@@ -348,6 +353,7 @@ class _CompanyHomeState extends State<CompanyHome> {
     _risks = _bridge.risksList();
     _messages = _bridge.messagesList();
     _checkpoints = _bridge.checkpointsList();
+      _products = _bridge.productsList();
     _syncTranscripts();
   }
 
@@ -454,6 +460,43 @@ class _CompanyHomeState extends State<CompanyHome> {
                 dense: true,
                 title: Text('… and ${rows.length - 3} older filings',
                     style: const TextStyle(fontSize: 12))),
+        ],
+      ),
+    );
+  }
+
+  /// v2.37.0 the product shelf (bridge v1.27): every product with its
+  /// lifecycle stage — the fact the snapshot's switcher doesn't carry.
+  /// The selected row is marked; an old core says so; the wrapper
+  /// refuses malformed rows wholesale, so a partial shelf never renders.
+  Widget _productsCard() {
+    final rows = _products;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.inventory_2_outlined),
+              title: Text('No product shelf from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.inventory_2_outlined),
+              title: Text('No products yet — the shelf is empty.')));
+    }
+    return Card(
+      child: Column(
+        children: [
+          for (final row in rows.take(6))
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.inventory_2_outlined, size: 18),
+              title: Text('${row['name']} · ${row['stage']}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: row['selected'] == true
+                  ? const Icon(Icons.check_circle,
+                      size: 18, color: Colors.green)
+                  : null,
+            ),
         ],
       ),
     );
@@ -971,6 +1014,15 @@ class _CompanyHomeState extends State<CompanyHome> {
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               _checkpointsCard(),
+              const SizedBox(height: 12),
+              // v2.37.0 "the product shelf": every product with its
+              // lifecycle stage — pulled through products_list (bridge
+              // v1.27), the SAME rows the CLI prints. An old core says
+              // so; never a fabricated product.
+              Text('Products',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _productsCard(),
               const SizedBox(height: 12),
               // v0.11.0 "the catch-up": ONE page that brings the boss up
               // to speed — pulled through catchup_md (bridge v1.9), the
