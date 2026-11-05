@@ -15,13 +15,13 @@ REPO="B1ueMu3ic4m/OPCCompany"
 TAP="B1ueMu3ic4m/homebrew-tap"
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-echo "[1/5] release state…"
+echo "[1/6] release state…"
 TAG=$(gh api "repos/$REPO/releases/latest" --jq '.tag_name + " draft=" + (.draft|tostring)')
 echo "  $TAG"
 case "$TAG" in *"draft=true"*) echo "FAIL: latest release is a draft — brew/README downloads 404"; exit 1;; esac
 VERSION=${TAG%% *}
 
-echo "[2/5] public asset download…"
+echo "[2/6] public asset download…"
 URL="https://github.com/$REPO/releases/download/$VERSION/OPCCompany-$VERSION.zip"
 TMP=$(mktemp)
 SHELL_TMP=$(mktemp)
@@ -32,7 +32,7 @@ if [ "$HTTP" != "200" ]; then echo "FAIL: $URL → HTTP $HTTP"; exit 1; fi
 ACTUAL=$(shasum -a 256 "$TMP" | cut -d' ' -f1)
 echo "  ok ($(wc -c < "$TMP" | tr -d ' ') bytes)"
 
-echo "[3/5] cask sha256 match…"
+echo "[3/6] cask sha256 match…"
 DECLARED=$(gh api "repos/$TAP/contents/Casks/opc-company.rb" --jq '.content' | base64 -d | sed -n 's/.*sha256 "\(.*\)".*/\1/p')
 if [ "$ACTUAL" = "$DECLARED" ]; then
   echo "  ok: $ACTUAL"
@@ -56,7 +56,19 @@ if [ "${SHAPE_HITS:-0}" -eq 0 ]; then
 fi
 echo "  ok: zip carries OPCCompany.app (cask-installable shape)"
 
-echo "[5/5] Windows shell preview package exports…"
+echo "[5/6] cask version matches the release tag…"
+# The sha gate proves the cask points at THIS zip, but not that its
+# version string matches the tag — a stale `version "2.38.0"` line with
+# the right sha would install the right bytes under the wrong name.
+CASK_VERSION=$(gh api "repos/$TAP/contents/Casks/opc-company.rb" --jq '.content' | base64 -d | sed -n 's/.*version "\([^"]*\)".*/\1/p')
+if [ "$CASK_VERSION" = "${VERSION#v}" ]; then
+  echo "  ok: cask $CASK_VERSION = ${VERSION#v}"
+else
+  echo "FAIL: cask version $CASK_VERSION ≠ release ${VERSION#v} — update the cask version line"
+  exit 1
+fi
+
+echo "[6/6] Windows shell preview package exports…"
 # The shell package is versioned but not covered by the cask; find it by
 # listing the release's assets. A release without one (macOS-only tags)
 # passes vacuously but says so explicitly.
