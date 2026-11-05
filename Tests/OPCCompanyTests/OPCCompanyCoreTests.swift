@@ -16987,7 +16987,7 @@ fileprivate func extractTopLevelStructSlice(
     )
     let elapsed = Date().timeIntervalSince(start)
     #expect(result.exitCode == 124, "SIGKILL 升级路径仍必须保持 124 超时退出码，实际 exitCode=\(result.exitCode)")
-    #expect(elapsed < 8, "SIGTERM 被屏蔽时必须靠 SIGKILL 强制返回——这个界只排除悬挂（悬挂永不返回），满负载并发套件下内核派发 SIGKILL 本身可达数秒，实际耗时=\(elapsed)s")
+    #expect(elapsed < 30, "SIGTERM 被屏蔽时必须靠 SIGKILL 强制返回——这个界只排除悬挂（悬挂永不返回）：0.3s 超时 + 0.5s grace 是下限，满负载并发套件下内核派发与 waitUntilExit 唤醒的调度可达十秒量级（本机 soak 实测 9.8s），30s 仍远低于任何悬挂，实际耗时=\(elapsed)s")
     #expect(result.standardError.contains("命令超时"),
             "SIGTERM 阶段写入的中文超时消息必须仍在 stderr buffer 里，实际 standardError=\(result.standardError)")
     #expect(result.standardError.contains("SIGKILL"),
