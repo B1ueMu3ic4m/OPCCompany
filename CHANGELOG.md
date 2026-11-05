@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [2.38.0] - 2026-11-06
+
+### Added — v2.38.0 "every door a face, as a test"
+- **Contract-parity gate**: the bridge's verb switch is the truth; the
+  Flutter shell must face every verb except the documented exemptions
+  (hall — the shell runs where the Mac's tmux is not) and must never
+  call a verb the bridge lacks; the CLI's alias map must resolve. The
+  v1.25 batch ack rode ten versions without a shell face — this gate
+  exists so the next orphan cannot. Negative-drilled: renaming a shell
+  call flags exactly that verb.
+
 ## [2.37.0] - 2026-11-05
 
 ### Added — v2.37.0 "the shelf answers with its stage"
