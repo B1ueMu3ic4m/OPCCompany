@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [2.40.0] - 2026-11-06
+
+### Fixed — v2.40.0 "the gate checks its own name"
+- **verify-release gains the cask-version gate (6/6)**: the sha gate
+  proves the cask points at THIS zip, but not that its version string
+  matches the tag — a stale version line with the right sha would
+  install the right bytes under the wrong name. Now gated.
+- **scripts/soak.sh**: the overnight soak as one command — full Swift
+  suite + full Flutter suite per round, failures aggregated, exit 0
+  only if every round of both suites is green.
+
 ## [2.39.0] - 2026-11-06
 
 ### Added — v2.39.0 "the doors hold at scale"
