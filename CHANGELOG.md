@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [2.39.0] - 2026-11-06
+
+### Added — v2.39.0 "the doors hold at scale"
+- **Doors-under-load gates**: a real company at scale — 300 messages,
+  120 risks, 80 decided approvals, 200 tasks, 30 goal chains — every
+  list door still answers LEGAL JSON, still honors its cap (bus 50,
+  risks 50, history 50, goals 20), still sorts honestly, and the
+  search clamp holds BOTH ways (oversized ask → 50, zero ask → 1).
+  NO timing assertions: the caps and the order are the contract, not
+  the clock. Every gate pins the read left the write path
+  byte-identical.
+
 ## [2.38.0] - 2026-11-06
 
 ### Added — v2.38.0 "every door a face, as a test"
