@@ -123,6 +123,10 @@ private func usage() -> String {
                                  current product, newest first (boss view:
                                  closure drills and backend noise never
                                  reach it). Pure read.
+      opc events [--json]        the event stream — EVERY kind of event on
+                                 the current product, newest first, capped
+                                 at 50: the SAME stream the macOS event log
+                                 renders. Pure read.
       opc messages [--json]      the message bus — the current product's
                                  recent agent traffic, newest first, who →
                                  whom. Pure read.
@@ -259,6 +263,8 @@ struct OPC {
                 try goals(rest)
             case "risks":
                 try risks(rest)
+            case "events":
+                try events(rest)
             case "messages":
                 try messages(rest)
             case "task":
@@ -1199,6 +1205,40 @@ struct OPC {
             }
             if rows.count > 12 {
                 print("… and \(rows.count - 12) older (opc risks --json for the full ledger)")
+            }
+        }
+    }
+
+    /// v2.43.0 "the event stream door" (bridge v1.32): EVERY kind of
+    /// event on the current product — the full stream the macOS event
+    /// log renders and no other front end could see — newest first,
+    /// capped at 50. `--json` serves the bridge's EXACT bytes.
+    @MainActor
+    static func events(_ rest: [String]) throws {
+        let (json, extra) = splitJSONFlag(rest)
+        guard extra.isEmpty else {
+            throw CLIError(message: "usage: opc events [--json]")
+        }
+        try withStore { store in
+            let data = try store.eventsListJSON()
+            if json {
+                printJSON(store, data)
+                return
+            }
+            let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+            guard !rows.isEmpty else {
+                print("no events yet — the office is quiet")
+                return
+            }
+            for row in rows.prefix(15) {
+                let agentID = row["agentID"] as? String
+                let who = agentID.map { " (\($0.prefix(8)))" } ?? ""
+                print("[\(row["createdAt"] ?? "?")] [\(row["kind"] ?? "?")] \(row["title"] ?? "?")\(who)")
+                let detail = row["detail"] as? String ?? ""
+                if !detail.isEmpty { print("    \(detail)") }
+            }
+            if rows.count > 15 {
+                print("… and \(rows.count - 15) older (opc events --json for the full stream)")
             }
         }
     }

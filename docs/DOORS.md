@@ -33,6 +33,7 @@ handles — both directions.
 | Goal ledger | `goalsListJSON()` — the closure traces the operations suite renders, newest-touched first | `goals_list` | v1.19 | `opc goals` | ✓ operations suite | ✓ goals card (v2.17.0) |
 | Risk ledger | `risksListJSON()` — the boss-view filtered risk stream (drills + backend noise never reach it), newest first | `risks_list` | v1.20 | `opc risks` | ✓ command center (boss view) | ✓ risks card (v2.18.0) |
 | Message bus | `messagesListJSON()` — the drill-filtered agent traffic, newest first, names resolved | `messages_list` | v1.21 | `opc messages` | ✓ workflow map | ✓ bus card (v2.19.0) |
+| Event stream | `eventsListJSON()` — EVERY kind of event on the current product (the full stream the event log renders, NOT boss-filtered), newest first, capped at 50 | `events_list` | v1.32 | `opc events` | ✓ event log | ✓ events card (v2.43.0) |
 | Task file | `taskJSON(taskID:)` — task + work items + artifacts (existence at read time) + approvals + referencing messages | `task_show` | v1.22 | `opc task` | ✓ inspector | ✓ task board selects, file renders (v2.22.0) |
 | Search | `searchJSON(query:limit:)` — one keyword across tasks, artifacts, messages, events; newest first | `search` | v1.24 | `opc search` | — | ✓ search box (v2.26.0) |
 | Terminal hall | `hallJSON()` — tmux presence, session name/liveness, per-agent window liveness (ONE list-windows probe) | `hall` | v1.28 | `opc hall` | ✓ hall chip (throttled, v2.11.0) | — (the shell cannot probe the Mac's tmux — honest) |

@@ -146,6 +146,9 @@ class _CompanyHomeState extends State<CompanyHome> {
   // v2.37.0 the product shelf (bridge v1.27): rides the standard
   // refresh — every product with its lifecycle stage.
   List<Map<String, dynamic>>? _products;
+  // v2.43.0 the event stream (bridge v1.32): rides the standard
+  // refresh — every kind of event, newest first, capped at 50.
+  List<Map<String, dynamic>>? _events;
   // v0.18.0 the tell door (bridge v1.11 terminal_send): one input line
   // per selected seat, sent synchronously on the platform thread like
   // every other bridge call. '' result = sent; a refusal shows verbatim.
@@ -209,6 +212,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _messages = _bridge.messagesList();
       _checkpoints = _bridge.checkpointsList();
       _products = _bridge.productsList();
+      _events = _bridge.eventsList();
     }
     // CI/headless shell smoke: after first frame (run loop confirmed
     // turning), run the full behavioral cycle and exit with the verdict.
@@ -247,6 +251,7 @@ class _CompanyHomeState extends State<CompanyHome> {
       _messages = _bridge.messagesList();
       _checkpoints = _bridge.checkpointsList();
       _products = _bridge.productsList();
+      _events = _bridge.eventsList();
       _syncTranscripts();
     });
   }
@@ -361,6 +366,7 @@ class _CompanyHomeState extends State<CompanyHome> {
     _messages = _bridge.messagesList();
     _checkpoints = _bridge.checkpointsList();
       _products = _bridge.productsList();
+      _events = _bridge.eventsList();
     _syncTranscripts();
   }
 
@@ -466,6 +472,47 @@ class _CompanyHomeState extends State<CompanyHome> {
             ListTile(
                 dense: true,
                 title: Text('… and ${rows.length - 3} older filings',
+                    style: const TextStyle(fontSize: 12))),
+        ],
+      ),
+    );
+  }
+
+  /// v2.43.0 the event stream card (bridge v1.32): EVERY kind of event
+  /// on the current product — the full stream the macOS event log
+  /// renders, newest first, capped at 50. kind rides the raw enum
+  /// value; an old core says so; a malformed row refuses the WHOLE
+  /// stream (never a partial one).
+  Widget _eventsCard() {
+    final rows = _events;
+    if (rows == null) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.stream),
+              title: Text('No event stream from this core.')));
+    }
+    if (rows.isEmpty) {
+      return const Card(
+          child: ListTile(
+              leading: Icon(Icons.stream),
+              title: Text('No events yet — the office is quiet.')));
+    }
+    return Card(
+      child: Column(
+        children: [
+          for (final row in rows.take(6))
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.stream, size: 18),
+              title: Text('[${row['kind']}] ${row['title']}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text('${row['detail']}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          if (rows.length > 6)
+            ListTile(
+                dense: true,
+                title: Text('… and ${rows.length - 6} older events',
                     style: const TextStyle(fontSize: 12))),
         ],
       ),
@@ -1030,6 +1077,15 @@ class _CompanyHomeState extends State<CompanyHome> {
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               _productsCard(),
+              const SizedBox(height: 12),
+              // v2.43.0 "the event stream": EVERY kind of event on the
+              // current product — pulled through events_list (bridge
+              // v1.32), the SAME stream the macOS event log renders.
+              // An old core says so; never a fabricated event.
+              Text('Events',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _eventsCard(),
               const SizedBox(height: 12),
               // v0.11.0 "the catch-up": ONE page that brings the boss up
               // to speed — pulled through catchup_md (bridge v1.9), the

@@ -286,6 +286,20 @@ char *opc_bridge_snapshot_json(void);
  *       Payload ignored. Pure read, same guard silence as
  *       approvals_list. The CLI's `risks --json` serves THESE EXACT
  *       bytes.
+ *   "events_list" {}                      (v1.32)
+ *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY
+ *       (.sortedKeys byte-stable): EVERY kind of event on the CURRENT
+ *       product — the full stream the macOS EventLogView renders and
+ *       no other front end could see — newest-first, capped at 50.
+ *       Each row: {id, kind, title, detail, agentID?, createdAt (epoch
+ *       seconds)}; kind rides the raw enum value (message/ctoSummary/
+ *       taskCreated/taskAssigned/statusChanged/artifactCreated/
+ *       commandPlanned/risk) — the SAME vocabulary the snapshot's
+ *       events carry. Order is the contract: createdAt desc, ties by
+ *       id — same store, same list, same bytes. An honest office
+ *       answers []. Payload ignored. Pure read, same guard silence as
+ *       risks_list. The CLI's `events --json` serves THESE EXACT
+ *       bytes.
  *   "messages_list" {}                    (v1.21)
  *       rc=0; the RESULT rides opc_bridge_last_error as a JSON ARRAY
  *       (.sortedKeys byte-stable): the CURRENT product's recent agent
