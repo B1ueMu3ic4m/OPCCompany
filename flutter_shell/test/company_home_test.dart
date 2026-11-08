@@ -68,7 +68,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // v2.41.0 the shell signs itself: the version rides the title too
-    expect(find.text('OPC Company — shell v2.41.0 · schema v14'),
+    expect(find.text('OPC Company — shell v2.42.0 · schema v14'),
         findsOneWidget);
     expect(find.text('Task 0'), findsOneWidget);
     expect(find.text('Eve · coding'), findsOneWidget);
