@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [2.42.0] - 2026-11-08
+
+### Added — v2.42.0 "the snapshot holds at scale"
+- **snapshot-under-load gate**: the doors-under-load family gains the
+  snapshot itself — a 200-task / 150-event company still answers
+  LEGAL snapshot JSON with schemaVersion 14, the full roster, every
+  task and event riding, shape-stable repetition (the snapshot
+  carries LIVE dwell fields, so its bytes legitimately drift between
+  two calls under a full-suite run — the shape is the contract, not
+  the clock), and the pure read leaving the write path
+  byte-identical. NO timing assertions.
+
 ## [2.41.0] - 2026-11-08
 
 ### Added — v2.41.0 "the shell signs itself"

@@ -201,3 +201,56 @@ private func rowsFromJSON(_ data: Data) throws -> [[String: Any]] {
 
     #expect(try seededBytes() == seed)
 }
+
+@MainActor
+@Test func snapshotDoorUnderLoadAnswersLegalJSONAtScale() throws {
+    let supportDir = try makeLoadedSupport()
+    defer {
+        CompanyPersistence.testSupportDirectoryOverride = nil
+        try? FileManager.default.removeItem(at: supportDir)
+    }
+    let store = CompanyStore.bootstrap(loadPersisted: false)
+    let pid = store.selectedProductID
+    let owner = store.agents.first!.id
+
+    var tasks: [CompanyTask] = []
+    for i in 0..<200 {
+        tasks.append(CompanyTask(productID: pid, title: "规模任务 \(i)",
+                                 ownerID: owner, status: .running,
+                                 successCriteria: "s"))
+    }
+    store.tasks = tasks
+    store.events = (0..<150).map { i in
+        CompanyEvent(productID: pid, kind: .risk, title: "规模风险 \(i)",
+                     detail: "load")
+    }
+    store.saveSnapshot()
+    let seed = try seededBytes()
+
+    let snap = try #require(store.snapshotJSONData())
+    let d = try #require(JSONSerialization.jsonObject(with: snap) as? [String: Any])
+    #expect(d["schemaVersion"] as? Int == 14,
+            "the schema version rides the big snapshot too")
+    let agents = try #require(d["agents"] as? [[String: Any]])
+    #expect(agents.count == store.agents.count,
+            "the roster survives the scale: \(agents.count)")
+    let snapTasks = try #require(d["tasks"] as? [[String: Any]])
+    #expect(snapTasks.count == 200,
+            "all 200 tasks ride the snapshot: \(snapTasks.count)")
+    let snapEvents = try #require(d["events"] as? [[String: Any]])
+    #expect(snapEvents.count == 150,
+            "all 150 events ride the snapshot: \(snapEvents.count)")
+
+    // shape-stable repetition: the snapshot carries LIVE fields (agent
+    // dwell clocks are recomputed per call), so under a full-suite run
+    // the bytes legitimately drift between two calls — the CONTRACT is
+    // the shape (schema, roster, counts), not the clock.
+    let again = try #require(store.snapshotJSONData())
+    let d2 = try #require(JSONSerialization.jsonObject(with: again) as? [String: Any])
+    #expect(d2["schemaVersion"] as? Int == 14)
+    #expect((d2["tasks"] as? [[String: Any]])?.count == 200)
+    #expect((d2["events"] as? [[String: Any]])?.count == 150)
+
+    // the pure read left the write path byte-identical
+    #expect(try seededBytes() == seed)
+}
