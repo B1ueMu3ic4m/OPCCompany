@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here.
 
+## [2.41.0] - 2026-11-08
+
+### Added — v2.41.0 "the shell signs itself"
+- **Flutter shell version self-report**: the AppBar prints
+  `shell v2.41.0 · schema v14` — the shell version from ONE constant
+  (`kShellVersion`), kept in lockstep with pubspec.yaml by a widget
+  test (pubspec's version is what `flutter build` stamps into the
+  Windows exe version resource; a drift means the exe and the title
+  bar disagree about what build this is). pubspec was stuck at 0.1.0
+  since the project's first day.
+- **verify-release gains the pubspec gate (7 gates)**: pubspec.yaml
+  version must equal the release tag — the same lie the cask-version
+  gate closes, for the shell side. Gate numbering straightened 1–7.
+
 ## [2.40.0] - 2026-11-06
 
 ### Fixed — v2.40.0 "the gate checks its own name"

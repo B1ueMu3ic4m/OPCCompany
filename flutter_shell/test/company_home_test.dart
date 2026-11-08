@@ -67,7 +67,9 @@ void main() {
     await tester.pumpWidget(_app(fake.asBridge()));
     await tester.pumpAndSettle();
 
-    expect(find.text('OPC Company — shell · schema v14'), findsOneWidget);
+    // v2.41.0 the shell signs itself: the version rides the title too
+    expect(find.text('OPC Company — shell v2.41.0 · schema v14'),
+        findsOneWidget);
     expect(find.text('Task 0'), findsOneWidget);
     expect(find.text('Eve · coding'), findsOneWidget);
     expect(find.text('Adam · idle'), findsOneWidget);
