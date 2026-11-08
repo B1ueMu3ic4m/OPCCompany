@@ -453,6 +453,13 @@ class OpcBridge {
   /// null (never a partial shelf).
   List<Map<String, dynamic>>? productsList() => _listVerb('products_list');
 
+  /// v1.32 the event stream: EVERY kind of event on the current product
+  /// — the full stream the macOS event log renders and no other front
+  /// end could see — newest-first, capped at 50. Rows: id/kind/title/
+  /// detail/agentID?/createdAt. Malformed JSON or a refused verb
+  /// returns null (never a partial stream).
+  List<Map<String, dynamic>>? eventsList() => _listVerb('events_list');
+
   /// v1.17 the desk door: one employee's working surface — chips,
   /// session, assigned tasks, work queue, pending inbox. Malformed JSON
   /// or a refused verb returns null (never a partial desk).

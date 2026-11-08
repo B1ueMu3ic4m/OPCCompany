@@ -344,6 +344,40 @@ extension CompanyStore {
                                           options: [.sortedKeys])
     }
 
+    /// The event stream as a LIST (bridge v1.32 `events_list`): EVERY
+    /// kind of event on the CURRENT product — the full stream the macOS
+    /// EventLogView renders and no other front end could see —
+    /// newest-first, capped at 50. Rows: {id, kind, title, detail,
+    /// agentID?, createdAt (epoch)}. kind rides the raw enum value
+    /// (message/ctoSummary/taskCreated/taskAssigned/statusChanged/
+    /// artifactCreated/commandPlanned/risk) — the SAME vocabulary the
+    /// snapshot's events carry. Order is the contract: createdAt desc,
+    /// ties by id — same store, same list, same bytes. Pure read; the
+    /// boss-view FILTERS (risks_list) stay where they belong.
+    public func eventsListJSON() throws -> Data {
+        let rows: [[String: Any]] = selectedProductEvents
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt > rhs.createdAt
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            .prefix(50)
+            .map { event in
+                var row: [String: Any] = ["id": event.id.uuidString,
+                                          "kind": event.kind.rawValue,
+                                          "title": event.title,
+                                          "detail": event.detail,
+                                          "createdAt": Int(event.createdAt.timeIntervalSince1970)]
+                if let agentID = event.agentID {
+                    row["agentID"] = agentID.uuidString
+                }
+                return row
+            }
+        return try JSONSerialization.data(withJSONObject: rows,
+                                          options: [.sortedKeys])
+    }
+
     /// The message bus as a LIST (bridge v1.21 `messages_list`): the
     /// CURRENT product's recent agent messages — the SAME drill-filtered,
     /// newest-first stream the macOS workflow map renders — capped at 50.

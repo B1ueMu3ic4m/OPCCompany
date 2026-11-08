@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [2.43.0] - 2026-11-09
+
+### Added — v2.43.0 "the event stream leaves the GUI"
+- **`events_list` read door** (bridge contract v1.32) + **`opc events
+  [--json]`** + **Flutter shell Events card**: EVERY kind of event on
+  the current product — the full stream the macOS EventLogView renders
+  and NO other front end could see — newest-first, capped at 50,
+  `kind` riding the raw enum value. Order is the contract (createdAt
+  desc, ties by id); the boss-view FILTERS stay in risks_list where
+  they belong. Serializer + real-ABI + CLI + shell widget tests; the
+  parity gate forced the shell face exactly as designed.
+
 ## [2.42.0] - 2026-11-08
 
 ### Added — v2.42.0 "the snapshot holds at scale"

@@ -189,6 +189,12 @@ class FakeOpcBridge {
   // v1.27 the product shelf refusal: the "old core" knob — the verb
   // answers -1 exactly like a pre-v1.27 dylib.
   bool productsRefused = false;
+
+  // v1.32 the event stream: null => the default three-event stream
+  // below. Typed dynamic so tests can script a MALFORMED payload (a
+  // non-Map row) and pin the wrapper's wholesale refusal.
+  List<dynamic>? eventsListResult;
+  bool eventsRefused = false;
   Map<String, dynamic>? tailResult;
 
   /// v1.3+ array verbs (approvals/history/deliverables) carry a JSON ARRAY.
@@ -253,6 +259,7 @@ class FakeOpcBridge {
     if (rc != OpcBridge.ok) return rc; // preserve the scripted refusal text
     // a core older than v1.6: the verb simply does not exist (rc=-1),
     // exactly what a pre-standup dylib answers
+    if (verb == 'events_list' && eventsRefused) return -1;
     if (verb == 'products_list' && productsRefused) return -1;
     if (verb == 'standup_window' && standupRefused) return -1;
     if (verb == 'team_stats_list' && teamStatsRefused) return -1;
@@ -638,6 +645,30 @@ class FakeOpcBridge {
           const [
             {'id': 'P1', 'name': 'Alpha', 'stage': 'building', 'selected': true},
             {'id': 'P2', 'name': 'Beta', 'stage': 'shipping', 'selected': false},
+          ],
+      'events_list' => eventsListResult ??
+          const [
+            {
+              'id': 'e1',
+              'kind': 'taskAssigned',
+              'title': '分配任务：审计这封',
+              'detail': 'Eve 领取了任务',
+              'createdAt': 1757001000,
+            },
+            {
+              'id': 'e2',
+              'kind': 'risk',
+              'title': '规模风险 3',
+              'detail': '任务卡住 45 分钟',
+              'createdAt': 1757000900,
+            },
+            {
+              'id': 'e3',
+              'kind': 'ctoSummary',
+              'title': '技术负责人摘要',
+              'detail': '本轮闭环 2 项',
+              'createdAt': 1757000800,
+            },
           ],
       'standup_window' => standupResult ??
           const <String, dynamic>{

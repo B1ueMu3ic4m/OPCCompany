@@ -304,6 +304,18 @@ public func opc_bridge_command(_ verb: UnsafePointer<CChar>?,
                     let data = try store.risksListJSON()
                     box.lastError = String(decoding: data, as: UTF8.self)
                     return 0
+                case "events_list":
+                    // v1.32 the event stream: EVERY kind of event on the
+                    // CURRENT product — the full stream the macOS
+                    // EventLogView renders and no other front end could
+                    // see — newest-first, capped at 50, riding the
+                    // smuggle channel as a JSON ARRAY (.sortedKeys
+                    // byte-stable). An honest office answers []. Payload
+                    // ignored. Pure read, same guard silence as
+                    // risks_list.
+                    let data = try store.eventsListJSON()
+                    box.lastError = String(decoding: data, as: UTF8.self)
+                    return 0
                 case "messages_list":
                     // v1.21 the message bus: the CURRENT product's recent
                     // agent messages — the SAME drill-filtered,
