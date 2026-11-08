@@ -2,7 +2,7 @@ name: opc_flutter_shell
 description: Cross-platform desktop shell for OPC Company, driving the portable core over a C-ABI bridge (dart:ffi).
 
 publish_to: 'none'
-version: 2.42.0
+version: 2.43.0
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
