@@ -6,6 +6,13 @@ import 'package:flutter/material.dart';
 import 'opc_bridge_bindings.dart';
 import 'shell_smoke.dart';
 
+/// v2.41.0 the shell signs itself: the release version this shell was
+/// built from — kept in lockstep with pubspec.yaml (the widget test
+/// reads both) and with the repo VERSION at pin time (the release
+/// script's perl line updates both; verify-release gates pubspec ==
+/// tag). A stale string here ships a shell that lies about itself.
+const kShellVersion = '2.41.0';
+
 /// M3 skeleton: the desktop shell is a thin, honest mirror of the bridge —
 /// zero business logic; every widget renders snapshot JSON the core owns,
 /// every button calls a bridge verb. The bridge hops onto the main queue
@@ -707,8 +714,8 @@ class _CompanyHomeState extends State<CompanyHome> {
     return Scaffold(
       appBar: AppBar(
         title: Text(snap == null
-            ? 'OPC Company — shell (no snapshot)'
-            : 'OPC Company — shell · schema v${snap.schemaVersion}'),
+            ? 'OPC Company — shell v$kShellVersion (no snapshot)'
+            : 'OPC Company — shell v$kShellVersion · schema v${snap.schemaVersion}'),
         actions: [
           if (snap != null) _productMenu(snap),
           IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),

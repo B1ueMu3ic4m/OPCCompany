@@ -15,13 +15,13 @@ REPO="B1ueMu3ic4m/OPCCompany"
 TAP="B1ueMu3ic4m/homebrew-tap"
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-echo "[1/6] release state…"
+echo "[1/7] release state…"
 TAG=$(gh api "repos/$REPO/releases/latest" --jq '.tag_name + " draft=" + (.draft|tostring)')
 echo "  $TAG"
 case "$TAG" in *"draft=true"*) echo "FAIL: latest release is a draft — brew/README downloads 404"; exit 1;; esac
 VERSION=${TAG%% *}
 
-echo "[2/6] public asset download…"
+echo "[2/7] public asset download…"
 URL="https://github.com/$REPO/releases/download/$VERSION/OPCCompany-$VERSION.zip"
 TMP=$(mktemp)
 SHELL_TMP=$(mktemp)
@@ -32,7 +32,7 @@ if [ "$HTTP" != "200" ]; then echo "FAIL: $URL → HTTP $HTTP"; exit 1; fi
 ACTUAL=$(shasum -a 256 "$TMP" | cut -d' ' -f1)
 echo "  ok ($(wc -c < "$TMP" | tr -d ' ') bytes)"
 
-echo "[3/6] cask sha256 match…"
+echo "[3/7] cask sha256 match…"
 DECLARED=$(gh api "repos/$TAP/contents/Casks/opc-company.rb" --jq '.content' | base64 -d | sed -n 's/.*sha256 "\(.*\)".*/\1/p')
 if [ "$ACTUAL" = "$DECLARED" ]; then
   echo "  ok: $ACTUAL"
@@ -54,9 +54,23 @@ if [ "${SHAPE_HITS:-0}" -eq 0 ]; then
   echo "FAIL: zip is not an app-bundle package — the cask installs OPCCompany.app"
   exit 1
 fi
+echo "[4/7] shape guard: the zip carries the app bundle…"
+# v2.35.0 shape guard: the cask is an APP cask (`app "OPCCompany.app"`),
+# so a sha-matching zip that carries the CLI binary instead of the bundle
+# would still fail every brew install — sha equality alone can't see it.
+# v2.34.0 shipped exactly that wrong shape for ~40 minutes before a
+# dist/ inventory caught it; this check makes the shape a gate.
+# NOTE: `grep -c` (not `-q`): with `set -o pipefail`, `-q`'s early exit
+# SIGPIPEs unzip mid-listing and the nonzero pipeline flips this check
+# even on a match — the flake this guard itself showed twice.
+SHAPE_HITS=$(unzip -l "$TMP" | grep -c 'OPCCompany.app/Contents/MacOS/OPCCompany' || true)
+if [ "${SHAPE_HITS:-0}" -eq 0 ]; then
+  echo "FAIL: zip is not an app-bundle package — the cask installs OPCCompany.app"
+  exit 1
+fi
 echo "  ok: zip carries OPCCompany.app (cask-installable shape)"
 
-echo "[5/6] cask version matches the release tag…"
+echo "[5/7] cask version matches the release tag…"
 # The sha gate proves the cask points at THIS zip, but not that its
 # version string matches the tag — a stale `version "2.38.0"` line with
 # the right sha would install the right bytes under the wrong name.
@@ -68,7 +82,20 @@ else
   exit 1
 fi
 
-echo "[6/6] Windows shell preview package exports…"
+echo "[6/7] shell pubspec version matches the release tag…"
+# v2.41.0 the shell signs itself: pubspec.yaml's version is what
+# `flutter build` stamps into the Windows exe version resource AND what
+# the shell's AppBar prints (kept in lockstep by a widget test) — a
+# stale pubspec ships an exe and a title bar that lie about the build.
+PUBSPEC_VERSION=$(curl -sL "https://raw.githubusercontent.com/$REPO/$VERSION/flutter_shell/pubspec.yaml" | sed -n 's/^version:[[:space:]]*//p')
+if [ "$PUBSPEC_VERSION" = "${VERSION#v}" ]; then
+  echo "  ok: pubspec $PUBSPEC_VERSION = ${VERSION#v}"
+else
+  echo "FAIL: pubspec version '${PUBSPEC_VERSION:-<missing>}' ≠ release ${VERSION#v} — sync flutter_shell/pubspec.yaml at pin time"
+  exit 1
+fi
+
+echo "[7/7] Windows shell preview package exports…"
 # The shell package is versioned but not covered by the cask; find it by
 # listing the release's assets. A release without one (macOS-only tags)
 # passes vacuously but says so explicitly.
