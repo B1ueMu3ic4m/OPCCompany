@@ -108,6 +108,7 @@ func shellVerbSet() throws -> Set<String> {
         "use": "product_select",
         "tell": "terminal_send",
         "transcript": "transcript",
+        "events": "events_list",
     ]
 
     let dead = cliAliases.filter { !abi.contains($0.value) }
