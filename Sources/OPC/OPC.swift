@@ -882,6 +882,19 @@ struct OPC {
             frame.append("  goals: \(traces.count) chain\(traces.count == 1 ? "" : "s") — leading \"\(goal)\" at \(top.completionScore)% (\(top.status.rawValue))")
         }
 
+        // v2.44.0 the events line: the stream's leading edge — the most
+        // recent event and the total on this product, from the SAME
+        // stream the events door serves (no boss filtering).
+        let stream = store.selectedProductEvents
+        if stream.isEmpty {
+            frame.append("  events: none yet")
+        } else {
+            let latest = stream.max { $0.createdAt < $1.createdAt }!
+            var title = latest.title
+            if title.count > 30 { title = String(title.prefix(30)) + "…" }
+            frame.append("  events: \(stream.count) — latest [\(latest.kind.rawValue)] \"\(title)\"")
+        }
+
         // v2.5.0 the seats line: who has a physically open tmux window
         // RIGHT NOW — one list-windows probe feeds the whole frame.
         let open = store.openTerminalWindowAgentIDs()

@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here.
 
+## [2.44.0] - 2026-11-10
+
+### Added — v2.44.0 "the honest pointers"
+- **`opc watch` gains the events line**: the stream's leading edge —
+  newest event with its kind in the raw vocabulary — rides the live
+  frame from the SAME stream the events door serves (no boss
+  filtering), beside the goals line it joins from v2.25.0.
+- **the shell's honest hall pointer**: the shell cannot probe the
+  Mac's tmux (a documented parity exemption) — instead of pretending
+  the seats page doesn't exist, it says so and points at the door that
+  can (`opc hall` on the Mac). The pointer never calls the bridge and
+  never fabricates seat facts.
+- README's CLI tour records `opc events`.
+
 ## [2.43.0] - 2026-11-09
 
 ### Added — v2.43.0 "the event stream leaves the GUI"

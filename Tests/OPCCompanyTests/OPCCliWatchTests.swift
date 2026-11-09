@@ -106,6 +106,12 @@ private func runCLI(_ args: [String], supportDir: URL) throws
     #expect(s.out.contains("goals: 1 chain — leading \"ship the watch ledger"),
             "the ledger's leading edge rides the frame (truncated): \(s.out)")
     #expect(s.out.contains("% ("), "the completion score and status ride too")
+    // v2.44.0 the events line: the goal start seeds an event, and the
+    // stream's leading edge rides the frame — kind in raw vocabulary.
+    #expect(s.out.contains("events: "),
+            "the event stream rides the frame: \(s.out)")
+    #expect(s.out.contains("latest ["),
+            "the newest event's kind rides raw: \(s.out)")
 
     // pure read: bytes must not move
     #expect(try Data(contentsOf: stateFile) == seededBytes,

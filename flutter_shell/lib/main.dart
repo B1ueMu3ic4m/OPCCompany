@@ -1087,6 +1087,19 @@ class _CompanyHomeState extends State<CompanyHome> {
               const SizedBox(height: 8),
               _eventsCard(),
               const SizedBox(height: 12),
+              // v2.44.0 the honest hall pointer: the shell CANNOT probe
+              // the Mac's tmux (the parity gate documents the exemption)
+              // — it says so and points at the door that can, instead of
+              // pretending the seats page doesn't exist.
+              Card(
+                child: const ListTile(
+                  dense: true,
+                  leading: Icon(Icons.chair_alt_outlined, size: 18),
+                  title: Text('Open seats — run `opc hall` on the Mac',
+                      style: TextStyle(fontSize: 13)),
+                ),
+              ),
+              const SizedBox(height: 12),
               // v0.11.0 "the catch-up": ONE page that brings the boss up
               // to speed — pulled through catchup_md (bridge v1.9), the
               Text('Catch-up — one page',
