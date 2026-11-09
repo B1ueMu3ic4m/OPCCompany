@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [2.45.0] - 2026-11-10
+
+### Added — v2.45.0 "the tour catches up"
+- README's feature tour records the event stream (v2.43) and its
+  watch-frame leading edge (v2.44) — the CLI list already did; the
+  tour lagged one release behind the doors it sells. First-party
+  TODO/FIXME count: zero.
+
 ## [2.44.0] - 2026-11-10
 
 ### Added — v2.44.0 "the honest pointers"

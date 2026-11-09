@@ -66,6 +66,7 @@ If you want to *watch* one Claude Code session play as pixel characters inside y
 - 🔌 **The scriptable door (v0.13/v0.14)** — every read verb accepts `--json`, printed by the same serializer the FFI bridge serves the shell, so a script, a bot and the GUI all read the same bytes
 - 🫀 **The live office (v0.12)** — the Flutter shell re-pulls the bridge every few seconds (an employee typing in a real terminal changes no snapshot field — event-driven-only meant frozen pixels), and `opc watch` gives the terminal the same live view
 - 🚪 **Five boss doors, one math (v0.8–v0.11)** — the standup (what the company did), the team door (who did it), the stall watch (what stopped moving) and the catch-up (one page: traffic, who, stuck, your desk, shelf integrity) — every door is a pure read over the same store, quoted verbatim by the GUI command center, the `opc` CLI, the C-ABI bridge and the Flutter shell, so no two surfaces can ever disagree
+- 📰 **The event stream leaves the GUI (v2.43)** — `opc events` and the shell's Events card read the SAME full-kind stream the macOS event log renders — every kind, newest first, capped at 50; `opc watch` frames its leading edge (v2.44), and the boss-filtered subset stays in `opc risks`
 
 ## Quick Start
 
