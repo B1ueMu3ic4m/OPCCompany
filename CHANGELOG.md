@@ -2,6 +2,36 @@
 
 All notable changes to this project are documented here.
 
+## Version policy (v3.0.0 onward)
+
+The v2.x line shipped **45 minor releases in five weeks** — a
+fast-minor cadence that served one-door-per-release well but made the
+version numbers themselves meaningless (minor 45, and climbing).
+v3.0.0 resets the ladder and locks the semantics:
+
+- **major** — a disruptive change: the version policy itself, a
+  contract break, or an architecture rewrite.
+- **minor** — a LARGE change (a new door, a new gate, a surface
+  milestone). **Never above 9**: when minor would hit 10, the change
+  is by definition major.
+- **patch** — routine fixes and docs. Also capped at 9; the next step
+  up is minor.
+
+The v2.x history stays as released (releases are immutable), grouped
+honestly by what they were: the v0.x founding arc, the v1.x door
+ladder, and the v2.x fast-minor era this policy retires.
+
+## [3.0.0] - 2026-11-11
+
+### Changed — v3.0.0 "the ladder resets"
+- **The version policy itself is the disruptive change this major
+  marks**: minor reset from 45 to 0, and the major/minor/patch
+  semantics above are now locked. NOTHING in the product changed —
+  the seven release gates, the 35-verb contract (v1.32), the 777
+  Swift + 115 Flutter tests all stand exactly as v2.45.0 left them.
+- All four version faces pin 3.0.0: VERSION, the CLI banner and
+  `opc version`, the shell's `kShellVersion`, and pubspec.yaml.
+
 ## [2.45.0] - 2026-11-10
 
 ### Added — v2.45.0 "the tour catches up"

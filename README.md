@@ -226,6 +226,7 @@ The UI ships in 简体中文 and English. Switch anytime: menu bar → **界面�
 
 ## Roadmap
 
+- [x] ~~Version policy convergence~~ — shipped v3.0.0: the fast-minor v2.x ladder (45 minors in five weeks) reset to semver discipline — major = disruptive, minor = large (never above 9), patch = routine (also capped)
 - [ ] Developer ID signing & notarization (drop the `xattr` step) + MSIX for the Windows shell
 - [x] ~~Windows companion~~ — shipped v0.3.0: `opc.exe` + Flutter shell package, both built & run in CI
 - [ ] Flutter shell → feature parity with the SwiftUI app (its UI is a preview)
@@ -243,6 +244,21 @@ OPC Company is local-first (no accounts, no telemetry). API keys live in the
 macOS Keychain, risky actions require boss approval, and per-employee
 permission gates are default-deny. See [SECURITY.md](SECURITY.md) for the full
 policy and how to report a vulnerability privately.
+
+## Versioning (v3.0.0 onward)
+
+v3.0.0 resets the ladder the fast-minor v2.x era wore out (45 minors in
+five weeks) and locks the semantics:
+
+| bump | means | cap |
+|---|---|---|
+| **major** | disruptive: a contract break, an architecture rewrite, the policy itself | — |
+| **minor** | a LARGE change: a new door, a new gate, a surface milestone | **never above 9** |
+| **patch** | routine fixes and docs | never above 9 (then minor) |
+
+Releases are immutable — the v2.x history stays exactly as shipped,
+grouped honestly: the v0.x founding arc, the v1.x door ladder, the
+v2.x fast-minor era this policy retires.
 
 ## License
 
