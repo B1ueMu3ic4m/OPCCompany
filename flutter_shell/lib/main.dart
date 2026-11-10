@@ -11,7 +11,7 @@ import 'shell_smoke.dart';
 /// reads both) and with the repo VERSION at pin time (the release
 /// script's perl line updates both; verify-release gates pubspec ==
 /// tag). A stale string here ships a shell that lies about itself.
-const kShellVersion = '2.45.0';
+const kShellVersion = '3.0.0';
 
 /// M3 skeleton: the desktop shell is a thin, honest mirror of the bridge —
 /// zero business logic; every widget renders snapshot JSON the core owns,
