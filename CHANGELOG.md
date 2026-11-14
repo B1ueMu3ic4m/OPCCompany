@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## [3.0.1] - 2026-11-14
+
+### Docs — v3.0.1 "the policy on its own page"
+- **docs/VERSIONING.md**: the policy of record — the major/minor/patch
+  semantics (minor never above 9), the era-by-era re-classification of
+  the released history (Founding arc v0.1–v0.18 · Door ladder
+  v1.1–v1.19 · Fast-minor era v2.0–v2.45), the cadence now, and how
+  the seven gates enforce it. README's Versioning section links it.
+- The **v2.45.0 release notes** carry an era note on the Releases page
+  — the fast-minor era's final minor, re-classified under this policy.
+- README's feature tour records the shell self-report (v2.41) and the
+  honest hall pointers (v2.44).
+
 ## Version policy (v3.0.0 onward)
 
 The v2.x line shipped **45 minor releases in five weeks** — a

@@ -67,6 +67,8 @@ If you want to *watch* one Claude Code session play as pixel characters inside y
 - 🫀 **The live office (v0.12)** — the Flutter shell re-pulls the bridge every few seconds (an employee typing in a real terminal changes no snapshot field — event-driven-only meant frozen pixels), and `opc watch` gives the terminal the same live view
 - 🚪 **Five boss doors, one math (v0.8–v0.11)** — the standup (what the company did), the team door (who did it), the stall watch (what stopped moving) and the catch-up (one page: traffic, who, stuck, your desk, shelf integrity) — every door is a pure read over the same store, quoted verbatim by the GUI command center, the `opc` CLI, the C-ABI bridge and the Flutter shell, so no two surfaces can ever disagree
 - 📰 **The event stream leaves the GUI (v2.43)** — `opc events` and the shell's Events card read the SAME full-kind stream the macOS event log renders — every kind, newest first, capped at 50; `opc watch` frames its leading edge (v2.44), and the boss-filtered subset stays in `opc risks`
+- 🪪 **The shell signs itself (v2.41)** — the AppBar prints `shell vX · schema vY` from ONE constant locked to pubspec.yaml (the Windows exe version resource), and verify-release gates pubspec == tag so no face can lie about the build
+- 🧭 **Honest pointers (v2.44)** — the shell cannot probe the Mac's tmux, so instead of pretending the seats page doesn't exist it points at `opc hall` on the Mac; the pointer never calls the bridge and never fabricates seat facts
 - 📜 **One contract, four faces, gated (v1.32)** — the frozen 6-symbol C ABI now serves **35 verbs** (contract v1.32); three document-drift gates keep `opc_bridge.h`, [docs/DOORS.md](docs/DOORS.md) and the verb switch byte-honest, a parity gate forces every verb onto every front end (with documented exemptions — the shell cannot probe the Mac's tmux), and a map test resolves every CLI alias
 - 🧪 **Release honesty, gated (v2.34–v2.45)** — `verify-release.sh` runs **seven gates** on every release: published state, public download, cask sha, app-bundle shape, cask version, shell pubspec version, and Windows PE six-symbol exports; doors-under-load tests pin caps and order at real scale; `scripts/soak.sh` soaks both suites in one command
 
@@ -260,7 +262,8 @@ five weeks) and locks the semantics:
 
 Releases are immutable — the v2.x history stays exactly as shipped,
 grouped honestly: the v0.x founding arc, the v1.x door ladder, the
-v2.x fast-minor era this policy retires.
+v2.x fast-minor era this policy retires. Full policy and the
+era-by-era re-classification: [docs/VERSIONING.md](docs/VERSIONING.md).
 
 ## License
 
